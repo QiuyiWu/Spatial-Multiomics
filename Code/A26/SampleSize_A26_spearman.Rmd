@@ -1,0 +1,635 @@
+---
+title: "Sample Size Study for A26"
+author: "Qiuyi Wu"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_depth: 2
+    toc_float: true
+    code_folding: hide
+    
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, fig_caption = TRUE, warning = FALSE, message = FALSE)
+```
+
+
+
+
+```{r lib, warning=FALSE, message=FALSE}
+rm(list=ls())
+
+# for data formatting
+library(tidyverse)
+library(dplyr)
+library(plyr)
+library(data.table)
+library(httr)
+library(reshape2)
+library(DT)
+
+# for plotting
+library(ggplot2)
+library(ggpubr)
+library(cowplot)
+library(gridExtra)
+library(pheatmap)
+library(ggfortify)
+library(readxl)
+```
+
+
+
+
+```{r preparation}
+heldout_updated <- readxl::read_xlsx("data/Heldout_Updated_a26.xlsx") %>% as.data.frame() %>% .[, c(2:5)]
+
+id_map <- heldout_updated %>%
+  select(Mapped_AnalysisID, HeldOut_AnalysisID1, HeldOut_AnalysisID2, finalID) %>%
+  tidyr::pivot_longer(
+    cols = c(Mapped_AnalysisID, HeldOut_AnalysisID1, HeldOut_AnalysisID2),
+    values_to = "ID"
+  ) %>%
+  filter(!is.na(ID)) %>%
+  distinct(ID, .keep_all = TRUE) %>%
+  select(ID, finalID)
+
+lookup <- setNames(id_map$finalID, id_map$ID)
+
+
+
+###########
+
+
+# finally 267 samples
+a26.met.data <- as.data.frame(read_excel("data/PostCombat_A26_Metabolite_beforeHeldout.xlsx"))
+a26.pro.data <- as.data.frame(read_excel("data/PostCombat_A26_Protein.xlsx", sheet = "combat_corrected_unscaled"))
+# convert Duke ID to Analysis ID
+dukeid.df <- data.frame(read_excel("data/A26_Bonnie_Flatmap_Grid_20260315.xlsx", sheet = "Proteome_DukeIDs"))[, -1]
+colnames(a26.pro.data)[1] <- "DukeID"
+a26.pro.data$DukeID <- as.numeric(substr(a26.pro.data$DukeID, 3,8))
+# Join and replace DukeID with AnalysisID
+a26.pro.data <- a26.pro.data %>%
+  left_join(dukeid.df, by = "DukeID") %>%
+  mutate(DukeID = AnalysisID) %>%       
+  select(-AnalysisID)                   
+
+heldout_updated <- as.data.frame(read_excel("data/Heldout_Updated_a26.xlsx"))
+
+a26.met.data <- a26.met.data[a26.met.data$Sample %in% unique(heldout_updated$finalID ), ]
+a26.pro.data <- a26.pro.data[a26.pro.data$DukeID %in% unique(heldout_updated$finalID ), ]
+
+rownames(a26.met.data) <- a26.met.data$Sample
+rownames(a26.pro.data) <- a26.pro.data$DukeID
+
+
+
+
+############
+load("data/sPCA_a26metCluster.RData")
+
+nb <- spca_delaunay_metCluster$lw$neighbours  # adjacency list
+# convert to binary adjacency matrix
+n <- length(nb)
+nbr1.a26 <- matrix(0, n, n)
+### 1st neighbor matrix ###
+for (i in 1:n) {
+  nbr1.a26[i, nb[[i]]] <- 1
+}
+
+rownames(nbr1.a26)=colnames(nbr1.a26) = rownames(spca_delaunay_metCluster$li)
+
+### 2nd neighbor matrix ###
+nbr2.a26 <- 1*(nbr1.a26%*%nbr1.a26!=0) - nbr1.a26
+nbr2.a26[is.na(nbr1.a26)] <- 0
+
+
+### 3rd neighbor matrix ###
+nbr3.a26 <- 1*(nbr1.a26%*%nbr1.a26%*%nbr1.a26!=0) - nbr1.a26 - nbr2.a26
+nbr3.a26[is.na(nbr3.a26)] <- 0
+
+
+######
+rename_ids <- function(ids, lookup) {
+  ids_chr <- as.character(ids)
+  mapped <- lookup[ids_chr]
+  ifelse(!is.na(mapped), mapped, ids_chr)
+}
+
+new_ids <- rename_ids(rownames(nbr1.a26), lookup)
+
+rownames(nbr1.a26) <- new_ids
+colnames(nbr1.a26) <- new_ids
+rownames(nbr2.a26) <- new_ids
+colnames(nbr2.a26) <- new_ids
+rownames(nbr3.a26) <- new_ids
+colnames(nbr3.a26) <- new_ids
+
+
+# in preparation (after building neighbors)
+nbr1.full <- nbr1.a26
+nbr2.full <- nbr2.a26
+nbr3.full <- nbr3.a26
+
+
+```
+
+The correlation method used in this report is "spearman" method.
+
+# Metabolomic data
+```{r a26 met}
+a26.met <- a26.met.data
+## metabolite columns 
+met.a26.cols <- setdiff(colnames(a26.met),c("Sample", "sampleType", "Plate"))
+
+## matrix of metabolites
+X <- as.matrix(a26.met[, met.a26.cols])
+rownames(X) <- a26.met$Sample
+
+
+###
+ids_chr <- as.character(rownames(X))
+mapped <- lookup[ids_chr]
+new_ids <- ifelse(!is.na(mapped), mapped, ids_chr)
+
+rownames(X) <- as.character(new_ids)
+###
+
+
+common_samples <- intersect(rownames(X), rownames(nbr1.a26))
+X.sub.met <- X[common_samples, , drop = FALSE]
+
+# reorder all neighbor matrices
+nbr1.a26 <- nbr1.a26[common_samples, common_samples]
+nbr2.a26 <- nbr2.a26[common_samples, common_samples]
+nbr3.a26 <- nbr3.a26[common_samples, common_samples]
+
+feature_mean <- colMeans(X.sub.met, na.rm = TRUE)
+feature_sd   <- apply(X.sub.met, 2, sd, na.rm = TRUE)
+
+summary(feature_mean)
+summary(feature_sd)
+
+hist(feature_sd, breaks = 50,
+     main = "Distribution of metabolite SDs",
+     xlab = "Standard deviation")
+
+plot(feature_mean, feature_sd,
+     xlab = "Mean",
+     ylab = "SD",
+     main = "Mean-SD relationship")
+```
+
+Here I used Z-score to make each metabolite column becomes mean 0, SD 1 across samples.
+
+```{r scaling met}
+X.sub.met <- scale(X.sub.met, center = TRUE, scale = TRUE)
+
+# Pearson as default
+
+avg_neighbor_cor_se <- function(X, nbr_mat) {
+  idx <- which(nbr_mat == 1, arr.ind = TRUE)
+  idx <- idx[idx[,1] < idx[,2], , drop = FALSE]
+
+  cors <- apply(idx, 1, function(k) {
+    cor(X[k[1], ], X[k[2], ], use = "pairwise.complete.obs")
+  })
+
+  c(mean = mean(cors, na.rm = TRUE),
+    se   = sd(cors, na.rm = TRUE) / sqrt(sum(!is.na(cors))))
+}
+
+avg_neighbor_cor_se.spearman <- function(X, nbr_mat) {
+  idx <- which(nbr_mat == 1, arr.ind = TRUE)
+  idx <- idx[idx[,1] < idx[,2], , drop = FALSE]
+
+  cors <- apply(idx, 1, function(k) {
+    cor(X[k[1], ], X[k[2], ], use = "pairwise.complete.obs", method = "spearman")
+  })
+
+  c(mean = mean(cors, na.rm = TRUE),
+    se   = sd(cors, na.rm = TRUE) / sqrt(sum(!is.na(cors))))
+}
+
+
+avg_neighbor_cor_raw.spearman <- function(X, nbr_mat) {
+  idx <- which(nbr_mat == 1, arr.ind = TRUE)
+  idx <- idx[idx[,1] < idx[,2], , drop = FALSE]
+
+  cors <- apply(idx, 1, function(k) {
+    cor(X[k[1], ], X[k[2], ],
+        use = "pairwise.complete.obs", method = "spearman")
+  })
+  cors[!is.na(cors)]
+}
+
+
+cors.1 <- avg_neighbor_cor_raw.spearman(X.sub.met, nbr1.a26)
+cors.2 <- avg_neighbor_cor_raw.spearman(X.sub.met, nbr2.a26)
+cors.3 <- avg_neighbor_cor_raw.spearman(X.sub.met, nbr3.a26)
+box_data <- list(cors.1, cors.2, cors.3)
+
+df.a26.met <- data.frame(
+  order = 1:3,
+  mean = sapply(box_data, mean),
+  se   = sapply(box_data, sd) / sqrt(sapply(box_data, length))
+)
+
+yl.met <- range(box_data)
+
+plot(df.a26.met$order, df.a26.met$mean,
+     xlim = c(0.5, 3.5),
+     ylim = yl.met,
+     type = "b", pch = 16,
+     xaxt = "n",
+     xlab = "Neighbor order",
+     ylab = "Average metabolomic correlation", 
+     main = "Decay of A26 Metabolomic similarity with neighbor order")
+
+axis(1, at = 1:3, labels = c("1st", "2nd", "3rd"))
+
+boxplot(box_data,
+        add = TRUE,
+        at = 1:3,
+        boxwex = 0.45,
+        outline = FALSE,
+        col = rgb(0, 0, 0, 0.15),
+        border = "gray40",
+        axes = FALSE)
+
+
+```
+
+
+
+
+```{r map met}
+map.df <- as.matrix(readxl::read_xlsx("data/A26_Bonnie_Flatmap_Grid_20260315.xlsx", sheet = "AnalysisID_Matrix", col_names = F))
+map_chr <- as.character(map.df)
+replacement <- lookup[map_chr]
+map_chr <- ifelse(!is.na(replacement), replacement, map_chr)
+map.df <- matrix(as.numeric(map_chr), nrow=nrow(map.df))
+
+
+
+avg_neighbor_cor <- function(X, nbr_mat, method = "pearson", use = "pairwise.complete.obs") {
+  n <- nrow(X)
+  out <- rep(NA_real_, n)
+  names(out) <- rownames(X)
+  for (i in seq_len(n)) {
+    nb_idx <- which(nbr_mat[i, ] != 0)  # neighbors of i
+    if (length(nb_idx) == 0) {
+      out[i] <- NA_real_
+      next
+    }
+    cors <- vapply(
+      nb_idx,
+      function(j) suppressWarnings(cor(X[i, ], X[j, ], method = method, use = use)),
+      numeric(1)
+    )
+    out[i] <- mean(cors, na.rm = TRUE)
+  }
+  out
+}
+
+# X.sub.met: samples x metabolites matrix with rownames = sample IDs
+# nbr1.a26, nbr2.a26, nbr3.a26: samples x samples adjacency matrices
+
+cor1.met <- avg_neighbor_cor(X.sub.met, nbr1.a26, method = "spearman")
+cor2.met <- avg_neighbor_cor(X.sub.met, nbr2.a26, method = "spearman")
+cor3.met <- avg_neighbor_cor(X.sub.met, nbr3.a26, method = "spearman")
+
+cor.df <- data.frame(
+  Sample = names(cor1.met),
+  cor_nbr1 = as.numeric(cor1.met),
+  cor_nbr2 = as.numeric(cor2.met),
+  cor_nbr3 = as.numeric(cor3.met),
+  stringsAsFactors = FALSE
+)
+
+
+
+
+
+
+
+
+
+paint_to_map <- function(id_map, values_named) {
+  id_chr <- matrix(as.character(id_map), nrow=nrow(id_map), ncol=ncol(id_map))
+  id_chr[id_chr %in% c("NA","NaN","nan","", "0")] <- NA_character_  # keep "0" only if it's a real sample
+
+  out <- matrix(NA_real_, nrow=nrow(id_chr), ncol=ncol(id_chr))
+  idx <- which(!is.na(id_chr), arr.ind = TRUE)
+  m <- match(id_chr[idx], names(values_named))
+  out[idx] <- values_named[m]
+  out
+}
+
+
+cor1_map <- paint_to_map(map.df, setNames(cor1.met, as.character(names(cor1.met))))
+cor2_map <- paint_to_map(map.df, setNames(cor2.met, as.character(names(cor2.met))))
+cor3_map <- paint_to_map(map.df, setNames(cor3.met, as.character(names(cor3.met))))
+
+
+plot_map <- function(mat, title = "") {
+
+  df <- expand.grid(
+    row = seq_len(nrow(mat)),
+    col = seq_len(ncol(mat))
+  )
+
+  df$value <- as.vector(mat)
+
+  ggplot(df, aes(x = col, y = row, fill = value)) +
+    geom_raster() +
+    scale_y_reverse() +
+    scale_x_reverse() +
+    coord_equal() +
+    scale_fill_gradient2(low = "blue", mid = "white",
+    high = "red",
+    midpoint = 0,
+    limits = c(-1, 1),
+    na.value = "grey90"
+  ) +
+    labs(title = title, x = NULL, y = NULL, fill = "avg cor") +
+    theme_minimal()
+}
+
+(p1 <- plot_map(cor1_map, "A26 Metabolites 1st Neighbors Correlation Map"))
+(p2 <- plot_map(cor2_map, "A26 Metabolites 2nd Neighbors Correlation Map"))
+(p3 <- plot_map(cor3_map, "A26 Metabolites 3rd Neighbors Correlation Map"))
+
+```
+
+
+
+```{r plot1}
+library(patchwork)
+
+p1 <- plot_map(cor1_map, "") +
+  ggtitle("1st Neighbor") +
+  theme(plot.title = element_text(hjust = 0.5))
+
+p2 <- plot_map(cor2_map, "") +
+  ggtitle("2nd Neighbor") +
+  theme(plot.title = element_text(hjust = 0.5))
+
+p3 <- plot_map(cor3_map, "") +
+  ggtitle("3rd Neighbor") +
+  theme(plot.title = element_text(hjust = 0.5))
+
+(p1 | p2 | p3) +
+  plot_annotation(
+    title = "A26 Metabolites Correlation Map",
+    theme = theme(plot.title = element_text(size = 26, hjust = 0.5))
+  )
+```
+
+
+
+
+# Proteomic data
+
+```{r a26 proteomic}
+a26.pro <- a26.pro.data
+colnames(a26.pro)[1] <- "pro.sample"
+
+## proteomic columns 
+pro.a26.cols <- setdiff(colnames(a26.pro),c("pro.sample", "pro.sampletype", "pro.plate"))
+
+## matrix of proteins
+X <- as.matrix(a26.pro[, pro.a26.cols])
+rownames(X) <- a26.pro$pro.sample
+
+###
+ids_chr <- as.character(rownames(X))
+mapped <- lookup[ids_chr]
+new_ids <- ifelse(!is.na(mapped), mapped, ids_chr)
+
+rownames(X) <- as.character(new_ids)
+###
+
+```
+
+
+```{r a26 pro}
+# in preparation (after building neighbors)
+nbr1.a26 <- nbr1.full 
+nbr2.a26 <- nbr2.full
+nbr3.a26 <- nbr3.full 
+
+common_samples <- intersect(rownames(X), rownames(nbr1.a26))
+X.sub.pro <- X[common_samples, , drop = FALSE]
+
+# reorder all neighbor matrices
+nbr1.a26 <- nbr1.a26[common_samples, common_samples]
+nbr2.a26 <- nbr2.a26[common_samples, common_samples]
+nbr3.a26 <- nbr3.a26[common_samples, common_samples]
+
+
+feature_mean <- colMeans(X.sub.pro, na.rm = TRUE)
+feature_sd   <- apply(X.sub.pro, 2, sd, na.rm = TRUE)
+
+summary(feature_mean)
+summary(feature_sd)
+
+hist(feature_sd, breaks = 50,
+     main = "Distribution of protein SDs",
+     xlab = "Standard deviation")
+
+plot(feature_mean, feature_sd,
+     xlab = "Mean",
+     ylab = "SD",
+     main = "Mean-SD relationship")
+```
+
+
+We can see the scaling is needed for proteomic data to make the features comparable. I used Z-score to make each protein column becomes mean 0, SD 1 across samples.
+
+
+```{r scaling}
+X.z.pro <- scale(X.sub.pro, center = TRUE, scale = TRUE)
+
+cors.1 <- avg_neighbor_cor_raw.spearman(X.z.pro, nbr1.a26)
+cors.2 <- avg_neighbor_cor_raw.spearman(X.z.pro, nbr2.a26)
+cors.3 <- avg_neighbor_cor_raw.spearman(X.z.pro, nbr3.a26)
+box_data <- list(cors.1, cors.2, cors.3)
+
+df.a26.pro <- data.frame(
+  order = 1:3,
+  mean = sapply(box_data, mean),
+  se   = sapply(box_data, sd) / sqrt(sapply(box_data, length))
+)
+
+yl.pro <- range(box_data)
+
+plot(df.a26.pro$order, df.a26.pro$mean,
+     xlim = c(0.5, 3.5),
+     ylim = yl.pro,
+     type = "b", pch = 16,
+     xaxt = "n",
+     xlab = "Neighbor order",
+     ylab = "Average Proteomic correlation", 
+     main = "Decay of A26 Proteomic similarity with neighbor order")
+
+axis(1, at = 1:3, labels = c("1st", "2nd", "3rd"))
+
+boxplot(box_data,
+        add = TRUE,
+        at = 1:3,
+        boxwex = 0.45,
+        outline = FALSE,
+        col = rgb(0, 0, 0, 0.15),
+        border = "gray40",
+        axes = FALSE)
+
+```
+
+```{r map pro}
+cor1.pro <- avg_neighbor_cor(X.z.pro, nbr1.a26, method = "spearman")
+cor2.pro <- avg_neighbor_cor(X.z.pro, nbr2.a26, method = "spearman")
+cor3.pro <- avg_neighbor_cor(X.z.pro, nbr3.a26, method = "spearman")
+
+cor.df <- data.frame(
+  Sample = names(cor1.pro),
+  cor_nbr1 = as.numeric(cor1.pro),
+  cor_nbr2 = as.numeric(cor2.pro),
+  cor_nbr3 = as.numeric(cor3.pro),
+  stringsAsFactors = FALSE
+)
+
+
+cor1_map <- paint_to_map(map.df, setNames(cor1.pro, as.character(names(cor1.pro))))
+cor2_map <- paint_to_map(map.df, setNames(cor2.pro, as.character(names(cor2.pro))))
+cor3_map <- paint_to_map(map.df, setNames(cor3.pro, as.character(names(cor3.pro))))
+
+(p1 <- plot_map(cor1_map, "A26 Proteins 1st Neighbors Correlation Map"))
+(p2 <- plot_map(cor2_map, "A26 Proteins 2nd Neighbors Correlation Map"))
+(p3 <- plot_map(cor3_map, "A26 Proteins 3rd Neighbors Correlation Map"))
+```
+
+
+# Protein Clusters
+
+Use loading to aggregate proteins to clusters.
+
+```{r pro cluster}
+a26.pro.cluster <- readxl::read_xlsx("data/pro_cluster_contribution_a26.xlsx", sheet = 1) %>% data.frame()
+
+make_sample_by_cluster_weighted_sum <- function(X.sub.pro, a26.pro.cluster) {
+  X <- as.matrix(X.sub.pro)
+
+  map <- a26.pro.cluster %>%
+    transmute(
+      Feature = as.character(Feature),
+      Cluster = as.character(Cluster),
+      Loading = as.numeric(Loading)
+    ) %>%
+    filter(Feature %in% colnames(X)) %>%
+    filter(!is.na(Loading))
+
+  feats_by_cluster <- split(map, map$Cluster)
+
+  cluster_mat <- sapply(feats_by_cluster, function(df) {
+    feats <- df$Feature
+    w <- df$Loading
+    # X[, feats] %*% w  => weighted sum per sample
+    as.numeric(X[, feats, drop = FALSE] %*% w)
+  })
+
+  cluster_mat <- as.data.frame(cluster_mat, check.names = FALSE)
+  cluster_mat
+}
+
+X.cluster.pro <- make_sample_by_cluster_weighted_sum(X.z.pro, a26.pro.cluster)
+## matrix of protein clusters
+X.cluster.pro <- as.matrix(X.cluster.pro)
+rownames(X.cluster.pro) <- rownames(X.sub.pro)
+
+
+
+cors.1 <- avg_neighbor_cor_raw.spearman(X.cluster.pro, nbr1.a26)
+cors.2 <- avg_neighbor_cor_raw.spearman(X.cluster.pro, nbr2.a26)
+cors.3 <- avg_neighbor_cor_raw.spearman(X.cluster.pro, nbr3.a26)
+box_data <- list(cors.1, cors.2, cors.3)
+
+df.a26.pro <- data.frame(
+  order = 1:3,
+  mean  = sapply(box_data, mean, na.rm = TRUE),
+  se    = sapply(box_data, sd, na.rm = TRUE) / sqrt(sapply(box_data, function(x) sum(!is.na(x))))
+)
+
+
+yl.pro <- range(unlist(box_data), na.rm = TRUE)
+
+plot(df.a26.pro$order, df.a26.pro$mean,
+     xlim = c(0.5, 3.5),
+     ylim = yl.pro,
+     type = "b", pch = 16,
+     xaxt = "n",
+     xlab = "Neighbor order",
+     ylab = "Average Cluster-level proteomic correlation",
+     main = "Decay of A26 Proteomic Cluster similarity with neighbor order")
+
+axis(1, at = 1:3, labels = c("1st", "2nd", "3rd"))
+
+boxplot(box_data,
+        add = TRUE,
+        at = 1:3,
+        boxwex = 0.45,
+        outline = FALSE,
+        col = rgb(0, 0, 0, 0.15),
+        border = "gray40",
+        axes = FALSE)
+
+```
+
+
+```{r map pro cluster}
+cor1.pro <- avg_neighbor_cor(X.cluster.pro, nbr1.a26, method = "spearman")
+cor2.pro <- avg_neighbor_cor(X.cluster.pro, nbr2.a26, method = "spearman")
+cor3.pro <- avg_neighbor_cor(X.cluster.pro, nbr3.a26, method = "spearman")
+
+cor.df <- data.frame(
+  Sample = names(cor1.pro),
+  cor_nbr1 = as.numeric(cor1.pro),
+  cor_nbr2 = as.numeric(cor2.pro),
+  cor_nbr3 = as.numeric(cor3.pro),
+  stringsAsFactors = FALSE
+)
+
+
+cor1_map <- paint_to_map(map.df, setNames(cor1.pro, as.character(names(cor1.pro))))
+cor2_map <- paint_to_map(map.df, setNames(cor2.pro, as.character(names(cor2.pro))))
+cor3_map <- paint_to_map(map.df, setNames(cor3.pro, as.character(names(cor3.pro))))
+
+(p1 <- plot_map(cor1_map, "A26 Protein Clusters 1st Neighbors Correlation Map"))
+(p2 <- plot_map(cor2_map, "A26 Protein Clusters 2nd Neighbors Correlation Map"))
+(p3 <- plot_map(cor3_map, "A26 Protein Clusters 3rd Neighbors Correlation Map"))
+```
+
+
+```{r plot2}
+library(patchwork)
+
+p1 <- plot_map(cor1_map, "") +
+  ggtitle("1st Neighbor") +
+  theme(plot.title = element_text(hjust = 0.5))
+
+p2 <- plot_map(cor2_map, "") +
+  ggtitle("2nd Neighbor") +
+  theme(plot.title = element_text(hjust = 0.5))
+
+p3 <- plot_map(cor3_map, "") +
+  ggtitle("3rd Neighbor") +
+  theme(plot.title = element_text(hjust = 0.5))
+
+(p1 | p2 | p3) +
+  plot_annotation(
+    title = "A26 Protein Clusters Correlation Map",
+    theme = theme(plot.title = element_text(size = 26, hjust = 0.5))
+  )
+```

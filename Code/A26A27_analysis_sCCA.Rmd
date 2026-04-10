@@ -1,0 +1,312 @@
+---
+title: "Cross-animal projection of A27-derived spCCA components onto A26"
+author: "Qiuyi Wu"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_depth: 2
+    toc_float: true
+    code_folding: hide
+---
+
+```{r setup, include=FALSE}
+library(Hmisc)
+library(sRDA)
+library(PMA)
+library(corrplot)
+library(dplyr)
+library(readxl)
+library(ggplot2)
+library(ggtext)
+library(pheatmap)
+library(gridExtra)
+library(factoextra)
+library(kableExtra)
+library(reshape2)
+library(deldir)
+library(igraph)
+library(spdep)
+library(patchwork)
+library(sRDA)
+library(ggrepel)
+
+knitr::opts_chunk$set(echo=TRUE, message=FALSE, cache=FALSE, warning=FALSE)
+```
+
+
+
+```{r omics map}
+heldout_updated <- as.data.frame(read_excel("../data/Heldout_Updated_a26.xlsx"))
+heldout_updated <- heldout_updated[, c(2:5)]
+map.df <- data.frame(read_excel("../data/A26_Bonnie_Flatmap_Grid_20260315.xlsx", sheet = "AnalysisID_Matrix", col_names = F))
+map.df <- as.matrix(sapply(map.df, as.numeric))
+load("../data/a26.RData")
+
+
+# Modify MAP based on HELDOUT: Build a lookup table of all IDs → finalID
+id_map <- heldout_updated %>%
+  select(Mapped_AnalysisID, HeldOut_AnalysisID1, HeldOut_AnalysisID2, finalID) %>%
+  tidyr::pivot_longer(
+    cols = c(Mapped_AnalysisID, HeldOut_AnalysisID1, HeldOut_AnalysisID2),
+    values_to = "ID"
+  ) %>%
+  filter(!is.na(ID)) %>%
+  distinct(ID, .keep_all = TRUE) %>%
+  select(ID, finalID)
+# Convert to named vector for fast replacement
+lookup <- setNames(id_map$finalID, id_map$ID)
+
+map_char <- as.character(map.df)               # all entries as character for indexing
+replacement <- lookup[map_char]                 # yields NA when not found
+final_vec <- ifelse(!is.na(replacement), replacement, map_char)  # keep original when not found
+map.df<- matrix(as.numeric(final_vec), nrow = nrow(map.df), ncol = ncol(map.df))
+
+
+load("../data/A26_PChclust.RData")
+rownames(a26.pro.cluster$score) <- rownames(a26.met.cluster$score)
+
+get_sample_coordinates <- function(block_matrix) {
+  coords <- which(!is.na(block_matrix), arr.ind = TRUE)
+  samples <- block_matrix[coords]
+  xy_df <- data.frame(
+    sample = as.character(samples),
+    x = coords[, "col"],  # column index as x
+    y = coords[, "row"]   # row index as y
+  )
+  return(xy_df)
+}
+
+map.df <- apply(map.df, 2, as.numeric)
+# set 0 value as NA
+map.df[map.df  == 0] <- NA
+
+xy_coords <- get_sample_coordinates(apply(map.df, 2, rev))
+xy_coords$sample <- as.character(xy_coords$sample)
+# Reorder coordinates to match met_design
+xy_ordered <- xy_coords[match(rownames(a26.met.cluster$score), xy_coords$sample), c("x", "y")]
+
+# Subset both datasets to common samples
+common_samples <- intersect(rownames(a26.met.cluster$score), unique(xy_coords$sample))
+met_score_common <- a26.met.cluster$score[common_samples, , drop = FALSE]
+pro_score_common <- a26.pro.cluster$score[common_samples, , drop = FALSE]
+
+xy_coords_common <- xy_coords[match(common_samples, xy_coords$sample), c("x", "y")]
+rownames(xy_coords_common) <- common_samples
+
+#rownames(xy_ordered) <- xy_coords[match(rownames(a26.met.cluster$score), xy_coords$sample), "sample"]
+# remove NA rows (where there's no match between two datasets)
+#xy_ordered <- na.omit(xy_ordered)
+
+xy_ordered <- xy_coords_common
+```
+
+
+
+```{r PCA}
+#Function to detect outliers based on median ± k * MAD （detect outliers based on the median ± k × MAD (Median Absolute Deviation)）
+mad_outliers <- function(x, k = 10) {
+  med <- median(x, na.rm = TRUE)
+  m <- mad(x, constant = 1, na.rm = TRUE)   # default constant=1
+  out <- x[abs(x - med) > k * m]
+  return(out)
+}
+# Metabolomics
+pca_met_corrected <- prcomp(a26.met.data[,-c(1:3)], scale. = TRUE)
+pca_met <- data.frame(pca_met_corrected$x)  # PCA scores
+pca_met$plate <- a26.met.data$Plate
+pca_met$sample_type <- a26.met.data$sampleType
+pca_met$color_indicator <- ifelse(pca_met$sample_type == "SPQC", "black", pca_met$plate)
+pca_met$sample <- as.numeric(a26.met.data$Sample)
+
+# Detect outliers for PC1 and PC2
+pc1_outliers <- mad_outliers(pca_met$PC1, k = 7)
+pc2_outliers <- mad_outliers(pca_met$PC2, k = 7)
+# Subset outliers
+outlier_met <- pca_met[pca_met$PC1 %in% pc1_outliers | pca_met$PC2 %in% pc2_outliers, ]
+
+
+ggplot(pca_met, aes(x=PC1, y=PC2, color=color_indicator)) +
+  geom_point(size=2) +
+  geom_text_repel(data=outlier_met, aes(label=sample), size=3, color="black") +  # Add outlier labels
+  labs(title="PCA Plot of A26 Metabolomics Data After Heldout",
+       x="PC 1",
+       y="PC 2") +
+  theme_minimal() +
+  scale_color_manual(values=c("black", "red", "blue", "green", "purple", "orange", "pink")) +  # Set black for SPQC
+  scale_shape_manual(values=c(16, 17))  
+
+
+
+# Proteomics
+pca_pro_corrected <- prcomp(a26.pro.data[,-c(1:3)], scale. = TRUE)
+pca_pro <- data.frame(pca_pro_corrected$x)  # PCA scores
+pca_pro$plate <- a26.pro.data$pro.plate 
+pca_pro$sample_type <- a26.pro.data$pro.sampletype 
+pca_pro$color_indicator <- ifelse(pca_pro$sample_type == "SPQC", "black", pca_pro$plate)
+pca_pro$sample <- as.numeric(a26.pro.data$DukeID)
+
+# Detect outliers for PC1 and PC2
+pc1_outliers <- mad_outliers(pca_pro$PC1, k = 7)
+pc2_outliers <- mad_outliers(pca_pro$PC2, k = 7)
+# Subset outliers
+outlier_pro <- pca_pro[pca_pro$PC1 %in% pc1_outliers | pca_pro$PC2 %in% pc2_outliers, ]
+
+
+ggplot(pca_pro, aes(x=PC1, y=PC2, color=color_indicator)) +
+  geom_point(size=2) +
+  geom_text_repel(data=outlier_pro, aes(label=sample), size=3, color="black") +  # Add outlier labels
+  labs(title="PCA Plot of A26 Proteomics Data After Heldout",
+       x="PC 1",
+       y="PC 2") +
+  theme_minimal() +
+  scale_color_manual(values=c("black", "red", "blue", "green", "purple", "orange", "pink")) +  # Set black for SPQC
+  scale_shape_manual(values=c(16, 17))  
+
+
+```
+
+
+
+
+```{r spCCA cluster 1st component}
+a26.met.cluster$score <- a26.met.cluster$score[rownames(a26.met.cluster$score) %in% rownames(xy_ordered), ]
+a26.pro.cluster$score <- a26.pro.cluster$score[rownames(a26.pro.cluster$score) %in% rownames(xy_ordered), ]
+
+
+# spca_delaunay_metCluster <- adegenet::spca(
+#   x = a26.met.cluster$score,
+#   xy = xy_ordered,
+#   center = TRUE,
+#   scale = TRUE,
+#   scannf = FALSE,
+#   nfposi = 3,
+#   nfnega = 0
+# )
+# save(spca_delaunay_metCluster,  file = "sPCA_a26metCluster.RData")
+load("../data/sPCA_a26metCluster.RData")
+
+# Standardize both datasets (center + scale)
+X <- a26.pro.cluster$score
+Y <- a26.met.cluster$score
+
+rownames(X) <- rownames(xy_ordered)
+
+# Get coordinates and rownames
+coords <- as.matrix(xy_ordered)
+sample_names <- rownames(xy_ordered)
+
+
+
+# lw is your listw object
+nb <- spca_delaunay_metCluster$lw$neighbours  # adjacency list
+# convert to binary adjacency matrix
+n <- length(nb)
+W_raw <- matrix(0, n, n)
+for (i in 1:n) {
+  W_raw[i, nb[[i]]] <- 1
+}
+# degree vector
+d_vec <- rowSums(W_raw)
+# diagonal degree matrix
+D <- diag(d_vec)
+# Unnormalized Laplacian
+L <- D - W_raw
+
+# Symmetric normalized Laplacian
+L_sym <- diag(1 / sqrt(d_vec)) %*% L %*% diag(1 / sqrt(d_vec))
+```
+
+
+## Spatial CCA {.tabset}
+
+
+To evaluate the reproducibility of the spatial canonical patterns identified in A27, we projected the A27-derived spCCA components onto the A26 data. Because spCCA was performed on cluster-level representations rather than the original feature matrices, we first mapped the A27 canonical loading vectors back to the original feature space. Specifically, for the proteomic data, the A27 spCCA loading matrix was multiplied by the A27 proteomic cluster loading matrix to obtain feature-level weights; the same procedure was applied to the metabolomic data. This yielded modality-specific feature weight matrices in the original proteomic and metabolomic spaces.
+
+Next, we identified the set of features shared between A26 and A27 within each modality and restricted the projection to these common features. Using the A26 proteomic and metabolomic data matrices, we then computed projected scores by multiplying the A26 feature matrices by the A27-derived feature weights. In this way, each A26 sample received proteomic and metabolomic scores corresponding to the canonical components learned from A27.
+
+Finally, for each component, these transferred scores were mapped back onto the cortical sample layout to generate spatial score maps for A26. This procedure allowed us to assess whether the cross-modality spatial patterns estimated in A27 were recapitulated in the independent A26 dataset. There are 9250 common proteins and 289 common metabolites. 
+
+
+```{r sparse spCCA 2, message=FALSE, warning=FALSE, results='hide'}
+
+# Inverse Laplacian (Moore–Penrose with small reg)
+eig <- eigen(L_sym, symmetric = TRUE)
+epsilon <- median(eig$values)  #max(eig$values) 
+eta <- 1/epsilon
+eig_inv_vals <- 1 / (eta*eig$values + 1)            # ifelse(eig$values > eps, 1 / eig$values, 0)
+W_tilde <- eig$vectors %*% diag(eig_inv_vals) %*% t(eig$vectors)   # = L_sym^{-1}
+
+
+##########
+
+eig <- eigen(W_tilde)
+W_half <- eig$vectors %*% diag(sqrt(pmax(eig$values, 0.01))) %*% t(eig$vectors)
+W_half_inv  <- eig$vectors %*% diag(1/sqrt(pmax(eig$values, 0.01)), nrow=length(eig$values)) %*% t(eig$vectors)
+
+
+X_tilde <- W_half %*% X
+Y_tilde <- W_half %*% Y
+
+Xtc <- X_tilde
+Ytc <- Y_tilde
+
+
+
+# load A27 score weights
+load("../data/a27_score.RData")
+load("../data/A27_PChclust.RData")
+scca_res_a27 <- scca_res
+ai27 <- scca_res_a27$u
+bi27 <- scca_res_a27$v
+pro_feat_wt_a27 <- a27.pro.cluster$loading %*% ai27
+met_feat_wt_a27 <- a27.met.cluster$loading %*% bi27
+rownames(pro_feat_wt_a27) = rownames(a27.pro.cluster$loading)
+rownames(met_feat_wt_a27) = rownames(a27.met.cluster$loading)
+
+common_pro <- intersect(rownames(a26.pro.cluster$loading), rownames(a27.pro.cluster$loading))
+X26_pro_common <- as.matrix(a26.pro.data[, common_pro])
+w27_pro_common <- pro_feat_wt_a27[common_pro,]
+u_A26_from_A27 <- X26_pro_common %*% w27_pro_common
+rownames(u_A26_from_A27) <- rownames(X26_pro_common)
+
+common_met <- intersect(rownames(a26.met.cluster$loading), rownames(a27.met.cluster$loading))
+X26_met_common <- as.matrix(a26.met.data[, common_met])
+w27_met_common <- met_feat_wt_a27[common_met,]
+v_A26_from_A27 <- X26_met_common %*% w27_met_common
+rownames(v_A26_from_A27) <- rownames(X26_met_common)
+
+
+
+
+for (i in 1:10) {
+  u_scores <- u_A26_from_A27[,i]
+  u_matrix <- matrix(u_scores[match(map.df, names(u_scores))], nrow = nrow(map.df))
+  u_df <- reshape2::melt(apply(u_matrix, 2, rev), varnames = c("Row", "Column"), 
+                         value.name = paste0("spCCA_U", i))
+
+  p_u <- ggplot(u_df, aes_string("Column", "Row", fill = paste0("spCCA_U", i))) +
+  geom_raster() + scale_x_reverse() + coord_equal() +
+  scale_fill_viridis_c(option = "plasma", na.value = "grey90") +
+  labs(title = paste0("Proteomic Score (U", i, ")"), x = NULL, y = NULL, fill = "Score") +
+  theme_minimal() + theme( panel.grid = element_blank())
+
+
+  v_scores <- v_A26_from_A27[,i]
+  v_matrix <- matrix(v_scores[match(map.df, names(v_scores))], nrow = nrow(map.df))
+  v_df <- reshape2::melt(apply(v_matrix, 2, rev), varnames = c("Row", "Column"), 
+                         value.name = paste0("spCCA_V", i))
+  
+  p_v <- ggplot(v_df, aes_string("Column", "Row", fill = paste0("spCCA_V", i))) +
+  geom_raster() + scale_x_reverse() + coord_equal() +
+  scale_fill_viridis_c(option = "plasma", na.value = "grey90") +
+  labs(title = paste0("Metabolomic Score (V", i, ")"), x = NULL, y = NULL, fill = "Score") +
+  theme_minimal() + theme( panel.grid = element_blank())
+  
+
+print(p_v + p_u)  
+}
+
+
+```
+

@@ -1,0 +1,182 @@
+---
+title: "Brain Multiomic Analysis -- PCA Map"
+author: "Qiuyi Wu"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_depth: 2
+    toc_float: true
+    code_folding: hide
+---
+
+```{r setup, include=FALSE}
+library(Hmisc)
+library(sRDA)
+library(PMA)
+library(corrplot)
+library(dplyr)
+library(readxl)
+library(ggplot2)
+library(ggtext)
+library(pheatmap)
+library(gridExtra)
+library(factoextra)
+library(kableExtra)
+library(reshape2)
+library(pROC)
+library(randomForest)
+library(glmnet)
+library(DT)
+library(reshape2)
+library(sva)
+library(writexl)
+library(ggrepel)
+library(purrr)
+library(tidyverse)
+library(plyr)
+library(DT)
+library(htmltools)
+
+knitr::opts_chunk$set(echo=TRUE, message=FALSE, cache=FALSE, warning=FALSE)
+```
+
+UPDATE on 08/21/2025:
+Based on the CCA analysis spatial map we decide to use heldout sample 278 to replace original sample (AnalysisID) 10;  heldout sample 401 to replace original sample (AnalysisID) 229. Also remove sample  (AnalysisID) 96 and 188. 
+
+
+# Bonnie A26
+
+In this analysis, I proceed with 85% cutoff for batch correction (combat), the PCA analysis, mapping of PCA scores on the brain map. Totally 590 metabolites, and 388 metabolites have missing value less than 85%, and 202 metabolites have missingness larger than 85%. After discussion, we decide to remove those missing > 70% for TG metabolites, and remove those missing > 85% for other metabolites. The number of metabolites reduced from 590 to **328**. Combat is based on 403 samples (33 SPQC samples are removed after SPQC subtraction). PCA analysis is based on 269 samples (134 held out samples are removed). **Based on the result, we also decided to remove sample 244 (according to the 6/4/2025 group meeting)**. **Based on the downsteaming analysis, we also decided to remove sample 96 and 188 (according to the 8/20/2025 group meeting)**.
+
+Steps for Combat:
+
+1. Remove sample 244, 96, 188
+1. For TG metabolites, remove those missing > 70%; for other metabolites, remove those missing > 85%. 
+2. Impute LOD/2
+3. Dilution factor
+4. Remove 3 SPQC outliers
+5. Log transform
+6. Subtract SPQC
+7. Combat
+8. PCA analysis (remove HeldOut_AnalysisIDs in Mapped_Samples sheet)
+
+
+```{r load metabolomic A26}
+load("../../../data/data_A22.RData")
+meta_met.a26 <- read_excel("../../../data/10412-Q500 Data.xlsx", sheet = "1. 10412 Raw Data", skip=1)
+met_data.a26 <- meta_met.a26[!meta_met.a26$`Sample identification` %in% c(grep("Q500\\(XL\\)_QC", meta_met.a26$`Sample identification`, value = TRUE)), ] # Analysis ID
+a26.met.sampletype <- ifelse(grepl("SPQC", met_data.a26$`Sample description`), "SPQC", "Non-SPQC")
+met_data.a26 <- cbind(met_data.a26$`Sample description`, a26.met.sampletype, met_data.a26$`Submission name`, met_data.a26[, -c(1:11)])
+colnames(met_data.a26)[1:3] <- c("Sample", "sampleType", "Plate")
+# Remove all the ratios/derived features before any analysis, 630 metabolites left
+met_data.a26 <- met_data.a26[, 1:633] 
+features <- met_data.a26[1,-(1:3)]
+met_data.a26 <- data.frame(met_data.a26[-c(1:14),])
+colnames(met_data.a26)[-(1:3)] <- features
+
+# Remove sample 244
+met_data.a26 <- met_data.a26[!met_data.a26$Sample == "244",]
+# Remove sample 96
+met_data.a26 <- met_data.a26[!met_data.a26$Sample == "96",]
+# Remove sample 188
+met_data.a26 <- met_data.a26[!met_data.a26$Sample == "188",]
+
+# Replace all occurrences of "<LOD" with NA in the entire dataset
+met_data.a26[met_data.a26 == "<LOD"] <- NA
+# Convert all elements in met_data.a26 from character to numeric
+met_data.a26[,-c(1:3)] <- as.data.frame(lapply(met_data.a26[,-c(1:3)], function(x) as.numeric(as.character(x))))
+# remove 100% missing metabolites
+met_data.a26 <- met_data.a26[, colMeans(is.na(met_data.a26)) < 1] # 40 metabolites with 100% missingness are removed, we have 590 metabolites left. 
+```
+
+
+
+```{r imput}
+# Identify which columns are TG metabolites
+tg_metabolites <- grepl("^TG", colnames(met_data.a26))
+# Apply different missingness cutoffs
+impute_cols <- colMeans(is.na(met_data.a26)) <= ifelse(tg_metabolites, 0.70, 0.85)
+# Split data based on cutoff criteria
+met_data.a26.impute <- met_data.a26[, impute_cols]
+met_data.a26.binary <- met_data.a26[, !impute_cols]
+
+
+# impute metabolites 
+met_data.a26.impute[,-c(1:3)] <- lapply(met_data.a26.impute[,-c(1:3)], function(col) {
+  if (is.numeric(col)) {
+    min_value <- min(col, na.rm = TRUE)
+    col[is.na(col)] <- min_value / 2
+  }
+  return(col)
+})
+features <- colnames(met_data.a26.impute)[-c(1:3)]
+
+# binary metabolites 
+met_data.a26.binary <- ifelse(is.na(met_data.a26.binary), 0, 1)
+
+# need to compare A22 and A26 scale -- dilution factor 
+met_data.a26.unscaling <- met_data.a26.impute
+met_data.a26.unscaling[,-c(1:3)] <- met_data.a26.impute[,-c(1:3)]*0.1
+
+# removed 3 SPQC outliers
+met_data.a26.unscaling <- met_data.a26.unscaling[-c(327:329), ]
+met_data.a26.binary <- met_data.a26.binary[-c(327:329), ]
+
+# log2 transformation
+met_data.a26.unscaling[,-c(1:3)] <- log2(met_data.a26.unscaling[,-c(1:3)])
+```
+
+
+- For A26 plate 5, 3 SPQC outlier samples are removed.
+- We average SPQC samples in each plate, and subtract the SPQC sample metabolites’ mean by plate. 
+- Then we correct for batch effects in the SPQC adjsuted data using the `ComBat` function from the `sva` package.
+
+
+```{r a26 spqc}
+# substract SPQC average by plate
+met_data.a26.spqcScaled <- array(dim = c(1,ncol(met_data.a26.unscaling)))
+colnames(met_data.a26.spqcScaled) <- colnames(met_data.a26.unscaling)
+met.plates <- unique(met_data.a26.unscaling$Plate)
+
+for (plate in met.plates) {
+  plate_data <- met_data.a26.unscaling[met_data.a26.unscaling$Plate == plate, ]
+  spqc_means <- colMeans(plate_data[plate_data$sampleType == "SPQC", -c(1:3)])
+  plate_data_spqcScaled <- plate_data
+  plate_data_spqcScaled[, -c(1:3)] <- sweep(plate_data[, -c(1:3)], 2, spqc_means, FUN = "-")
+  met_data.a26.spqcScaled <- rbind(met_data.a26.spqcScaled, plate_data_spqcScaled)
+}
+met_data.a26.spqcScaled <- met_data.a26.spqcScaled[-1,]
+
+# remove SPQC samples, 403 samples
+met_data.a26.spqcScaled <- met_data.a26.spqcScaled[met_data.a26.spqcScaled$sampleType != "SPQC", ]
+rownames(met_data.a26.spqcScaled) <- met_data.a26.spqcScaled$Sample
+```
+
+
+
+```{r a26 combat}
+# ComBat Batch correction
+metabolite <- as.matrix(t(met_data.a26.spqcScaled[,-c(1:3)]))
+met.batch <- as.factor(met_data.a26.spqcScaled$Plate)
+# Apply ComBat to remove batch effect
+combat_corrected <- ComBat(dat = metabolite, batch = met.batch, mod = NULL, par.prior = TRUE, prior.plots = FALSE)
+df_corrected <- t(combat_corrected)
+
+a26.met.data <- data.frame(cbind(met_data.a26.spqcScaled[,c(1:3)], df_corrected))
+colnames(a26.met.data) = colnames(met_data.a26.spqcScaled)
+
+# library(openxlsx)
+# write.xlsx(a26.met.data,"../../data/PostCombat_A26_Metabolite_beforeHeldout.xlsx")
+
+# PCA + PLOT
+#df_corrected <- df_corrected[, which(var_values > 0)]  # Keep nonzero variance columns
+pca_met_corrected <- prcomp(df_corrected, scale. = TRUE)
+pca_data <- data.frame(pca_met_corrected$x)  # PCA scores
+pca_data$plate <- met_data.a26.spqcScaled$Plate
+pca_data$sample_type <- met_data.a26.spqcScaled$sampleType
+pca_data$color_indicator <- ifelse(pca_data$sample_type == "SPQC", "black", pca_data$plate)
+pca_data$sample <- as.numeric(met_data.a26.spqcScaled$Sample)
+
+```
+

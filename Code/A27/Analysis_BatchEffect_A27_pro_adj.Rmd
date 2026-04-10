@@ -1,0 +1,383 @@
+---
+title: "Brain Multiomic Analysis -- A27 Proteomics Data Batch Effect"
+author: "Qiuyi Wu"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_depth: 2
+    toc_float: true
+    code_folding: hide
+---
+
+```{r setup, include=FALSE}
+library(Hmisc)
+library(sRDA)
+library(PMA)
+library(corrplot)
+library(dplyr)
+library(readxl)
+library(ggplot2)
+library(ggtext)
+library(pheatmap)
+library(gridExtra)
+library(factoextra)
+library(kableExtra)
+library(reshape2)
+library(pROC)
+library(randomForest)
+library(glmnet)
+library(DT)
+library(reshape2)
+library(sva)
+
+knitr::opts_chunk$set(echo=TRUE, message=FALSE, cache=FALSE, warning=FALSE)
+
+```
+
+# Frizzle A27
+For the Frizzle data, to visualize batch effect, produce a PCA plot on the proteomics data, using samples from all plates including SPQC samples. Color the samples by plate and point shape by sample type (SPQC or not).
+
+
+
+## Proteomics Data
+
+```{r load proteomics A27}
+load("../../data/Adjusted_Protein_A27.RData")
+pro.comb.num <- as.data.frame(lapply(pro.a27.adj[,-c(1:4)], function(x) as.numeric(as.character(x))))
+```
+
+Extract the data from `10788_SNE_combine_final_012026_Report_protein_export (Normal).tsv`. There are totally `r dim(pro.a27.adj)[1]` samples, and `r dim(pro.a27.adj)[2]-4` proteins.
+
+
+In the table below, I showed the number of missing values in each protein, and I use LOD/2 to impute these missing values before conducting PCA. After imputing missing data, I also scaled the data to match it with the unit in A22. 
+
+The data processing order: log2 transformation -> impute missing values -> scale
+
+### Proteomics PCA plot 
+
+```{r combine proteomics A27 PCA}
+# Check the missingness in the variables:
+missingNumber.pro <- data.frame(Protein= colSums(is.na(pro.comb.num)))
+
+datatable(missingNumber.pro,
+          options = list(pageLength = 10),
+          caption = htmltools::tags$caption(
+            style = 'caption-side: top; text-align: left; font-size: 120%; font-weight: bold;',
+            "Number of Missing values in each protein"))
+
+
+
+# LOD/2 imputation for the missingness 
+pro.comb.num[] <- apply(pro.comb.num, 2, function(x) {
+  x[is.na(x)] <- min(x, na.rm = TRUE)/2
+  return(x)
+})
+
+
+# Scale the data to make it unified with A22: A27 raw data * 0.1
+# which means the log2 transformed processed data should be added term log2(0.1) 
+# log2(A27 raw data * 0.1) = log2(0.1) + log2(raw data)
+
+pro.comb.num <- pro.comb.num + log2(0.1)
+pca_pro <- prcomp(pro.comb.num, scale. = TRUE)
+pca_data <- data.frame(pca_pro$x[,1:2])  # PCA scores
+pca_data$plate <- pro.a27.adj$pro.plate
+pca_data$sample_type <- pro.a27.adj$pro.sampletype
+
+outlier_ids <- which(abs(pca_data$PC1) > 200)
+   
+
+# # Plot PCA using ggplot
+# ggplot(pca_data, aes(x=PC1, y=PC2, color=plate, shape=sample_type)) +
+#   geom_point(size=2) +
+#   labs(title="PCA Plot of Proteomics Data",
+#        x="PC 1",
+#        y="PC 2") +
+#   theme_minimal() +
+#   scale_color_manual(values = c(
+#   "#E41A1C", "#377EB8","#4DAF4A","#984EA3","#FF7F00","#FFFF33","#F781BF"))+
+#   scale_shape_manual(values=c(16, 17))  + # Shape 16 for SPQC, 17 for non-SPQC
+#     geom_text(data = pca_data[outlier_ids, ], 
+#               aes(x = pca_data[outlier_ids, 1], 
+#                   y = pca_data[outlier_ids, 2], 
+#                   label = pro.a27.adj$pro.sample[outlier_ids]),
+#               hjust = -0.4, vjust = 0.5, size = 4, color = "blue")
+
+
+pca_data$color_indicator <- ifelse(pca_data$sample_type == "SPQC", "black", pca_data$plate)
+ggplot(pca_data, aes(x=PC1, y=PC2, color=color_indicator, shape=sample_type)) +
+  geom_point(size=2) +
+  labs(title="PCA Plot of Proteomics Data (SPQC colored in black)",
+       x="PC 1",
+       y="PC 2") +
+  theme_minimal() +
+  scale_color_manual(values=c( "red", "blue", "green", "purple","orange","black",  "pink",  "#377EB8")) +  # Set black for SPQC
+  scale_shape_manual(values=c(16, 17))  
+
+# 
+# loadings_df <- as.data.frame(pca_result$rotation[, 1:2])  # PC1 and PC2
+# loadings_df$PG.ProteinAccessions <- rownames(loadings_df)
+# 
+# # Step 6: Merge with precursor count and flag low-precursor proteins
+# loadings_annot <- loadings_df %>%
+#   left_join(precursor_info, by = "PG.ProteinAccessions") %>%
+#   mutate(low_precursor = ifelse(PG.NrOfPrecursorsUsedForQuantification < 6, "Low (<6)", "Sufficient (≥6)"))
+# 
+# # Step 7: Plot
+# ggplot(loadings_annot, aes(x = PC1, y = PC2, color = low_precursor)) +
+#   geom_point(alpha = 0.7) +
+#   theme_minimal() +
+#   scale_color_manual(values = c("Low (<6)" = "red", "Sufficient (≥6)" = "black")) +
+#   labs(
+#     title = "PCA Loadings by Number of Precursors",
+#     x = "PC1", y = "PC2",
+#     color = "Precursor Count"
+#   )
+
+
+```
+
+
+
+### Proteomics PCA plot in Each Plate
+
+For quality control purposes, we also perform PCA on each plate separately and produce a similar scatter plot.
+
+I also show the outliers based on Mahalanobis distance and identify them in the corresponding PC plots (red dots). 
+
+PC coordinates of each plate are shown in the table below.
+
+
+```{r pro each plate}
+
+pro.plates <- unique(pro.a27.adj$pro.plate)
+tb <- vector("list", 7)
+
+pro.comb.complete_spqcScaled <- array(dim = c(1,ncol(pro.a27.adj)-4))
+colnames(pro.comb.complete_spqcScaled) <- colnames(pro.comb.num)
+# Loop through each plate and perform PCA
+for(plate in pro.plates) {
+  # Subset data for the current plate
+  plate_data <- pro.comb.num[pro.a27.adj$pro.plate == plate, ]
+  identifier <- pro.a27.adj[pro.a27.adj$pro.plate == plate, 1:4]
+  
+  # subtract average SPQC by plate
+  spqc_means <- colMeans(plate_data[identifier$pro.sampletype == "SPQC",], na.rm = T)
+  plate_data_spqcScaled <- sweep(plate_data, 2, spqc_means, FUN = "-")
+  pro.comb.complete_spqcScaled <- rbind(pro.comb.complete_spqcScaled, plate_data_spqcScaled)
+  
+  # Remove columns with zero variance (constant columns)
+  plate_data_clean <- plate_data[, apply(plate_data, 2, var) > 0]
+  pca_result <- prcomp(plate_data_clean, scale. = TRUE)
+
+  
+  # Center the SPQC samples to (0, 0) by subtracting the mean of the first principal component (PC1) and second principal component (PC2)
+  scaled_pca_result <- scale(pca_result$x[, 1:2], center = TRUE, scale = FALSE)
+  
+  pca_data <- data.frame(scaled_pca_result)  # PCA scores
+  pca_data$plate <- identifier$pro.plate
+  pca_data$SPQC <- identifier$pro.sampletype
+  pca_data$sampleID <- identifier$pro.sample
+
+  
+  # Calculate Mahalanobis distance for each sample in PCA space
+  pca_scores <- scaled_pca_result
+  centroid <- colMeans(pca_scores)  
+  dist_mahalanobis <- apply(pca_scores, 1, function(x) dist(rbind(centroid, x)))
+  
+  # Identify outliers 
+  outlier_threshold <- quantile(dist_mahalanobis, 0.9)
+  outlier_ids <- which(dist_mahalanobis > outlier_threshold)
+
+
+  # Plot PCA using ggplot
+  p <- ggplot(pca_data, aes(x=PC1, y=PC2, color=SPQC)) +
+    geom_point(size=2) +
+    geom_point(data = pca_data[outlier_ids, ], aes(x = pca_data[outlier_ids, 1], y = pca_data[outlier_ids, 2]), color = "blue", size = 2) +  
+    labs(title=paste("PCA Plot for Plate:", plate),
+         x="PC 1",
+         y="PC 2") +
+    theme_minimal() +
+    scale_color_manual(values=c("black", "red")) +
+    geom_text(data = plate_data[outlier_ids, ],
+              aes(x = pca_data[outlier_ids, 1],
+                  y = pca_data[outlier_ids, 2],
+                  label = pca_data$sampleID[outlier_ids]),
+              hjust = 0.5, vjust = 2, size = 2, color = "blue")
+  print(p)  
+  
+  
+  
+  # Create a data frame for PC coordinates -- original one before centralized 
+  pc_coords <- data.frame(round(pca_result$x[, 1:2], 3))
+  pc_coords$sample_id <- pca_data$sampleID 
+  pc_coords$color_indicator <- pca_data$SPQC
+  pc_coords$is_outlier <- ifelse(rownames(pc_coords) %in% rownames(plate_data[outlier_ids,]), TRUE, FALSE) 
+  
+  tb[[plate]] <- pc_coords
+}
+
+datatable(tb[["1"]],
+          options = list(pageLength = 10),
+          caption = htmltools::tags$caption(
+            style = 'caption-side: top; text-align: left; font-size: 120%; font-weight: bold;',
+            "PC coordinates for Plate 1"))
+
+datatable(tb[["S-trap batch 1"]],
+          options = list(pageLength = 10),
+          caption = htmltools::tags$caption(
+            style = 'caption-side: top; text-align: left; font-size: 120%; font-weight: bold;',
+            "PC coordinates for Plate S-trap batch 1"))
+
+datatable(tb[["3"]],
+          options = list(pageLength = 10),
+          caption = htmltools::tags$caption(
+            style = 'caption-side: top; text-align: left; font-size: 120%; font-weight: bold;',
+            "PC coordinates for Plate 3"))
+
+datatable(tb[["4"]],
+          options = list(pageLength = 10),
+          caption = htmltools::tags$caption(
+            style = 'caption-side: top; text-align: left; font-size: 120%; font-weight: bold;',
+            "PC coordinates for Plate 4"))
+
+datatable(tb[["5"]],
+          options = list(pageLength = 10),
+          caption = htmltools::tags$caption(
+            style = 'caption-side: top; text-align: left; font-size: 120%; font-weight: bold;',
+            "PC coordinates for Plate 5"))
+
+datatable(tb[["6"]],
+          options = list(pageLength = 10),
+          caption = htmltools::tags$caption(
+            style = 'caption-side: top; text-align: left; font-size: 120%; font-weight: bold;',
+            "PC coordinates for Plate 6"))
+
+datatable(tb[["S-trap batch 2"]],
+          options = list(pageLength = 10),
+          caption = htmltools::tags$caption(
+            style = 'caption-side: top; text-align: left; font-size: 120%; font-weight: bold;',
+            "PC coordinates for Plate S-trap batch 2"))
+
+```
+
+
+
+```{r re-plot PCA protein}
+pro.comb.complete_spqcScaled  <- pro.comb.complete_spqcScaled[-1,]
+pca_pro <- prcomp(pro.comb.complete_spqcScaled, scale. = TRUE)
+pca_data <- data.frame(pca_pro$x)  # PCA scores
+
+
+pca_data$plate <- pro.a27.adj$pro.plate
+pca_data$sample_type <- pro.a27.adj$pro.sampletype
+
+pca_data$color_indicator <- ifelse(pca_data$sample_type == "SPQC", "black", pca_data$plate)
+
+ggplot(pca_data, aes(x=PC1, y=PC2, color=color_indicator, shape=sample_type)) +
+  geom_point(size=2) +
+  labs(title="SPQC adjusted PCA Plot of Proteomics Data",
+       x="PC 1",
+       y="PC 2") +
+  theme_minimal() +
+  scale_color_manual(values=c( "red", "blue", "green", "purple","orange","black",  "pink",  "#377EB8")) +  # Set black for SPQC
+  scale_shape_manual(values=c(16, 17))  
+```
+
+### Proteomics SVA Batch Correction
+We also tried to correct for batch effects in the data using the `ComBat` function from the `sva` package.
+
+```{r pro sva}
+protein_data <- as.matrix(t(pro.comb.num))
+pro.batch <- as.factor(pro.a27.adj$pro.plate)
+
+# Apply ComBat to remove batch effect
+combat_corrected <- ComBat(dat = protein_data, batch = pro.batch, mod = NULL, par.prior = TRUE, prior.plots = FALSE)
+
+
+pca_pro_corrected <- prcomp(t(combat_corrected), scale. = TRUE)
+pca_data <- data.frame(pca_pro_corrected$x)  # PCA scores
+pca_data$plate <- pro.a27.adj$pro.plate
+pca_data$sample_type <- pro.a27.adj$pro.sampletype 
+pca_data$color_indicator <- ifelse(pca_data$sample_type == "SPQC", "black", pca_data$plate)
+
+
+outlier_ids <- which(abs(pca_data$PC1) > 300)
+
+ggplot(pca_data, aes(x=PC1, y=PC2, color=color_indicator, shape=sample_type)) +
+  geom_point(size=2) +
+  labs(title="PCA Plot of Proteomics Data using [ComBat]",
+       x="PC 1",
+       y="PC 2") +
+  theme_minimal() +
+  scale_color_manual(values=c("red", "blue", "green", "purple","orange","black",  "pink",  "#377EB8")) +  
+  scale_shape_manual(values=c(16, 17))  +
+    geom_text(data = pca_data[outlier_ids, ], 
+              aes(x = pca_data[outlier_ids, 1], 
+                  y = pca_data[outlier_ids, 2], 
+                  label = pro.a27.adj$pro.sample[outlier_ids]),
+              hjust = -0.4, vjust = 0.5, size = 4, color = "blue")
+
+
+combat_corrected_unscaled <- combat_corrected 
+
+```
+
+
+
+```{r pro spqc sva}
+protein_data <- as.matrix(t(pro.comb.complete_spqcScaled))
+
+# Apply ComBat to remove batch effect
+combat_corrected <- ComBat(dat = protein_data, batch = pro.batch, mod = NULL, par.prior = TRUE, prior.plots = FALSE)
+
+
+pca_pro_corrected <- prcomp(t(combat_corrected), scale. = TRUE)
+pca_data <- data.frame(pca_pro_corrected$x)  # PCA scores
+pca_data$plate <- pro.a27.adj$pro.plate
+pca_data$sample_type <- pro.a27.adj$pro.sampletype 
+pca_data$color_indicator <- ifelse(pca_data$sample_type == "SPQC", "black", pca_data$plate)
+
+
+outlier_ids <- which(abs(pca_data$PC1) > 300)
+  
+ggplot(pca_data, aes(x=PC1, y=PC2, color=color_indicator, shape=sample_type)) +
+  geom_point(size=2) +
+  labs(title="SPQC adjusted PCA Plot of Proteomics Data using [ComBat]",
+       x="PC 1",
+       y="PC 2") +
+  theme_minimal() +
+  scale_color_manual(values=c("red", "blue", "green", "purple","orange","black",  "pink",  "#377EB8")) +  
+  scale_shape_manual(values=c(16, 17))  +
+    geom_text(data = pca_data[outlier_ids, ], 
+              aes(x = pca_data[outlier_ids, 1], 
+                  y = pca_data[outlier_ids, 2], 
+                  label = pro.a27.adj$pro.sample[outlier_ids]),
+              hjust = -0.4, vjust = 0.5, size = 4, color = "blue")
+
+
+combat_corrected_scaled <- combat_corrected
+
+
+
+
+# save data
+
+# combat_corrected_scaled <- cbind( pro.a27.adj[,1:3], t(combat_corrected_scaled))
+# combat_corrected_unscaled <- cbind( pro.a27.adj[,1:3], t(combat_corrected_unscaled))
+# library(openxlsx)
+# write.xlsx(
+#   list("combat_corrected_unscaled" = combat_corrected_unscaled, "combat_corrected_scaled" = combat_corrected_scaled),
+#   file = "PostCombat_A27_Protein.xlsx"
+# )
+
+
+```
+
+We decide NOT to subtract the SPQC (plate-wise) before batch correction.
+
+
+
+
+

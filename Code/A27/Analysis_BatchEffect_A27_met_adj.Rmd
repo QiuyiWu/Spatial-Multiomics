@@ -1,0 +1,224 @@
+---
+title: "Brain Multiomic Analysis -- PCA Map"
+author: "Qiuyi Wu"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_depth: 2
+    toc_float: true
+    code_folding: hide
+---
+
+```{r setup, include=FALSE}
+library(Hmisc)
+library(sRDA)
+library(PMA)
+library(corrplot)
+library(dplyr)
+library(readxl)
+library(ggplot2)
+library(ggtext)
+library(pheatmap)
+library(gridExtra)
+library(factoextra)
+library(kableExtra)
+library(reshape2)
+library(pROC)
+library(randomForest)
+library(glmnet)
+library(DT)
+library(reshape2)
+library(sva)
+library(writexl)
+library(ggrepel)
+library(purrr)
+library(tidyverse)
+library(plyr)
+library(DT)
+library(htmltools)
+
+knitr::opts_chunk$set(echo=TRUE, message=FALSE, cache=FALSE, warning=FALSE)
+```
+
+
+
+# Frizzle A27
+
+In this analysis, I proceed with 85% cutoff for batch correction (combat), the PCA analysis, mapping of PCA scores on the brain map. Totally 630 metabolites. After discussion, we decide to remove those missing > 70% for TG metabolites, and remove those missing > 85% for other metabolites. The number of metabolites reduced from 620 to **308**. After meeting in January 2026, we decided to remove the outlier 212. 
+Steps for Combat:
+
+1. For TG metabolites, remove those missing > 70%; for other metabolites, remove those missing > 85%, remove outlier 212
+2. Impute LOD/2
+3. Dilution factor x0.1
+5. Log transform
+6. Subtract SPQC
+7. Combat
+
+
+```{r load metabolomic A27}
+meta_met.a27 <- read_excel("../../data/10788-Q500 Data.xlsx", sheet = "1. 10788 Raw Data", skip=1)
+met_data.a27 <- cbind(meta_met.a27$`Sample description`,  meta_met.a27$`Submission name`, meta_met.a27[, -c(1:11)])
+colnames(met_data.a27)[1:2] <- c("Sample", "Plate")
+met_data.a27$Plate <- sub("^plate", "Plate", met_data.a27$Plate)
+
+# Remove all the ratios/derived features before any analysis, 630 metabolites left
+met_data.a27 <- met_data.a27[, 1:632] 
+# use the same format ones as u6
+features <- met_data.a27[1,-(1:2)]
+met_data.a27 <- data.frame(met_data.a27[-c(1:121),]) #data.frame(met_data.a27[-c(1:154),]) 
+met_data.a27$Sample[is.na(met_data.a27$Sample)] <- meta_met.a27$`Sample type`[grep("QC", meta_met.a27$`Sample type`)]
+colnames(met_data.a27)[-(1:2)] <- features
+# remove outlier sample 212
+met_data.a27 <- met_data.a27[!met_data.a27$Sample=="212", ]
+
+# Replace all occurrences of "<LOD" with NA in the entire dataset
+met_data.a27[met_data.a27 == "< LOD"] <- NA
+# Convert all elements in met_data.a27 from character to numeric
+met_data.a27[,-c(1:2)] <- as.data.frame(lapply(met_data.a27[,-c(1:2)], function(x) as.numeric(as.character(x))))
+# remove 100% missing metabolites
+met_data.a27 <- met_data.a27[, colMeans(is.na(met_data.a27)) < 1] # 10 metabolites with 100% missingness are removed, we have 620 metabolites left. 
+```
+
+
+
+```{r imput}
+# Identify which columns are TG metabolites
+tg_metabolites <- grepl("^TG", colnames(met_data.a27))
+# Apply different missingness cutoffs
+impute_cols <- colMeans(is.na(met_data.a27)) <= ifelse(tg_metabolites, 0.70, 0.85)
+# Split data based on cutoff criteria
+met_data.a27.impute <- met_data.a27[, impute_cols]  # 308 metabolites
+met_data.a27.binary <- met_data.a27[, !impute_cols] # 312 metabolites
+
+
+# impute metabolites 
+met_data.a27.impute[,-c(1:2)] <- lapply(met_data.a27.impute[,-c(1:2)], function(col) {
+  if (is.numeric(col)) {
+    min_value <- min(col, na.rm = TRUE)
+    col[is.na(col)] <- min_value / 2
+  }
+  return(col)
+})
+features <- colnames(met_data.a27.impute)[-c(1:2)]
+
+# binary metabolites 
+met_data.a27.binary <- ifelse(is.na(met_data.a27.binary), 0, 1)
+
+# need to compare A22 and a27 scale -- dilution factor 
+met_data.a27.unscaling <- met_data.a27.impute
+met_data.a27.unscaling[,-c(1:2)] <- met_data.a27.impute[,-c(1:2)]*0.1
+
+# log2 transformation
+met_data.a27.unscaling[,-c(1:2)] <- log2(met_data.a27.unscaling[,-c(1:2)] + 0.0001) 
+
+
+# Perform PCA on the data before Combat
+met_unscaled_mat.a27 <- as.matrix(met_data.a27.unscaling[ , -c(1:2)])  # remove metadata cols
+pca_unscaled.a27 <- prcomp(met_unscaled_mat.a27, scale. = TRUE, center = FALSE)
+pca_data_unscaled.a27 <- as.data.frame(pca_unscaled.a27$x[, 1:2]) 
+colnames(pca_data_unscaled.a27) <- c("PC1", "PC2")
+# Add sample info
+pca_data_unscaled.a27$Sample <- met_data.a27.unscaling$Sample
+pca_data_unscaled.a27$color_indicator <- as.factor(met_data.a27.unscaling$Plate)
+# Mark outliers (beyond ±3 SD)
+pca_data_unscaled.a27$z_PC1 <- scale(pca_data_unscaled.a27$PC1)
+pca_data_unscaled.a27$z_PC2 <- scale(pca_data_unscaled.a27$PC2)
+pca_data_unscaled.a27$outlier <- abs(pca_data_unscaled.a27$z_PC1) > 2 | abs(pca_data_unscaled.a27$z_PC2) > 2
+
+ggplot(pca_data_unscaled.a27, aes(x = PC1, y = PC2, color = color_indicator)) +
+  geom_point(size = 2) +
+  geom_text_repel(
+    data = subset(pca_data_unscaled.a27, outlier),
+    aes(label = Sample),
+    size = 3,
+    max.overlaps = 100
+  ) +
+  labs(
+    title = "PCA Plot of A27 Metabolome Data before ComBat",
+    x = paste0("PC1 (", round(100 * summary(pca_unscaled.a27)$importance[2, 1], 1), "% variance)"),
+    y = paste0("PC2 (", round(100 * summary(pca_unscaled.a27)$importance[2, 2], 1), "% variance)")
+  ) +
+  theme_minimal() +
+  scale_color_manual(values = c("cyan3", "red", "blue", "green", "purple", "orange", "pink")) +
+  scale_shape_manual(values = c(16, 17))
+```
+
+
+
+- We average SPQC samples in each plate, and subtract the SPQC sample metabolites’ mean by plate. 
+- Then we correct for batch effects in the SPQC adjsuted data using the `ComBat` function from the `sva` package.
+
+
+```{r a27 spqc}
+# substract SPQC average by plate
+met_data.a27.spqcScaled <- array(dim = c(1,ncol(met_data.a27.unscaling)))
+colnames(met_data.a27.spqcScaled) <- colnames(met_data.a27.unscaling)
+met.plates <- unique(met_data.a27.unscaling$Plate)
+
+for (plate in met.plates) {
+  plate_data <- met_data.a27.unscaling[met_data.a27.unscaling$Plate == plate, ]
+  spqc_means <- colMeans(plate_data[plate_data$Sample == "10788 SPQC -Frizzle", -c(1:2)])
+  plate_data_spqcScaled <- plate_data
+  plate_data_spqcScaled[, -c(1:2)] <- sweep(plate_data[, -c(1:2)], 2, spqc_means, FUN = "-")
+  met_data.a27.spqcScaled <- rbind(met_data.a27.spqcScaled, plate_data_spqcScaled)
+}
+met_data.a27.spqcScaled <- met_data.a27.spqcScaled[-1,]
+
+# remove SPQC and QC level 1-3 samples, 403 samples
+remove_samples <- c("10788 SPQC -Frizzle","QC Level 1","QC Level 2","QC Level 3")
+
+met_data.a27.spqcScaled <- met_data.a27.spqcScaled[!met_data.a27.spqcScaled$Sample %in% remove_samples, ]
+rownames(met_data.a27.spqcScaled) <- met_data.a27.spqcScaled$Sample
+```
+
+
+
+```{r a27 combat}
+# ComBat Batch correction
+metabolite <- as.matrix(t(met_data.a27.spqcScaled[,-c(1:2)]))
+met.batch <- as.factor(met_data.a27.spqcScaled$Plate)
+# Apply ComBat to remove batch effect
+combat_corrected <- ComBat(dat = metabolite, batch = met.batch, mod = NULL, par.prior = TRUE, prior.plots = FALSE)
+df_corrected <- t(combat_corrected)
+
+a27.met.data <- data.frame(cbind(met_data.a27.spqcScaled[,c(1:2)], df_corrected))
+colnames(a27.met.data) = colnames(met_data.a27.spqcScaled)
+
+# library(openxlsx)
+# write.xlsx(a27.met.data,"PostCombat_a27_Metabolite_beforeHeldout.xlsx")
+                         
+# PCA + PLOT
+#df_corrected <- df_corrected[, which(var_values > 0)]  # Keep nonzero variance columns
+pca_met_corrected <- prcomp(df_corrected, scale. = TRUE)
+pca_data <- data.frame(pca_met_corrected$x)  # PCA scores
+pca_data$plate <- met_data.a27.spqcScaled$Plate
+pca_data$sample_type <- ifelse(met_data.a27.spqcScaled$Sample == "10788 SPQC -Frizzle", "SPQC", "Non-SPQC")
+pca_data$color_indicator <- ifelse(pca_data$sample_type == "SPQC", "black", pca_data$plate)
+pca_data$sample <- as.numeric(met_data.a27.spqcScaled$Sample)
+
+
+pca_data$dist12 <- sqrt(pca_data$PC1^2 + pca_data$PC2^2)  # distance from origin in PC1-PC2
+out_idx <- which.max(pca_data$dist12)
+outlier_sample <- pca_data$sample[out_idx]
+outlier_plate  <- pca_data$plate[out_idx]
+cat("Outlier sample:", outlier_sample, "\nPlate:", outlier_plate, "\n")
+
+
+ggplot(pca_data, aes(x=PC1, y=PC2, color=color_indicator)) +
+  geom_point(size=2) +
+  geom_point(data = pca_data[out_idx, ], size = 3, stroke = 1.2) +
+  geom_text_repel(data = pca_data[out_idx, ],
+                  aes(label = sample),
+                  max.overlaps = Inf,
+                  show.legend = FALSE) +
+  labs(title="SPQC adjusted PCA Plot of a27 Metabolome Data using [ComBat]",
+       x="PC 1",
+       y="PC 2") +
+  theme_minimal() +
+  scale_color_manual(values=c("cyan3", "red", "blue", "green", "purple", "orange", "pink" )) +  # Set black for SPQC
+  scale_shape_manual(values=c(16, 17))
+
+
+```
+

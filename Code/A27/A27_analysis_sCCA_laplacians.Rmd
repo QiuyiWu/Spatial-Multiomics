@@ -1,0 +1,860 @@
+---
+title: "Brain Multiomic A27 CCA Analysis"
+author: "Qiuyi Wu"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_depth: 2
+    toc_float: true
+    code_folding: hide
+---
+
+```{r setup, include=FALSE}
+library(Hmisc)
+library(sRDA)
+library(PMA)
+library(corrplot)
+library(dplyr)
+library(readxl)
+library(ggplot2)
+library(ggtext)
+library(pheatmap)
+library(gridExtra)
+library(factoextra)
+library(kableExtra)
+library(reshape2)
+library(deldir)
+library(igraph)
+library(spdep)
+library(patchwork)
+library(sRDA)
+library(ggrepel)
+
+knitr::opts_chunk$set(echo=TRUE, message=FALSE, cache=FALSE, warning=FALSE)
+```
+
+
+# Data Preprocessing
+In this analysis, I proceed with 85% cutoff for batch correction (combat), the PCA analysis, mapping of PCA scores on the brain map. Totally 630 metabolites. After discussion, we decide to remove those missing > 70% for TG metabolites, and remove those missing > 85% for other metabolites. The number of metabolites reduced from 620 to **308**. After meeting in January 2026, we decided to remove the outlier 212. 
+Steps for Combat:
+
+1. For TG metabolites, remove those missing > 70%; for other metabolites, remove those missing > 85%, remove outlier 212
+2. Impute LOD/2
+3. Dilution factor x0.1
+5. Log transform
+6. Subtract SPQC
+7. Combat
+
+
+For the proteomics data, we followed a procedure similar to that used for the metabolomics data:
+
+- Impute LOD/2
+- Dilution factor
+- Combat
+- Remove heldout samples
+- Clustering analysis (on feature variables)
+
+
+In heldout step, we follow these steps:
+1. remove outliers (only Metabolitics data, because Proteomics outliers looks like another batch)
+2. comparing the mapped samples and heldout samples and swap them if necessary
+3. compute k = (x-med)/mad, for Proteomics and metabolitics data, each of them would have one or two k values (from original samples and heldout samples), and we unselect the one with maximum k values for the final mapping samples
+
+- Use both PC1 and PC2, and compute the robust distance of each sample from the center:
+ $$d_i = \sqrt{(PC1_i - med(PC1))^2 + (PC2_i - med(PC2))^2}$$
+- Then normalize this by the MAD of the distances:
+ $$k_i = \frac{d_i}{MAD(d)}$$
+- This way, k represents how far a sample is from the robust center of the PCA space (PC1, PC2).
+
+We took the intersection to retain only the common samples between the two datasets, resulting in 267 samples for the Clustering analysis (PChclust) procedure.
+
+Finally, because the mapping from the sheet `AnalysisID_Matrix` in `A26_Bonnie_Flatmap_Grid.xlsx` contains only 236 samples, **we ultimately obtained 231 matched samples across both datasets**.
+
+
+# A27 Omics Reconstruction
+
+```{r omics map}
+heldout_updated <- as.data.frame(read_excel("../data/Heldout_Updated_a27.xlsx"))
+heldout_updated <- heldout_updated[, c(1:3)]
+map.df <- data.frame(read_excel("../data/A27_Frizzle_Flatmap_Grid_20260317.xlsx", sheet = "AnalysisID_Matrix", col_names = F))
+map.df <- as.matrix(sapply(map.df, as.numeric))
+ 
+load("../data/a27.RData")
+
+
+# Modify MAP based on HELDOUT: Build a lookup table of all IDs → finalID
+id_map <- heldout_updated %>%
+  select(Mapped_AnalysisID, HeldOut_AnalysisID1, finalID) %>%
+  tidyr::pivot_longer(
+    cols = c(Mapped_AnalysisID, HeldOut_AnalysisID1),
+    values_to = "ID"
+  ) %>%
+  filter(!is.na(ID)) %>%
+  distinct(ID, .keep_all = TRUE) %>%
+  select(ID, finalID)
+# Convert to named vector for fast replacement
+lookup <- setNames(id_map$finalID, id_map$ID)
+
+map_char <- as.character(map.df)               # all entries as character for indexing
+replacement <- lookup[map_char]                 # yields NA when not found
+final_vec <- ifelse(!is.na(replacement), replacement, map_char)  # keep original when not found
+map.df<- matrix(as.numeric(final_vec), nrow = nrow(map.df), ncol = ncol(map.df))
+
+
+
+
+load("../data/A27_PChclust.RData")
+rownames(a27.pro.cluster$score) <- rownames(a27.met.cluster$score)
+
+get_sample_coordinates <- function(block_matrix) {
+  coords <- which(!is.na(block_matrix), arr.ind = TRUE)
+  samples <- block_matrix[coords]
+  xy_df <- data.frame(
+    sample = as.character(samples),
+    x = coords[, "col"],  # column index as x
+    y = coords[, "row"]   # row index as y
+  )
+  return(xy_df)
+}
+
+map.df <- apply(map.df, 2, as.numeric)
+# set 0 value as NA
+map.df[map.df  == 0] <- NA
+
+xy_coords <- get_sample_coordinates(apply(map.df, 2, rev))
+xy_coords$sample <- as.character(xy_coords$sample)
+# Reorder coordinates to match met_design
+xy_ordered <- xy_coords[match(rownames(a27.met.cluster$score), xy_coords$sample), c("x", "y")]
+
+# Subset both datasets to common samples
+common_samples <- intersect(rownames(a27.met.cluster$score), unique(xy_coords$sample))
+met_score_common <- a27.met.cluster$score[common_samples, , drop = FALSE]
+pro_score_common <- a27.pro.cluster$score[common_samples, , drop = FALSE]
+
+xy_coords_common <- xy_coords[match(common_samples, xy_coords$sample), c("x", "y")]
+rownames(xy_coords_common) <- common_samples
+
+#rownames(xy_ordered) <- xy_coords[match(rownames(a27.met.cluster$score), xy_coords$sample), "sample"]
+# remove NA rows (where there's no match between two datasets)
+#xy_ordered <- na.omit(xy_ordered)
+
+xy_ordered <- xy_coords_common
+```
+
+
+
+```{r PCA}
+#Function to detect outliers based on median ± k * MAD （detect outliers based on the median ± k × MAD (Median Absolute Deviation)）
+mad_outliers <- function(x, k = 10) {
+  med <- median(x, na.rm = TRUE)
+  m <- mad(x, constant = 1, na.rm = TRUE)   # default constant=1
+  out <- x[abs(x - med) > k * m]
+  return(out)
+}
+# Metabolomics
+pca_met_corrected <- prcomp(a27.met.data[,-c(1:2)], scale. = TRUE)
+pca_met <- data.frame(pca_met_corrected$x)  # PCA scores
+pca_met$plate <- a27.met.data$Plate
+#pca_met$sample_type <- a27.met.data$sampleType
+#pca_met$color_indicator <- ifelse(pca_met$sample_type == "SPQC", "black", pca_met$plate)
+pca_met$sample <- as.numeric(a27.met.data$Sample)
+
+# Detect outliers for PC1 and PC2
+pc1_outliers <- mad_outliers(pca_met$PC1, k = 7)
+pc2_outliers <- mad_outliers(pca_met$PC2, k = 7)
+# Subset outliers
+outlier_met <- pca_met[pca_met$PC1 %in% pc1_outliers | pca_met$PC2 %in% pc2_outliers, ]
+
+
+ggplot(pca_met, aes(x=PC1, y=PC2, color=plate)) +
+  geom_point(size=2) +
+  geom_text_repel(data=outlier_met, aes(label=sample), size=3, color="black") +  # Add outlier labels
+  labs(title="PCA Plot of A27 Metabolomics Data After Heldout",
+       x="PC 1",
+       y="PC 2") +
+  theme_minimal() +
+  scale_color_manual(values=c("black", "red", "blue", "green", "purple", "orange", "pink")) +  # Set black for SPQC
+  scale_shape_manual(values=c(16, 17))  
+
+
+
+# Proteomics
+pca_pro_corrected <- prcomp(a27.pro.data[,-c(1:3)], scale. = TRUE)
+pca_pro <- data.frame(pca_pro_corrected$x)  # PCA scores
+pca_pro$plate <- a27.pro.data$pro.plate 
+# pca_pro$sample_type <- a26.pro.data$pro.sampletype 
+# pca_pro$color_indicator <- ifelse(pca_pro$sample_type == "SPQC", "black", pca_pro$plate)
+pca_pro$sample <- as.numeric(a27.pro.data$DukeID)
+
+# Detect outliers for PC1 and PC2
+pc1_outliers <- mad_outliers(pca_pro$PC1, k = 7)
+pc2_outliers <- mad_outliers(pca_pro$PC2, k = 7)
+# Subset outliers
+outlier_pro <- pca_pro[pca_pro$PC1 %in% pc1_outliers | pca_pro$PC2 %in% pc2_outliers, ]
+
+
+ggplot(pca_pro, aes(x=PC1, y=PC2, color=plate)) +
+  geom_point(size=2) +
+  geom_text_repel(data=outlier_pro, aes(label=sample), size=3, color="black") +  # Add outlier labels
+  labs(title="PCA Plot of A27 Proteomics Data After Heldout",
+       x="PC 1",
+       y="PC 2") +
+  theme_minimal() +
+  scale_color_manual(values=c("black", "red", "blue", "green", "purple", "orange", "pink")) +  # Set black for SPQC
+  scale_shape_manual(values=c(16, 17))  
+
+
+```
+
+
+
+
+
+
+![Metabolite Delaunay Network](data/a26network_delaunay_metCluster.png){width=90%}
+
+
+```{r spCCA cluster 1st component}
+a27.met.cluster$score <- a27.met.cluster$score[rownames(a27.met.cluster$score) %in% rownames(xy_ordered), ]
+a27.pro.cluster$score <- a27.pro.cluster$score[rownames(a27.pro.cluster$score) %in% rownames(xy_ordered), ]
+
+
+# spca_delaunay_metCluster <- adegenet::spca(
+#   x = a27.met.cluster$score,
+#   xy = xy_ordered,
+#   center = TRUE,
+#   scale = TRUE,
+#   scannf = FALSE,
+#   nfposi = 3,
+#   nfnega = 0
+# )
+# save(spca_delaunay_metCluster,  file = "../data/sPCA_a27metCluster.RData")
+load("../data/sPCA_a27metCluster.RData")
+
+# Standardize both datasets (center + scale)
+X <- a27.pro.cluster$score
+Y <- a27.met.cluster$score
+
+rownames(X) <- rownames(xy_ordered)
+
+# Get coordinates and rownames
+coords <- as.matrix(xy_ordered)
+sample_names <- rownames(xy_ordered)
+
+
+
+# lw is your listw object
+nb <- spca_delaunay_metCluster$lw$neighbours  # adjacency list
+# convert to binary adjacency matrix
+n <- length(nb)
+W_raw <- matrix(0, n, n)
+for (i in 1:n) {
+  W_raw[i, nb[[i]]] <- 1
+}
+# degree vector
+d_vec <- rowSums(W_raw)
+# diagonal degree matrix
+D <- diag(d_vec)
+# Unnormalized Laplacian
+L <- D - W_raw
+
+# Symmetric normalized Laplacian
+L_sym <- diag(1 / sqrt(d_vec)) %*% L %*% diag(1 / sqrt(d_vec))
+
+
+```
+
+## Concept
+
+### 1. CCA
+For CCA, let Let $\mathbf{X} \in \mathbb{R}^{n \times p}$ and $\mathbf{Y} \in \mathbb{R}^{n \times q}$ denote the standardized (centered and scaled) feature matrices of two omics datasets—in our case, proteomic cluster scores and metabolomic cluster scores. Canonical Correlation Analysis (CCA) seeks projection vectors $\mathbf{a}_k \in \mathbb{R}^p$ and $\mathbf{b}_k \in \mathbb{R}^q$ for each component $k \in \{1, \dots, K\}$ such that the canonical variates
+
+$$
+\mathbf{u}_k = \mathbf{X} \mathbf{a}_k, \quad \mathbf{v}_k = \mathbf{Y} \mathbf{b}_k
+$$
+
+maximize the correlation:
+
+$$
+\max_{\mathbf{a}_k, \mathbf{b}_k} \; \text{corr}(\mathbf{X} \mathbf{a}_k, \mathbf{Y} \mathbf{b}_k)
+$$
+
+subject to constraints: $\|\mathbf{a}_k\|_2 = 1$, $\|\mathbf{b}_k\|_2 = 1$ and orthogonality across components.
+
+
+### 2. Sparse CCA
+For sparse CCA, it helps to promote interpretability and reduce overfitting in high-dimensional data by imposing sparsity constraints on the canonical vectors. The optimization problem becomes:
+
+$$
+\max_{\mathbf{a}_k, \mathbf{b}_k} \; \mathbf{a}_k^\top \mathbf{X}^\top \mathbf{Y} \mathbf{b}_k \quad \text{subject to} \quad
+\|\mathbf{a}_k\|_2 \leq 1,\;
+\|\mathbf{b}_k\|_2 \leq 1,\;
+\|\mathbf{a}_k\|_1 \leq c_1,\;
+\|\mathbf{b}_k\|_1 \leq c_2
+$$
+
+Here, $c_1$ and $c_2$ are sparsity parameters controlling how many features contribute to each canonical direction. We estimate the sparse canonical vectors using the `PMA::CCA()` function.
+
+
+### 3. Spatial Sparse CCA
+
+To account for spatial structure in the samples, we pre-transform the data using a spatial smoothing matrix. Let $\mathbf{W} \in \mathbb{R}^{n \times n}$ be a spatial weight matrix derived from Delaunay triangulation (via sPCA). We compute its eigendecomposition:
+
+$$
+\mathbf{W} = \mathbf{V} \mathbf{\Lambda} \mathbf{V}^\top
+$$
+
+Then define the symmetric square root:
+
+$$
+\mathbf{W}^{1/2} = \mathbf{V} \; \text{diag}(\sqrt{\lambda_1^+}, \dots, \sqrt{\lambda_n^+}) \; \mathbf{V}^\top
+$$
+
+where $\lambda_i^+ = \max(\lambda_i, 0)$.
+
+We apply this transformation to both datasets:
+
+$$
+\tilde{\mathbf{X}} = \mathbf{W}^{1/2} \mathbf{X}, \quad
+\tilde{\mathbf{Y}} = \mathbf{W}^{1/2} \mathbf{Y}
+$$
+
+We then scale these and run sparse CCA on the spatially informed versions $\tilde{\mathbf{X}}$ and $\tilde{\mathbf{Y}}$.
+
+
+## Visualization 
+
+For each component $k = 1, \dots, K$:
+
+### 1. Canonical Scores (Spatial Maps)
+
+The spatially transformed canonical scores
+
+$$
+\mathbf{u}_k = \tilde{\mathbf{X}} \mathbf{a}_k, \quad \mathbf{v}_k = \tilde{\mathbf{Y}} \mathbf{b}_k
+$$
+
+are mapped onto 2D sample locations using heatmaps (via `ggplot2::geom_tile()`). These maps highlight spatial patterns in the scores associated with each component.
+
+### 2. Feature-Level Contributions
+
+We compute feature-level contributions by projecting the canonical vectors back through the cluster loading matrices:
+
+$$
+\text{Proteomic feature weights} = \mathbf{L}_X \mathbf{a}_k, \quad
+\text{Metabolomic feature weights} = \mathbf{L}_Y \mathbf{b}_k
+$$
+
+The top 20 features (by absolute value) are displayed using barplots for interpretation.
+
+### 3. Cluster-Level Contributions
+
+The vectors $\mathbf{a}_k$ and $\mathbf{b}_k$ themselves indicate the importance of proteomic and metabolomic clusters. Their top 20 values (absolute) are also plotted.
+
+
+
+
+## Spatial CCA {.tabset}
+We use `{PMA}::CCA()` for sparse CCA. It's purely designed for statistical association and sparsity between two datasets, without knowledge of space (e.g., neighbor structure via spatial inverse laplacian weight matrix $\widetilde{W} = L^{-1}$). 
+
+$$L = I - D^{-1/2}wD^{1/2}$$
+
+
+
+$$\widetilde{W} = (L + \epsilon I)^{-1} =\frac{1}{\epsilon} (\frac{1}{\epsilon} L +  I)^{-1}\approx (\eta L+ I)^{-1} = Q(\eta\Lambda + I)^{-1} Q^{\top}$$
+where $\eta = \frac{1}{\epsilon} =  \frac{1}{median(\lambda)}$
+
+
+Here, we preprocess the data as $\widetilde{W}^{1/2}X$ and $\widetilde{W}^{1/2}Y$ to indirectly incorporate spatial information. This approach is valid because $\widetilde{W}$ is symmetric and positive semi-definite, so that $\widetilde{W}^{1/2}$ exists.
+
+
+
+```{r sparse spCCA 2, message=FALSE, warning=FALSE, results='hide', fig.width=4, fig.height=4}
+
+# Inverse Laplacian (Moore–Penrose with small reg)
+eig <- eigen(L_sym, symmetric = TRUE)
+epsilon <- median(eig$values)  #max(eig$values) 
+eta <- 1/epsilon
+eig_inv_vals <- 1 / (eta*eig$values + 1)            # ifelse(eig$values > eps, 1 / eig$values, 0)
+W_tilde <- eig$vectors %*% diag(eig_inv_vals) %*% t(eig$vectors)   # = L_sym^{-1}
+
+
+
+## PLOT ##
+val_median <- median(eig$values)
+val_max <- max(eig$values)
+idx_median <- which.min(abs(eig$values - val_median))
+idx_max <- which.max(eig$values)
+
+plot(eig$values, pch = 20, main = "Eigenvalue of L")
+points(idx_median, val_median, col = "red", pch = 19, cex = 1.5)
+points(idx_max, val_max, col = "red", pch = 19, cex = 1.5)
+text(idx_median, val_median, 
+     labels = round(val_median, 3), 
+     pos = 4, col = "red")
+text(idx_max, val_max, 
+     labels = round(val_max, 3), 
+     pos = 4, col = "red")
+##########
+
+eig <- eigen(W_tilde)
+W_half <- eig$vectors %*% diag(sqrt(pmax(eig$values, 0.01))) %*% t(eig$vectors)
+W_half_inv  <- eig$vectors %*% diag(1/sqrt(pmax(eig$values, 0.01)), nrow=length(eig$values)) %*% t(eig$vectors)
+
+
+X_tilde <- W_half %*% X
+Y_tilde <- W_half %*% Y
+
+Xtc <- X_tilde
+Ytc <- Y_tilde
+
+set.seed(123)
+perm_out <- CCA.permute(Xtc, Ytc, typex = "standard", typez = "standard", nperms = 25, standardize = F)
+
+# Extract optimal penalties
+penaltyx <- perm_out$bestpenaltyx
+penaltyz <- perm_out$bestpenaltyz
+
+
+scca_res <- CCA(Xtc, Ytc, typex = "standard", typez = "standard",
+               K = 10, penaltyx = penaltyx, penaltyz = penaltyz)
+
+```
+
+<!-- ![Average Correlation](data/averageCorrelation.png){width=90%} -->
+
+
+- U: canonical variate values for X (proteomics) for each subject. Dimension: n × K (n subjects, K components).
+- V: canonical variate values for Y (metabolomics) for each subject. Dimension: n × K (n subjects, K components).
+- P: loadings vector for X (how much each X feature contributes to a canonical component). Dimension: p × K (p features from X).
+- Q: loadings vector for Y (how much each Y feature contributes). Dimension: p × K (p features from X)
+
+
+
+```{r wrap function}
+plot_spcca_component <- function(i, scca_res, Xtc, Ytc, map.df, X, Y, a27.pro.cluster, a27.met.cluster) {
+  ai <- scca_res$u[, i]
+  bi <- scca_res$v[, i]
+  
+  u_scores <- Xtc %*% ai
+  v_scores <- Ytc %*% bi
+  names(u_scores) <- rownames(X)
+  names(v_scores) <- rownames(Y)
+  
+  u_unsmoothed <- W_half_inv %*% u_scores
+  v_unsmoothed <- W_half_inv %*% v_scores
+  names(u_unsmoothed) <- rownames(X)
+  names(v_unsmoothed) <- rownames(Y)
+  
+  u_scores.cluster = u_df.cluster = p_u.cluster = vector(length = 3, "list")
+
+  
+
+  cat("Component: ", i, "\n")
+  cat("Pearson correlation: ", round(cor(u_scores, v_scores), 4), "\n")
+  cat("Spearman correlation: ", round(cor(u_scores, v_scores, method = "spearman"), 4), "\n")
+
+  # Spatial maps
+  u_matrix <- matrix(u_scores[match(map.df, names(u_scores))], nrow = nrow(map.df))
+  u_df <- reshape2::melt(apply(u_matrix, 2, rev), varnames = c("Row", "Column"), 
+                         value.name = paste0("spCCA_U", i))
+  v_matrix <- matrix(v_scores[match(map.df, names(v_scores))], nrow = nrow(map.df))
+  v_df <- reshape2::melt(apply(v_matrix, 2, rev), varnames = c("Row", "Column"), 
+                         value.name = paste0("spCCA_V", i))
+  
+
+  # p_u <- ggplot(u_df, aes_string("Column", "Row", fill = paste0("spCCA_U", i))) +
+  #   geom_tile(color = "black") + scale_fill_viridis_c(option = "plasma") +
+  #   coord_fixed() + theme_minimal() +
+  #   labs(title = paste0("spCCA Proteomic Score (U", i, ")"), fill = "Score")
+  # 
+  # p_v <- ggplot(v_df, aes_string("Column", "Row", fill = paste0("spCCA_V", i))) +
+  #   geom_tile(color = "black") + scale_fill_viridis_c(option = "plasma") +
+  #   coord_fixed() + theme_minimal() +
+  #   labs(title = paste0("spCCA Metabolomic Score (V", i, ")"), fill = "Score")
+  
+
+  p_u <- ggplot(u_df, aes_string("Column", "Row", fill = paste0("spCCA_U", i))) +
+  geom_raster() + coord_equal() +
+  scale_fill_viridis_c(option = "plasma", na.value = "grey90") +
+  labs(title = paste0("spCCA Proteomic Score (U", i, ")"), x = NULL, y = NULL, fill = "Score") +
+  theme_minimal() + theme( panel.grid = element_blank())
+  
+  p_v <- ggplot(v_df, aes_string("Column", "Row", fill = paste0("spCCA_V", i))) +
+  geom_raster() + coord_equal() +
+  scale_fill_viridis_c(option = "plasma", na.value = "grey90") +
+  labs(title = paste0("spCCA Metabolomic Score (V", i, ")"), x = NULL, y = NULL, fill = "Score") +
+  theme_minimal() + theme( panel.grid = element_blank())
+  
+  
+  print(p_u.cluster[[1]] + p_u.cluster[[2]] + p_u.cluster[[3]] ) 
+  print(p_v + p_u)
+  
+  
+  cat("Component: ", i, "\n")
+  cat("Pearson correlation: ", round(cor(u_unsmoothed, v_unsmoothed), 4), "\n")
+  cat("Spearman correlation: ", round(cor(u_unsmoothed, v_unsmoothed, method = "spearman"), 4), "\n")
+
+  # unsmoothed Spatial maps
+  u_matrix2 <- matrix(u_unsmoothed[match(map.df, names(u_unsmoothed))], nrow = nrow(map.df))
+  u_df2 <- reshape2::melt(apply(u_matrix2, 2, rev), varnames = c("Row", "Column"), 
+                       value.name = paste0("spCCA_U", i))
+  v_matrix2 <- matrix(v_unsmoothed[match(map.df, names(v_unsmoothed))], nrow = nrow(map.df))
+  v_df2 <- reshape2::melt(apply(v_matrix2, 2, rev), varnames = c("Row", "Column"), 
+                       value.name = paste0("spCCA_V", i))
+
+  # p_u2 <- ggplot(u_df2, aes_string("Column", "Row", fill = paste0("spCCA_U", i))) +
+  # geom_tile(color = "black") + scale_fill_viridis_c(option = "plasma") +
+  # coord_fixed() + theme_minimal() +
+  # labs(title = paste0("Unsmoothed Proteomic Score (U", i, ")"), fill = "Score")
+  # 
+  # p_v2 <- ggplot(v_df2, aes_string("Column", "Row", fill = paste0("spCCA_V", i))) +
+  # geom_tile(color = "black") + scale_fill_viridis_c(option = "plasma") +
+  # coord_fixed() + theme_minimal() +
+  # labs(title = paste0("Unsmoothed Metabolomic Score (V", i, ")"), fill = "Score")
+  
+  p_u2 <- ggplot(u_df2, aes_string("Column", "Row", fill = paste0("spCCA_U", i))) +
+  geom_raster() + coord_equal() +
+  scale_fill_viridis_c(option = "plasma", na.value = "grey90") +
+  labs(title = paste0("Unsmoothed spCCA Proteomic Score (U", i, ")"), x = NULL, y = NULL, fill = "Score") +
+  theme_minimal() + theme( panel.grid = element_blank())
+  
+  p_v2 <- ggplot(v_df2, aes_string("Column", "Row", fill = paste0("spCCA_V", i))) +
+  geom_raster() + coord_equal() +
+  scale_fill_viridis_c(option = "plasma", na.value = "grey90") +
+  labs(title = paste0("Unsmoothed spCCA Metabolomic Score (V", i, ")"), x = NULL, y = NULL, fill = "Score") +
+  theme_minimal() + theme( panel.grid = element_blank())
+  
+
+  print(p_v2 + p_u2)
+
+
+  # Feature-level weights
+  pro_feat_wt <- a27.pro.cluster$loading %*% ai
+  met_feat_wt <- a27.met.cluster$loading %*% bi
+  names(pro_feat_wt) <- rownames(a27.pro.cluster$loading)
+  names(met_feat_wt) <- rownames(a27.met.cluster$loading)
+
+  barplot(sort(abs(pro_feat_wt), decreasing = TRUE)[1:20], las = 2, cex.names = 0.5,
+          main = paste0("Top Proteomic Features U", i))
+  barplot(sort(abs(met_feat_wt), decreasing = TRUE)[1:20], las = 2, cex.names = 0.5,
+          main = paste0("Top Metabolomic Features V", i))
+
+  names(ai) <- colnames(X)
+  names(bi) <- colnames(Y)
+  barplot(sort(abs(ai), decreasing = TRUE)[1:20], las = 2, cex.names = 0.6,
+          main = paste0("Top Proteomic Clusters U", i))
+  barplot(sort(abs(bi), decreasing = TRUE)[1:20], las = 2, cex.names = 0.6,
+          main = paste0("Top Metabolomic Clusters V", i))
+  
+
+  
+  
+}
+
+
+   
+# pro_tb <- as.data.frame(scca_res$u)
+# pro_tb <- cbind(Cluster = colnames(X), pro_tb)
+# pro.select.cluster <- pro_tb[pro_tb$Cluster %in% cluster_id,]
+
+
+# #write_xlsx(pro_tb,"pro_cluster.xlsx")
+# 
+# met_tb <- as.data.frame(scca_res$v)
+# met_tb <- cbind(Cluster = colnames(Y), met_tb)
+# 
+# #write_xlsx(met_tb,"met_cluster.xlsx")
+# 
+# group.met <- a27.met.cluster$group
+# loading.met <- a27.met.cluster$loading
+# df.met <- data.frame(
+#     Feature = rownames(loading.met),
+#     Cluster = group.met[rownames(loading.met)],
+#     Loading = apply(loading.met, 1, function(x) x[x!=0]))
+# 
+# df.met <- df.met[order(df.met$Cluster, -abs(df.met$Loading)), ]
+# df.met <- df.met %>%
+#     dplyr::group_by(Cluster) %>%
+#     dplyr::mutate(Contribution = abs(Loading) / sum(abs(Loading))) %>%
+#     dplyr::ungroup()
+# write_xlsx(df.met,"met_cluster_contribution.xlsx")
+# 
+# 
+# 
+# group.pro <- a27.pro.cluster$group
+# loading.pro <- a27.pro.cluster$loading
+# df.pro <- data.frame(
+#   Feature = rownames(loading.pro),
+#   Cluster = group.pro[rownames(loading.pro)],
+#   Loading = apply(loading.pro, 1, function(x) x[x!=0]))
+# 
+# df.pro <- df.pro[order(df.pro$Cluster, -abs(df.pro$Loading)), ]
+# df.pro <- df.pro %>%
+#   dplyr::group_by(Cluster) %>%
+#   dplyr::mutate(Contribution = abs(Loading) / sum(abs(Loading))) %>%
+#   dplyr::ungroup()
+# write_xlsx(df.pro,"pro_cluster_contribution.xlsx")
+
+
+```
+
+
+### Component 1
+
+```{r c1 }
+plot_spcca_component(1, scca_res, Xtc, Ytc, map.df, X, Y, a27.pro.cluster, a27.met.cluster)
+```
+
+
+### Component 2
+
+```{r c2}
+plot_spcca_component(2, scca_res, Xtc, Ytc, map.df, X, Y, a27.pro.cluster, a27.met.cluster)
+```
+
+
+### Component 3
+
+```{r c3}
+plot_spcca_component(3, scca_res, Xtc, Ytc, map.df, X, Y, a27.pro.cluster, a27.met.cluster)
+```
+
+
+
+### Component 4
+
+```{r c4}
+plot_spcca_component(4, scca_res, Xtc, Ytc, map.df, X, Y, a27.pro.cluster, a27.met.cluster)
+```
+
+
+
+
+### Component 5
+
+```{r c5}
+plot_spcca_component(5, scca_res, Xtc, Ytc, map.df, X, Y, a27.pro.cluster, a27.met.cluster)
+```
+
+
+
+### Component 6
+
+```{r c6}
+plot_spcca_component(6, scca_res, Xtc, Ytc, map.df, X, Y, a27.pro.cluster, a27.met.cluster)
+```
+
+
+### Component 7
+
+```{r c7}
+plot_spcca_component(7, scca_res, Xtc, Ytc, map.df, X, Y, a27.pro.cluster, a27.met.cluster)
+```
+
+
+### Component 8
+
+```{r c8}
+plot_spcca_component(8, scca_res, Xtc, Ytc, map.df, X, Y, a27.pro.cluster, a27.met.cluster)
+```
+
+
+### Component 9
+
+```{r c9}
+plot_spcca_component(9, scca_res, Xtc, Ytc, map.df, X, Y, a27.pro.cluster, a27.met.cluster)
+```
+
+### Component 10
+
+```{r c10}
+plot_spcca_component(10, scca_res, Xtc, Ytc, map.df, X, Y, a27.pro.cluster, a27.met.cluster)
+```
+
+
+
+
+
+
+
+## CCA (without Spatial Information) {.tabset}
+In `PMA::CCA`, the canonical correlations are not guaranteed to be in decreasing order by default.
+
+- No orthogonality constraint: Sparse CCA (`PMA::CCA`) does not enforce orthogonality between canonical components like regular CCA does. As a result, later components can have higher correlation than earlier ones.
+
+- Greedy optimization: Each pair of sparse canonical vectors is obtained through an iterative penalized optimization, which may not find the global optimum or follow a strict ordering.
+
+
+```{r CCA (without Spatial Information), message=FALSE, warning=FALSE, echo=FALSE, results='hide'}
+
+X <- a27.pro.cluster$score
+Y <- a27.met.cluster$score
+
+# standardize data
+Xc <- scale(X, center = TRUE, scale = TRUE)
+Yc <- scale(Y, center = TRUE, scale = TRUE)
+
+
+set.seed(123)
+perm_out <- CCA.permute(Xc, Yc, typex = "standard", typez = "standard", nperms = 25)
+
+# Extract optimal penalties
+penaltyx <- perm_out$bestpenaltyx
+penaltyz <- perm_out$bestpenaltyz
+
+
+cca_res <- CCA(Xc, Yc, typex = "standard", typez = "standard",
+               K = 10, penaltyx = penaltyx, penaltyz = penaltyz)
+
+
+# Compute correlations manually
+cors <- sapply(1:ncol(cca_res$u), function(i) cor(Xc %*% cca_res$u[, i], Yc %*% cca_res$v[, i]))
+
+# Order components by decreasing correlation
+order_idx <- order(abs(cors), decreasing = TRUE)
+
+```
+
+```{r wrap function2}
+plot_cca_component <- function(i, cca_res, Xc, Yc, map.df, X, Y, a27.pro.cluster, a27.met.cluster) {
+    # Canonical vectors (loadings)
+  ai <- cca_res$u[, i]
+  bi <- cca_res$v[, i]
+
+  # Canonical scores
+  u_scores <- Xc %*% ai
+  v_scores <- Yc %*% bi
+  names(u_scores) <- rownames(X)
+  names(v_scores) <- rownames(Y)
+
+  # Correlations
+  cat("Component: ", i, "\n")
+  cat("Pearson correlation: ", round(cor(u_scores, v_scores, method = "pearson"), 4), "\n")
+  cat("Spearman correlation: ", round(cor(u_scores, v_scores, method = "spearman"), 4), "\n")
+
+  # Prepare spatial maps
+  u_matrix <- matrix(u_scores[match(map.df, names(u_scores))], nrow = nrow(map.df))
+  u_matrix_flip <- apply(u_matrix, 2, rev)
+  u_df <- melt(u_matrix_flip, varnames = c("Row", "Column"), value.name = paste0("CCA_U", i))
+
+  v_matrix <- matrix(v_scores[match(map.df, names(v_scores))], nrow = nrow(map.df))
+  v_matrix_flip <- apply(v_matrix, 2, rev)
+  v_df <- melt(v_matrix_flip, varnames = c("Row", "Column"), value.name = paste0("CCA_V", i))
+
+  # p_u <- ggplot(u_df, aes_string(x = "Column", y = "Row", fill = paste0("CCA_U", i))) +
+  # geom_tile(color = "black") +
+  # scale_fill_viridis_c(option = "plasma") + #, limits = c(-15, 15), oob = scales::squish) +
+  # coord_fixed() +
+  # theme_minimal() +
+  # labs(title = paste0("Sparse spCCA Proteomic Score (U", i, ")"), fill = "Score") +
+  # theme(plot.title = element_text(size = 12))
+  # 
+  # p_v <- ggplot(v_df, aes_string(x = "Column", y = "Row", fill = paste0("CCA_V", i))) +
+  # geom_tile(color = "black") +
+  # scale_fill_viridis_c(option = "plasma") +
+  # coord_fixed() +
+  # theme_minimal() +
+  # labs(title = paste0("Sparse spCCA Metabolomic Score (V", i, ")"), fill = "Score") +
+  # theme(plot.title = element_text(size = 12))
+  
+  p_u <- ggplot(u_df, aes_string("Column", "Row", fill = paste0("CCA_U", i))) +
+  geom_raster() + coord_equal() +
+  scale_fill_viridis_c(option = "plasma", na.value = "grey90") +
+  labs(title = paste0("Sparse spCCA Proteomic Score (U", i, ")"), x = NULL, y = NULL, fill = "Score") +
+  theme_minimal() + theme( panel.grid = element_blank())
+
+  p_v <- ggplot(v_df, aes_string("Column", "Row", fill = paste0("CCA_V", i))) +
+  geom_raster() + coord_equal() +
+  scale_fill_viridis_c(option = "plasma", na.value = "grey90") +
+  labs(title = paste0("Sparse spCCA Metabolomic Score (V", i, ")"), x = NULL, y = NULL, fill = "Score") +
+  theme_minimal() + theme( panel.grid = element_blank())
+
+  print(p_v + p_u)
+
+  # Feature-level contributions
+  proteomic_feature_weights <- a27.pro.cluster$loading %*% ai
+  metabolomic_feature_weights <- a27.met.cluster$loading %*% bi
+  names(proteomic_feature_weights) <- rownames(a27.pro.cluster$loading)
+  names(metabolomic_feature_weights) <- rownames(a27.met.cluster$loading)
+
+  top_pro_features <- sort(abs(proteomic_feature_weights), decreasing = TRUE)[1:20]
+  barplot(top_pro_features, las = 2, cex.names = 0.5, main = paste0("Top Proteomic Features in Sparse CCA U", i))
+
+  top_met_features <- sort(abs(metabolomic_feature_weights), decreasing = TRUE)[1:20]
+  barplot(top_met_features, las = 2, cex.names = 0.5, main = paste0("Top Metabolomic Features in Sparse CCA V", i))
+
+
+  # Cluster-level contributions
+  names(ai) <- colnames(X)
+  names(bi) <- colnames(Y)
+  top_pro_clusters <- sort(abs(ai), decreasing = TRUE)[1:20]
+  top_met_clusters <- sort(abs(bi), decreasing = TRUE)[1:20]
+
+  barplot(top_pro_clusters, las = 2, cex.names = 0.6,
+  main = paste0("Top Proteomic Clusters in Sparse CCA U", i))
+  barplot(top_met_clusters, las = 2, cex.names = 0.6,
+  main = paste0("Top Metabolomic Clusters in Sparse CCA V", i))
+}
+```
+
+
+### Component 1
+
+```{r cc1}
+plot_cca_component(1, cca_res, Xc, Yc, map.df, X, Y, a27.pro.cluster, a27.met.cluster)
+```
+
+### Component 2
+```{r cc2}
+plot_cca_component(2, cca_res, Xc, Yc, map.df, X, Y, a27.pro.cluster, a27.met.cluster)
+```
+
+### Component 3
+```{r cc3}
+plot_cca_component(3, cca_res, Xc, Yc, map.df, X, Y, a27.pro.cluster, a27.met.cluster)
+```
+
+### Component 4
+```{r cc4}
+plot_cca_component(4, cca_res, Xc, Yc, map.df, X, Y, a27.pro.cluster, a27.met.cluster)
+```
+
+### Component 5
+```{r cc5}
+plot_cca_component(5, cca_res, Xc, Yc, map.df, X, Y, a27.pro.cluster, a27.met.cluster)
+```
+
+### Component 6
+```{r cc6}
+plot_cca_component(6, cca_res, Xc, Yc, map.df, X, Y, a27.pro.cluster, a27.met.cluster)
+```
+
+### Component 7
+```{r cc7}
+plot_cca_component(7, cca_res, Xc, Yc, map.df, X, Y, a27.pro.cluster, a27.met.cluster)
+```
+
+### Component 8
+```{r cc8}
+plot_cca_component(8, cca_res, Xc, Yc, map.df, X, Y, a27.pro.cluster, a27.met.cluster)
+```
+
+### Component 9
+```{r cc9}
+plot_cca_component(9, cca_res, Xc, Yc, map.df, X, Y, a27.pro.cluster, a27.met.cluster)
+```
+
+
+### Component 10
+```{r cc10}
+plot_cca_component(10, cca_res, Xc, Yc, map.df, X, Y, a27.pro.cluster, a27.met.cluster)
+```
+
+
+
+
+
+
+

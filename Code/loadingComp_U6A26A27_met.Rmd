@@ -1,0 +1,872 @@
+---
+title: "Comparing PC1 Loadings in U5/A26/A27 vs sCCA loadings in A26 and A27"
+author: "Qiuyi Wu"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_depth: 2
+    toc_float: true
+    code_folding: hide
+---
+
+```{r setup, include=FALSE}
+library(Hmisc)
+library(sRDA)
+library(PMA)
+library(corrplot)
+library(dplyr)
+library(readxl)
+library(ggplot2)
+library(ggtext)
+library(pheatmap)
+library(gridExtra)
+library(factoextra)
+library(kableExtra)
+library(reshape2)
+library(pROC)
+library(randomForest)
+library(glmnet)
+library(DT)
+library(reshape2)
+library(sva)
+library(writexl)
+library(ggrepel)
+library(purrr)
+library(tidyverse)
+library(plyr)
+library(DT)
+library(htmltools)
+library(ggrepel)
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+
+knitr::opts_chunk$set(echo=TRUE, message=FALSE, cache=FALSE, warning=FALSE)
+```
+
+If we wan to compare A26, A27, U5, we need to remove the batch effect in these three datasets, so here we subtract the average of Q500 level 3 samples.
+
+# U5
+
+In this analysis, I proceed with 85% cutoff for the PCA analysis. Totally 622 metabolites, remove 22 metabolites that are 100% missing. After discussion, we decide to remove those missing > 70% for TG metabolites, and remove those missing > 85% for other metabolites. The number of metabolites reduced from 600 to **327**. 
+
+
+Steps for PCA:
+
+1. For TG metabolites, remove those missing > 70%; for other metabolites, remove those missing > 85%. 
+2. Impute LOD/2
+3. Dilution factor x0.222
+5. Log transform
+
+
+
+```{r load metabolomic u5}
+# load FIA data
+meta_met.u5fia <- read_excel("../../data/5583 FIA Q500 Data.xlsx", sheet = "5583 FIA Q500 Data", skip=1)
+met_data.u5fia <- as.data.frame(meta_met.u5fia[c(6:80, 92:94), ])
+# load UPLC data
+meta_met.u5uplc <- read_excel("../../data/5583 UPLC Q500 Data.xlsx", sheet = "5583 UPLC Q500 Data", skip=1)
+met_data.u5uplc <- as.data.frame(meta_met.u5uplc[c(6:80, 92:94), ])
+# combine two data
+met_data.u5 <- cbind(met_data.u5fia, met_data.u5uplc[, 12:219])
+# remove the "status" columns
+met_data.u5 <- met_data.u5[, !grepl("Status", colnames(met_data.u5))]
+met_data.u5 <- cbind(met_data.u5$`Sample Identification`, met_data.u5[, -c(1:11)])
+colnames(met_data.u5)[1] <- "Sample"
+features.u5 <- colnames(met_data.u5)[-1]
+# Replace all occurrences of "<LOD" with NA in the entire dataset
+met_data.u5[met_data.u5 == "<LOD"] <- NA
+# Convert all elements from character to numeric
+met_data.u5[,-1] <- as.data.frame(lapply(met_data.u5[,-1], function(x) as.numeric(as.character(x))))
+# remove 100% missing metabolites
+met_data.u5 <- met_data.u5[, colMeans(is.na(met_data.u5)) < 1] # 22 metabolites with 100% missingness are removed, we have 600 metabolites left. 
+```
+
+```{r imput u5}
+# Identify which columns are TG metabolites
+tg_metabolites <- grepl("^TG", colnames(met_data.u5))
+# Apply different missingness cutoffs
+impute_cols <- colMeans(is.na(met_data.u5)) <= ifelse(tg_metabolites, 0.70, 0.85)
+# Split data based on cutoff criteria
+met_data.u5.impute <- met_data.u5[, impute_cols]  # 327 metabolites
+met_data.u5.binary <- met_data.u5[, !impute_cols] # 273 metabolites
+
+# impute metabolites 
+met_data.u5.impute[,-1] <- lapply(met_data.u5.impute[,-1], function(col) {
+  if (is.numeric(col)) {
+    min_value <- min(col, na.rm = TRUE)
+    col[is.na(col)] <- min_value / 2
+  }
+  return(col)
+})
+features <- colnames(met_data.u5.impute)[-1]
+
+# binary metabolites 
+met_data.u5.binary <- ifelse(is.na(met_data.u5.binary), 0, 1)
+
+#  dilution factor 
+met_data.u5.unscaling <- met_data.u5.impute
+met_data.u5.unscaling[,-1] <- met_data.u5.impute[,-1]*0.222
+
+# log2 transformation
+met_data.u5.unscaling[,-1] <- log2(met_data.u5.unscaling[,-1] + 0.0001) 
+
+
+# substract QC500 level 3 samples and remove them
+qc3_u5 <- subset(met_data.u5.unscaling, Sample == "Quant 500_QC3")
+qc3_u5means <- colMeans(qc3_u5[, features], na.rm = TRUE)
+met_data.u5.unscaling[, features] <- sweep(
+  met_data.u5.unscaling[, features],
+  2,
+  qc3_u5means,
+  FUN = "-"
+)
+met_data.u5.unscaling <- subset(met_data.u5.unscaling, Sample != "Quant 500_QC3")
+
+
+
+
+
+
+# Perform PCA on the data before Combat
+met_unscaled_mat.u5 <- as.matrix(met_data.u5.unscaling[ , -1])  # remove metadata cols
+pca_unscaled.u5 <- prcomp(met_unscaled_mat.u5, scale. = TRUE, center = FALSE)
+pca_data_unscaled.u5 <- as.data.frame(pca_unscaled.u5$x[, 1:2]) 
+colnames(pca_data_unscaled.u5) <- c("PC1", "PC2")
+# Add sample info
+pca_data_unscaled.u5$Sample <- met_data.u5.unscaling$Sample
+# Mark outliers (beyond ±3 SD)
+pca_data_unscaled.u5$z_PC1 <- scale(pca_data_unscaled.u5$PC1)
+pca_data_unscaled.u5$z_PC2 <- scale(pca_data_unscaled.u5$PC2)
+pca_data_unscaled.u5$outlier <- abs(pca_data_unscaled.u5$z_PC1) > 3 | abs(pca_data_unscaled.u5$z_PC2) > 3
+
+ggplot(pca_data_unscaled.u5, aes(x = PC1, y = PC2)) +
+  geom_point(size = 2) +
+  geom_text_repel(
+    data = subset(pca_data_unscaled.u5, outlier),
+    aes(label = Sample),
+    size = 3,
+    max.overlaps = 100
+  ) +
+  labs(
+    title = "PCA Plot of U5 Metabolome Data before ComBat",
+    x = paste0("PC1 (", round(100 * summary(pca_unscaled.u5)$importance[2, 1], 1), "% variance)"),
+    y = paste0("PC2 (", round(100 * summary(pca_unscaled.u5)$importance[2, 2], 1), "% variance)")
+  ) +
+  theme_minimal() +
+  #scale_color_manual(values = c("cyan3", "red", "blue", "green", "purple", "orange", "pink")) +
+  scale_shape_manual(values = c(16, 17))
+```
+
+
+# Bonnie A26
+
+In this analysis, I proceed with 85% cutoff for the PCA analysis. Totally 630 metabolites, remove 13 metabolites that are 100% missing. After discussion, we decide to remove those missing > 70% for TG metabolites, and remove those missing > 85% for other metabolites. The number of metabolites reduced from 617 to **331**.  **Based on the result, we also decided to remove sample 244 (according to the 6/4/2025 group meeting)**. **Based on the downsteaming analysis, we also decided to remove sample 96 and 188 (according to the 8/20/2025 group meeting)**.
+
+Steps for PCA:
+
+1. only keep Q500(XL)_QC3 (remove Q500(XL)_QC1 and Q500(XL)_QC2 and SPQC samples)
+2. Remove sample 244, 96, 188
+3. For TG metabolites, remove those missing > 70%; for other metabolites, remove those missing > 85%. 
+4. Impute LOD/2
+5. Dilution factor x0.1
+6. Log transform
+
+
+
+```{r load metabolomic A26}
+meta_met.a26 <- read_excel("../../data/10412-Q500 Data.xlsx", sheet = "1. 10412 Raw Data", skip=1)
+# only keep Q500(XL)_QC3
+met_data.a26 <- meta_met.a26[
+  !meta_met.a26$`Sample identification` %in%
+    c(
+      grep("Q500\\(XL\\)_QC[12]$", meta_met.a26$`Sample identification`, value = TRUE),
+      "101"
+    ),
+]
+met_data.a26 <- cbind(met_data.a26$`Sample description`,  met_data.a26$`Submission name`, met_data.a26[, -c(1:11)])
+colnames(met_data.a26)[1:2] <- c("Sample",  "Plate")
+# Remove all the ratios/derived features before any analysis, 630 metabolites left
+met_data.a26 <- met_data.a26[, 1:632] 
+# use the same format ones as u5
+features <- met_data.a26[1,-(1:2)]
+met_data.a26 <- data.frame(met_data.a26[-c(1:14),])
+met_data.a26$Sample[is.na(met_data.a26$Sample)] <- "Q500(XL)_QC3"
+colnames(met_data.a26)[-(1:2)] <- features
+# Convert all elements in met_data.a26 from character to numeric
+met_data.a26[,-c(1:2)] <- as.data.frame(lapply(met_data.a26[,-c(1:2)], function(x) as.numeric(as.character(x))))
+
+
+# Remove sample 244
+met_data.a26 <- met_data.a26[!met_data.a26$Sample == "244",]
+# Remove sample 96
+met_data.a26 <- met_data.a26[!met_data.a26$Sample == "96",]
+# Remove sample 188
+met_data.a26 <- met_data.a26[!met_data.a26$Sample == "188",]
+
+# Replace all occurrences of "<LOD" with NA in the entire dataset
+met_data.a26[met_data.a26 == "<LOD"] <- NA
+# Convert all elements in met_data.a26 from character to numeric
+met_data.a26[,-c(1:2)] <- as.data.frame(lapply(met_data.a26[,-c(1:2)], function(x) as.numeric(as.character(x))))
+# remove 100% missing metabolites
+met_data.a26 <- met_data.a26[, colMeans(is.na(met_data.a26)) < 1] # 13 metabolites with 100% missingness are removed, we have 617 metabolites left. 
+```
+
+
+
+```{r imput a26}
+# Identify which columns are TG metabolites
+tg_metabolites <- grepl("^TG", colnames(met_data.a26))
+# Apply different missingness cutoffs
+impute_cols <- colMeans(is.na(met_data.a26)) <= ifelse(tg_metabolites, 0.70, 0.85)
+# Split data based on cutoff criteria
+met_data.a26.impute <- met_data.a26[, impute_cols]
+met_data.a26.binary <- met_data.a26[, !impute_cols]
+
+
+# impute metabolites 
+met_data.a26.impute[,-c(1:2)] <- lapply(met_data.a26.impute[,-c(1:2)], function(col) {
+  if (is.numeric(col)) {
+    min_value <- min(col, na.rm = TRUE)
+    col[is.na(col)] <- min_value / 2
+  }
+  return(col)
+})
+features <- colnames(met_data.a26.impute)[-c(1:2)]
+
+# binary metabolites 
+met_data.a26.binary <- ifelse(is.na(met_data.a26.binary), 0, 1)
+
+# need to compare A22 and A26 scale -- dilution factor 
+met_data.a26.unscaling <- met_data.a26.impute
+met_data.a26.unscaling[,-c(1:2)] <- met_data.a26.impute[,-c(1:2)]*0.1
+
+# log2 transformation
+met_data.a26.unscaling[,-c(1:2)] <- log2(met_data.a26.unscaling[,-c(1:2)] + 0.0001)
+
+# Compute per-plate QC means
+qca26_rows <- grepl("Q500|QC", met_data.a26.unscaling$Sample)
+qca26_means_per_plate <- met_data.a26.unscaling %>%
+  filter(qca26_rows) %>%
+  group_by(Plate) %>%
+  dplyr::summarise(across(all_of(features), ~ mean(.x, na.rm = TRUE)))
+# Subtract QC means
+met_a26_adj <- met_data.a26.unscaling %>%
+  left_join(qca26_means_per_plate, by = "Plate", suffix = c("", "_qcmean"))
+for (f in features) {
+  met_a26_adj[[f]] <- met_a26_adj[[f]] - met_a26_adj[[paste0(f, "_qcmean")]]
+}
+# Remove the columns with _qcmean
+met_a26_adj <- met_a26_adj %>% select(-ends_with("_qcmean"))
+# Remove QC samples 
+met_data.a26.unscaling <- met_a26_adj %>% filter(!grepl("Q500|QC", Sample))
+
+
+# Perform PCA on the data before Combat
+met_unscaled_mat.a26 <- as.matrix(met_data.a26.unscaling[ , -c(1:2)])  # remove metadata cols
+pca_unscaled.a26 <- prcomp(met_unscaled_mat.a26, scale. = TRUE, center = FALSE)
+pca_data_unscaled.a26 <- as.data.frame(pca_unscaled.a26$x[, 1:2]) 
+colnames(pca_data_unscaled.a26) <- c("PC1", "PC2")
+# Add sample info
+pca_data_unscaled.a26$Sample <- met_data.a26.unscaling$Sample
+pca_data_unscaled.a26$color_indicator <- as.factor(met_data.a26.unscaling$Plate)
+# Mark outliers (beyond ±3 SD)
+pca_data_unscaled.a26$z_PC1 <- scale(pca_data_unscaled.a26$PC1)
+pca_data_unscaled.a26$z_PC2 <- scale(pca_data_unscaled.a26$PC2)
+pca_data_unscaled.a26$outlier <- abs(pca_data_unscaled.a26$z_PC1) > 3 | abs(pca_data_unscaled.a26$z_PC2) > 3
+
+ggplot(pca_data_unscaled.a26, aes(x = PC1, y = PC2, color = color_indicator)) +
+  geom_point(size = 2) +
+  geom_text_repel(
+    data = subset(pca_data_unscaled.a26, outlier),
+    aes(label = Sample),
+    size = 3,
+    max.overlaps = 100
+  ) +
+  labs(
+    title = "PCA Plot of A26 Metabolome Data before ComBat",
+    x = paste0("PC1 (", round(100 * summary(pca_unscaled.a26)$importance[2, 1], 1), "% variance)"),
+    y = paste0("PC2 (", round(100 * summary(pca_unscaled.a26)$importance[2, 2], 1), "% variance)")
+  ) +
+  theme_minimal() +
+  scale_color_manual(values = c("cyan3", "red", "blue", "green", "purple", "orange")) +
+  scale_shape_manual(values = c(16, 17))
+```
+
+
+
+
+# Frizzle A27
+
+In this analysis, I proceed with 85% cutoff for the PCA analysis. Totally 630 metabolites, remove 10 metabolites that are 100% missing. After discussion, we decide to remove those missing > 70% for TG metabolites, and remove those missing > 85% for other metabolites. The number of metabolites reduced from 620 to **308**. 
+
+Steps for PCA:
+
+1. For TG metabolites, remove those missing > 70%; for other metabolites, remove those missing > 85%. 
+2. Impute LOD/2
+3. Dilution factor x0.1
+4. Log transform
+
+
+
+```{r load metabolomic a27}
+meta_met.a27 <- read_excel("../../data/10788-Q500 Data.xlsx", sheet = "1. 10788 Raw Data", skip=1)
+# only keep Q500(XL)_QC3
+met_data.a27 <- meta_met.a27[
+  !meta_met.a27$`Sample identification` %in%
+    c(
+      grep("Q500\\(XL\\)_QC[12]$", meta_met.a27$`Sample identification`, value = TRUE),
+      "101"
+    ),
+]
+met_data.a27 <- cbind(met_data.a27$`Sample description`,  met_data.a27$`Submission name`, met_data.a27[, -c(1:11)])
+colnames(met_data.a27)[1:2] <- c("Sample", "Plate")
+met_data.a27$Plate <- sub("^plate", "Plate", met_data.a27$Plate)
+
+# Remove all the ratios/derived features before any analysis, 630 metabolites left
+met_data.a27 <- met_data.a27[, 1:632] 
+# use the same format ones as u5
+features <- met_data.a27[1,-(1:2)]
+
+met_data.a27 <- data.frame(met_data.a27[-c(1:121),])
+met_data.a27$Sample[is.na(met_data.a27$Sample)] <- "Q500(XL)_QC3"
+colnames(met_data.a27)[-(1:2)] <- features
+
+
+# Replace all occurrences of "<LOD" with NA in the entire dataset
+met_data.a27[met_data.a27 == "<LOD"] <- NA
+# Convert all elements in met_data.a27 from character to numeric
+met_data.a27[,-c(1:2)] <- as.data.frame(lapply(met_data.a27[,-c(1:2)], function(x) as.numeric(as.character(x))))
+# remove 100% missing metabolites
+met_data.a27 <- met_data.a27[, colMeans(is.na(met_data.a27)) < 1] # 10 metabolites with 100% missingness are removed, we have 620 metabolites left. 
+```
+
+
+
+```{r imput a27}
+# Identify which columns are TG metabolites
+tg_metabolites <- grepl("^TG", colnames(met_data.a27))
+# Apply different missingness cutoffs
+impute_cols <- colMeans(is.na(met_data.a27)) <= ifelse(tg_metabolites, 0.70, 0.85)
+# Split data based on cutoff criteria
+met_data.a27.impute <- met_data.a27[, impute_cols]  # 308 metabolites
+met_data.a27.binary <- met_data.a27[, !impute_cols] # 312 metabolites
+
+
+# impute metabolites 
+met_data.a27.impute[,-c(1:2)] <- lapply(met_data.a27.impute[,-c(1:2)], function(col) {
+  if (is.numeric(col)) {
+    min_value <- min(col, na.rm = TRUE)
+    col[is.na(col)] <- min_value / 2
+  }
+  return(col)
+})
+features <- colnames(met_data.a27.impute)[-c(1:2)]
+
+# binary metabolites 
+met_data.a27.binary <- ifelse(is.na(met_data.a27.binary), 0, 1)
+
+# need to compare A22 and a27 scale -- dilution factor 
+met_data.a27.unscaling <- met_data.a27.impute
+met_data.a27.unscaling[,-c(1:2)] <- met_data.a27.impute[,-c(1:2)]*0.1
+
+# log2 transformation
+met_data.a27.unscaling[,-c(1:2)] <- log2(met_data.a27.unscaling[,-c(1:2)] + 0.0001) 
+
+# Compute per-plate QC means
+qca27_rows <- grepl("Q500|QC", met_data.a27.unscaling$Sample)
+qca27_means_per_plate <- met_data.a27.unscaling %>%
+  filter(qca27_rows) %>%
+  group_by(Plate) %>%
+  dplyr::summarise(across(all_of(features), ~ mean(.x, na.rm = TRUE)))
+# Subtract QC means
+met_a27_adj <- met_data.a27.unscaling %>%
+  left_join(qca27_means_per_plate, by = "Plate", suffix = c("", "_qcmean"))
+for (f in features) {
+  met_a27_adj[[f]] <- met_a27_adj[[f]] - met_a27_adj[[paste0(f, "_qcmean")]]
+}
+# Remove the columns with _qcmean
+met_a27_adj <- met_a27_adj %>% select(-ends_with("_qcmean"))
+# Remove QC samples 
+met_data.a27.unscaling <- met_a27_adj %>% filter(!grepl("Q500|QC", Sample))
+
+
+# Perform PCA on the data before Combat
+met_unscaled_mat.a27 <- as.matrix(met_data.a27.unscaling[ , -c(1:2)])  # remove metadata cols
+pca_unscaled.a27 <- prcomp(met_unscaled_mat.a27, scale. = TRUE, center =FALSE)
+pca_data_unscaled.a27 <- as.data.frame(pca_unscaled.a27$x[, 1:2]) 
+colnames(pca_data_unscaled.a27) <- c("PC1", "PC2")
+# Add sample info
+pca_data_unscaled.a27$Sample <- met_data.a27.unscaling$Sample
+pca_data_unscaled.a27$color_indicator <- as.factor(met_data.a27.unscaling$Plate)
+# Mark outliers (beyond ±3 SD)
+pca_data_unscaled.a27$z_PC1 <- scale(pca_data_unscaled.a27$PC1)
+pca_data_unscaled.a27$z_PC2 <- scale(pca_data_unscaled.a27$PC2)
+pca_data_unscaled.a27$outlier <- abs(pca_data_unscaled.a27$z_PC1) > 3 | abs(pca_data_unscaled.a27$z_PC2) > 3
+
+ggplot(pca_data_unscaled.a27, aes(x = PC1, y = PC2, color = color_indicator)) +
+  geom_point(size = 2) +
+  geom_text_repel(
+    data = subset(pca_data_unscaled.a27, outlier),
+    aes(label = Sample),
+    size = 3,
+    max.overlaps = 100
+  ) +
+  labs(
+    title = "PCA Plot of A27 Metabolome Data before ComBat",
+    x = paste0("PC1 (", round(100 * summary(pca_unscaled.a27)$importance[2, 1], 1), "% variance)"),
+    y = paste0("PC2 (", round(100 * summary(pca_unscaled.a27)$importance[2, 2], 1), "% variance)")
+  ) +
+  theme_minimal() +
+  scale_color_manual(values = c("cyan3", "red", "blue", "green", "purple", "orange", "pink")) +
+  scale_shape_manual(values = c(16, 17))
+```
+
+# Combined U5, A26 and A27
+There are 252 metabolites for combined data of U5, A26 and A27. 
+
+
+```{r Combined DATA}
+# Merge u5, A26 and A27
+common_cols <- Reduce(intersect, list(
+  names(met_data.u5.unscaling),
+  names(met_data.a26.unscaling),
+  names(met_data.a27.unscaling)
+)) #252 common metabolites
+
+meta_met.u5_sub <- met_data.u5.unscaling[, common_cols]
+meta_met.a26_sub <- met_data.a26.unscaling[, common_cols]
+meta_met.a27_sub <- met_data.a27.unscaling[, common_cols]
+met_data.comb <- rbind(meta_met.u5_sub, meta_met.a26_sub, meta_met.a27_sub)
+met_data.comb$Subject <- c(rep("U5", nrow(meta_met.u5_sub)), rep("A26", nrow(meta_met.a26_sub)), rep("A27", nrow(meta_met.a27_sub)))
+
+# Perform PCA on the combined data
+met_combined_mat <- as.matrix(met_data.comb[ , -c(1, ncol(met_data.comb))])  
+pca_combined <- prcomp(met_combined_mat, scale. = TRUE, center = TRUE)
+# Extract first 2 PCs for plotting
+pca_data.comb <- as.data.frame(pca_combined$x[, 1:2])
+colnames(pca_data.comb) <- c("PC1", "PC2")
+pca_data.comb$Sample <- met_data.comb$Sample
+# Add Subject info to PCA data
+pca_data.comb$Subject <- met_data.comb$Subject
+
+pca_data.comb$z_PC1 <- scale(pca_data.comb$PC1)
+pca_data.comb$z_PC2 <- scale(pca_data.comb$PC2)
+pca_data.comb$outlier <- abs(pca_data.comb$z_PC1) > 3 | abs(pca_data.comb$z_PC2) > 3
+pc1_var <- round(100 * summary(pca_combined)$importance[2, 1], 1)
+pc2_var <- round(100 * summary(pca_combined)$importance[2, 2], 1)
+
+
+ggplot(pca_data.comb, aes(x = PC1, y = PC2, color = Subject)) +
+  geom_point(size = 2) +
+  geom_text_repel(
+    data = subset(pca_data.comb, outlier),
+    aes(label = Sample),
+    size = 3,
+    max.overlaps = 100
+  ) +
+  labs(
+    title = "PCA Plot of Combined Metabolome Data before ComBat",
+    x = paste0("PC1 (", pc1_var, "% variance)"),
+    y = paste0("PC2 (", pc2_var, "% variance)")
+  ) +
+  theme_minimal() +
+  scale_color_manual(values = c("U5" = "purple", "A26" = "cyan3", "A27" = "red")) +
+  scale_shape_manual(values = c(16, 17))
+```
+
+
+```{r PCA without QC samples}
+# Perform PCA on the combined data
+met_data.comb.adj <- met_data.comb[!met_data.comb$Sample %in% c("Quant 500_QC3", "Q500(XL)_QC3"), ]
+met_combined_mat <- as.matrix(met_data.comb.adj[ , -c(1, ncol(met_data.comb.adj))])  
+pca_combined <- prcomp(met_combined_mat, scale. = TRUE, center = TRUE)
+# Extract first 2 PCs for plotting
+pca_data.comb <- as.data.frame(pca_combined$x[, 1:2])
+colnames(pca_data.comb) <- c("PC1", "PC2")
+pca_data.comb$Sample <- met_data.comb.adj$Sample
+# Add Subject info to PCA data
+pca_data.comb$Subject <- met_data.comb.adj$Subject
+pca_data.comb$z_PC1 <- scale(pca_data.comb$PC1)
+pca_data.comb$z_PC2 <- scale(pca_data.comb$PC2)
+pca_data.comb$outlier <- abs(pca_data.comb$z_PC1) > 3 | abs(pca_data.comb$z_PC2) > 3
+pc1_var <- round(100 * summary(pca_combined)$importance[2, 1], 1)
+pc2_var <- round(100 * summary(pca_combined)$importance[2, 2], 1)
+
+ggplot(pca_data.comb, aes(x = PC1, y = PC2, color = Subject)) +
+  geom_point(size = 2) +
+  geom_text_repel(
+    data = subset(pca_data.comb, outlier),
+    aes(label = Sample),
+    size = 3,
+    max.overlaps = 100
+  ) +
+  labs(
+    title = "PCA Plot of Combined Metabolome Data before ComBat (QC Samples Removed)",
+    x = paste0("PC1 (", pc1_var, "% variance)"),
+    y = paste0("PC2 (", pc2_var, "% variance)")
+  ) +
+  theme_minimal() +
+  scale_color_manual(values = c("U5" = "purple", "A26" = "cyan3", "A27" = "red")) +
+  scale_shape_manual(values = c(16, 17))
+
+
+
+
+
+
+# Remove outliers
+met_data.comb.clean <- met_data.comb.adj[!met_data.comb.adj$Sample %in% pca_data.comb$Sample[pca_data.comb$outlier], ]
+met_combined_mat <- as.matrix(met_data.comb.clean[ , -c(1, ncol(met_data.comb.clean))])  
+pca_combined <- prcomp(met_combined_mat, scale. = TRUE, center = TRUE)
+# Extract first 2 PCs for plotting
+pca_data.comb <- as.data.frame(pca_combined$x[, 1:2])
+colnames(pca_data.comb) <- c("PC1", "PC2")
+pca_data.comb$Sample <- met_data.comb.clean$Sample
+# Add Subject info to PCA data
+pca_data.comb$Subject <- met_data.comb.clean$Subject
+pca_data.comb$z_PC1 <- scale(pca_data.comb$PC1)
+pca_data.comb$z_PC2 <- scale(pca_data.comb$PC2)
+pc1_var <- round(100 * summary(pca_combined)$importance[2, 1], 1)
+pc2_var <- round(100 * summary(pca_combined)$importance[2, 2], 1)
+
+
+# Plot without outliers
+ggplot(pca_data.comb, aes(x = PC1, y = PC2, color = Subject)) +
+  geom_point(size = 2) +
+  labs(
+    title = "PCA Plot of Combined Metabolome Data before ComBat  (Outliers Removed)",
+    x = paste0("PC1 (", pc1_var, "% variance)"),
+    y = paste0("PC2 (", pc2_var, "% variance)")
+  ) +
+  theme_minimal() +
+  scale_color_manual(values = c("U5" = "purple", "A26" = "cyan3", "A27" = "red"))
+
+
+loadings <- pca_combined$rotation[, 1]   # PC1 loadings
+# Create dataframe of features + loadings
+pc1_loadings_df <- data.frame(
+  Feature = names(loadings),
+  PC1_Loading = loadings,
+  Abs_Loading = abs(loadings)
+)
+# Sort by magnitude
+pc1_top_features <- pc1_loadings_df[order(-pc1_loadings_df$Abs_Loading), ]
+
+
+top_n <- 20
+ggplot(pc1_top_features[1:top_n, ],
+       aes(x = reorder(Feature, PC1_Loading), y = PC1_Loading)) +
+  geom_bar(stat = "identity") +
+  coord_flip() +
+  labs(
+    title = paste("Top", top_n, "Features Driving PC1 Separation (U5/A26/A27)"),
+    x = "Feature",
+    y = "PC1 Loading"
+  ) +
+  theme_minimal()
+
+datatable(pc1_top_features,
+    options = list(pageLength = 10),
+    caption = htmltools::tags$caption(
+    style = 'caption-side: top; text-align: left; font-size: 120%; font-weight: bold;',
+    "Features Driving PC1 Separation (U5/A26/A27)"))
+
+
+
+
+# Top 10 positive loadings
+top_pos <- pc1_loadings_df[order(-pc1_loadings_df$PC1_Loading), ] |> head(10)
+# Top 10 negative loadings
+top_neg <- pc1_loadings_df[order(pc1_loadings_df$PC1_Loading), ] |>  head(10)
+top_features <- rbind(top_pos, top_neg)
+
+top_features$Feature <- factor(
+  top_features$Feature,
+  levels = top_features$Feature[order(top_features$PC1_Loading)]
+)
+
+ggplot(top_features,
+       aes(x = Feature, y = PC1_Loading, fill = PC1_Loading > 0)) +
+  geom_bar(stat = "identity") +
+  coord_flip() +
+  scale_fill_manual(
+    values = c("TRUE" = "#D55E00", "FALSE" = "#0072B2"),
+    guide = "none"
+  ) +
+  labs(
+    title = "Top 10 Positive and Negative Features Driving PC1 (U5/A26/A27)",
+    x = "Feature",
+    y = "PC1 Loading"
+  ) +
+  theme_minimal()
+
+
+  # ggsave("top10loadings.png",
+  #   plot = p1,
+  #   width = 25,
+  #   height = 20,
+  #   units = "cm",
+  #   dpi = 300
+  # )
+
+```
+
+
+
+# Comparing Loadings in U5/A26/A27 vs sCCA loadings in A26 
+
+
+```{r a26}
+load("../../data/a26_score.RData")
+load("../../data/A26_PChclust.RData")
+scca_res_a26 <- scca_res
+bi26 <- scca_res_a26$v
+
+met_feat_wt_a26 <- a26.met.cluster$loading %*% bi26
+rownames(met_feat_wt_a26) = rownames(a26.met.cluster$loading)
+common_met <- intersect(pc1_loadings_df$Feature, rownames(a26.met.cluster$loading))
+w26_met_common <- met_feat_wt_a26[common_met,]
+pc1_loadings_common1 <- pc1_loadings_df[common_met,]
+
+# sanity checks
+stopifnot(identical(pc1_loadings_common1$Feature, rownames(w26_met_common)))
+
+cor_results.a26 <- data.frame(
+  Component = paste0("Comp", 1:10),
+  Correlation = NA_real_,
+  P_value = NA_real_
+)
+
+for (i in 1:10) {
+  test_res <- cor.test(
+    pc1_loadings_common1$PC1_Loading,
+    w26_met_common[, i],
+    method = "spearman"
+  )
+  
+  cor_results.a26$Correlation[i] <- round(unname(test_res$estimate), 3)
+  cor_results.a26$P_value[i] <- test_res$p.value
+}
+
+print(cor_results.a26[, c("Correlation", "P_value")])
+
+```
+
+
+
+
+# Comparing Loadings in U5/A26/A27 vs sCCA loadings in A27
+
+
+```{r a27}
+load("../../data/a27_score.RData")
+load("../../data/A27_PChclust.RData")
+scca_res_a27 <- scca_res
+bi27 <- scca_res_a27$v
+
+met_feat_wt_a27 <- a27.met.cluster$loading %*% bi27
+rownames(met_feat_wt_a27) = rownames(a27.met.cluster$loading)
+common_met <- intersect(pc1_loadings_df$Feature, rownames(a27.met.cluster$loading))
+w27_met_common <- met_feat_wt_a27[common_met,]
+pc1_loadings_common2 <- pc1_loadings_df[common_met,]
+
+# sanity checks
+stopifnot(identical(pc1_loadings_common2$Feature, rownames(w27_met_common)))
+
+cor_results.a27 <- data.frame(
+  Component = paste0("Comp", 1:10),
+  Correlation = NA_real_,
+  P_value = NA_real_
+)
+
+for (i in 1:10) {
+  test_res <- cor.test(
+    pc1_loadings_common2$PC1_Loading,
+    w27_met_common[, i],
+    method = "spearman"
+  )
+  
+  cor_results.a27$Correlation[i] <- round(unname(test_res$estimate), 3)
+  cor_results.a27$P_value[i] <- test_res$p.value
+}
+
+print(cor_results.a27[, c("Correlation", "P_value")])
+
+plot(pc1_loadings_common2$PC1_Loading, w27_met_common[, 2], xlab = "PC1 loadings separating from U5/A26/A27", ylab = "A27 sCCA Component 2", pch = 20)
+
+```
+
+When inspecting the scatter plot of the strongest correlation (PC2 of A27) and we found correlation to be a very misleading metric. The PC1 separating the animals has some negative values and some zeros. The zeros of PC1 correspond to the largest positive values of that PC3, while the negative values of PC1 correspond to the negative and mediocre values of PC3. By looking at the scatter plot, we would come to the opposite conclusion compared to looking at correlation. 
+
+Now we are using a different matric representing the concordance between components (https://www.biorxiv.org/content/10.1101/2024.09.14.613024v1.full.pdf).
+Here we want to know if the two components prioritize the same metabolites. 
+
+We are compare the top L metabolites from 
+
+- the cross-animal PC1 loading
+- each A26 or A27 sCCA metabolite loading vector
+
+and plot the overlap proportion $\frac{A\cap  B}{L}$ for a sequence of L values. 
+
+
+```{r}
+
+get_top_features <- function(x, L, mode = c("absolute", "positive", "negative")) {
+  mode <- match.arg(mode)
+  
+  if (mode == "absolute") {
+    ord <- order(abs(x), decreasing = TRUE)
+  } else if (mode == "positive") {
+    ord <- order(x, decreasing = TRUE)
+  } else if (mode == "negative") {
+    ord <- order(x, decreasing = FALSE)   # most negative first
+  }
+  
+  names(x)[ord][1:L]
+}
+
+compute_overlap_curve <- function(x, y, L_vec, mode = c("absolute", "positive", "negative")) {
+  mode <- match.arg(mode)
+  
+  stopifnot(length(x) == length(y))
+  stopifnot(!is.null(names(x)), !is.null(names(y)))
+  stopifnot(identical(names(x), names(y)))
+  
+  data.frame(
+    L = L_vec,
+    Overlap = sapply(L_vec, function(L) {
+      top_x <- get_top_features(x, L, mode = mode)
+      top_y <- get_top_features(y, L, mode = mode)
+      length(intersect(top_x, top_y)) / L
+    })
+  )
+}
+
+compute_null_band <- function(n, L_vec, alpha = 0.05) {
+  data.frame(
+    L = L_vec,
+    top_fraction = L_vec / n,
+    expected = L_vec / n,
+    lower = sapply(L_vec, function(L) qhyper(alpha / 2,     m = L, n = n - L, k = L) / L),
+    upper = sapply(L_vec, function(L) qhyper(1 - alpha / 2, m = L, n = n - L, k = L) / L)
+  )
+}
+
+
+
+make_cat_plot <- function(pc1_df, w_met_common, title_text, mode = "absolute") {
+  
+  # make named vector for PC1
+  pc1_vec <- pc1_df$PC1_Loading
+  names(pc1_vec) <- pc1_df$Feature
+  
+  n_feat <- length(pc1_vec)
+  L_vec <- 1:n_feat   # per collaborator's instruction
+  
+  # overlap curves for all 10 components
+  overlap_list <- lapply(1:ncol(w_met_common), function(i) {
+    comp_vec <- w_met_common[, i]
+    names(comp_vec) <- rownames(w_met_common)
+    
+    df <- compute_overlap_curve(
+      x = pc1_vec,
+      y = comp_vec,
+      L_vec = L_vec,
+      mode = mode
+    )
+    
+    df$Component <- paste0("Component ", i)
+    df
+  })
+  
+  overlap_df <- bind_rows(overlap_list) %>%
+    mutate(top_fraction = L / n_feat)
+  
+  overlap_df$Component <- factor(
+  overlap_df$Component,
+  levels = paste0("Component ", 1:10))
+  
+  # null band
+  null_df <- compute_null_band(n = n_feat, L_vec = L_vec)
+  
+  p <- ggplot() +
+    geom_ribbon(
+      data = null_df,
+      aes(x = top_fraction, ymin = lower, ymax = upper),
+      inherit.aes = FALSE,
+      alpha = 0.2,
+      fill = "grey70"
+    ) +
+    geom_abline(
+      slope = 1, intercept = 0,
+      linetype = "dashed", color = "black"
+    ) +
+    geom_line(
+      data = overlap_df,
+      aes(x = top_fraction, y = Overlap, color = Component),
+      linewidth = 0.9
+    ) +
+    scale_x_continuous(
+      limits = c(0, 1),
+      breaks = seq(0, 1, by = 0.1),
+      labels = scales::percent_format(accuracy = 1)
+    ) +
+    scale_y_continuous(
+      limits = c(0, 1),
+      breaks = seq(0, 1, by = 0.1),
+      labels = scales::percent_format(accuracy = 1)
+    ) +
+    labs(
+      title = title_text,
+      x = "Top fraction",
+      y = "Overlap ratio"
+    ) +
+    theme_bw() +
+    theme(
+      plot.title = element_text(hjust = 0.5),
+      legend.position = "right"
+    )
+  
+  list(plot = p, overlap_df = overlap_df, null_df = null_df)
+}
+
+### A26 ###
+
+res_a26 <- make_cat_plot(
+  pc1_df = pc1_loadings_common1,
+  w_met_common = w26_met_common,
+  title_text = "Cross-animal PC1 vs A26 sr-sCCA components",
+  mode = "absolute"
+)
+
+res_a26$plot
+
+
+
+
+### A27 ###
+
+res_a27 <- make_cat_plot(
+  pc1_df = pc1_loadings_common2,
+  w_met_common = w27_met_common,
+  title_text = "Cross-animal PC1 vs A27 sr-sCCA components",
+  mode = "absolute"
+)
+
+res_a27$plot
+
+
+
+
+
+
+```
+
+
+
+
+
+
+
