@@ -1,55 +1,245 @@
-## 📊 Figures and Corresponding Code
+# Spatial Multiomics
 
-This repository contains the code used to generate all figures for the manuscript:  
-**“Integrated metabolomics and proteomics from voxelated cortical hemispheres of adult rhesus monkeys”**  
-by *Qiuyi Wu\*, Alev M. Brigande\*, Michael W. Lutz, Pixu Shi, and Anita A. Disney*.
+## Overview
 
----
+This repository contains the full analysis pipeline for the Spatial Multiomics study, including:
 
-## Main Figures
+* data preprocessing
+* batch correction
+* sample selection
+* clustering analysis
+* spatial sparse CCA (spCCA)
+* figure generation for the manuscript
 
-- **Figure 2**: Post-ComBat PCA plots  
-  `PCA_Figure.R`
+⚠️ **Important:** Two large raw proteomics input files are **not included in this repository** due to file size limitations. They are deposited separately in the Duke Library:
 
-- **Figure 3a–b**: Spatial correlation gradients for A26  
-  `A26_analysis_sCCA_laplacians.Rmd`
+* `10788_SNE_combine_final_012026_Report_protein_export (Normal).tsv`
+* `Bonnie Proteomics with QC variables.txt`
 
-- **Figure 3c–d**: Spatial correlation gradients for A27  
-  `A27_analysis_sCCA_laplacians.Rmd`
-
-- **Figure 3e–f**: Projection of A27-derived components onto A26  
-  `A26A27_analysis_sCCA.Rmd`
-
-- **Figure 4a–b**: Correlation with neighboring samples (A26)  
-  `SampleSize_A26_spearman.Rmd`
-
-- **Figure 4c–d**: Correlation with neighboring samples (A27)  
-  `SampleSize_A27_spearman.Rmd`
-
-- **Figure 5**: PCA of metabolomics with blood present (U5) vs. perfused samples (A26, A27)  
-  `loadingComp_U6A26A27_met.Rmd`
+These files are **only required for the initial reformatting step** (P1 below).
 
 ---
 
-## Supplementary Figures
+## Full Pipeline and Figure Reproduction
 
-- **Figure S2**: Pre-ComBat PCA plots  
-  `PCA_Figure.R`
+To fully reproduce the results and manuscript figures, users should follow the complete pipeline:
 
-- **Figures S3–S4**: Additional spatial correlation gradient analyses  
-  `A26_analysis_sCCA_laplacians.Rmd`  
-  `A27_analysis_sCCA_laplacians.Rmd`
+➡️ Full workflow diagram:
+https://github.com/QiuyiWu/Spatial-Multiomics/blob/main/DIAGRAM.md
 
-- **Figure S5**: Spatial gradient boxplots  
-  `SampleSize_A26_spearman.Rmd`  
-  `SampleSize_A27_spearman.Rmd`
+➡️ Figures and outputs:
+https://github.com/QiuyiWu/Spatial-Multiomics/blob/main/README_Figures.md
+
+### Key dependency structure
+
+* Raw data (Duke Library) → required for **P1 reformatting**
+* Pipeline (`DIAGRAM.md`) → defines full workflow
+* This repository → contains all downstream analysis and figure generation
+
+Users should run the pipeline **sequentially** to ensure all intermediate data objects are correctly generated.
 
 ---
 
-## Notes
+# A26 Analysis Pipeline
 
-- PCA plots (pre- and post-ComBat) are generated from the same script (`PCA_Figure.R`) with different preprocessing settings.
-- Spatial correlation gradients are derived from spatial CCA (sCCA) using Laplacian-based spatial weighting.
-- Neighbor correlation analyses (Figure 4 and S5) quantify spatial decay of metabolomic similarity across cortical samples.
+## Metabolomics
 
+### M1. Data preprocessing and Batch Correction
 
+* Input: `10412-Q500 Data.xlsx`
+* Output: `PostCombat_A26_Metabolite_beforeHeldout.xlsx`
+  (403 samples × 328 variables)
+* Code: `Analysis_BatchEffect_A26_met_adj.Rmd`
+
+Steps:
+
+* Remove samples 244, 96, 188
+* Missingness filtering (TG >70%, others >85%)
+* LOD/2 imputation
+* Dilution factor adjustment
+* Remove 3 SPQC outliers
+* Log transform
+* Subtract SPQC
+* ComBat batch correction
+* PCA analysis (exclude HeldOut_AnalysisIDs)
+
+---
+
+## Proteomics
+
+### P1. Data Reformatting (requires Duke Library data)
+
+* Input: `Bonnie Proteomics with QC variables.txt`
+* Output: `Adjusted_Protein_A26.RData`
+  (428 samples × 9990 variables)
+* Code: `Reformatting_A26_pro.R`
+
+This step converts **log2-transformed raw long-format proteomics data** into a **wide-format dataset** used for downstream analysis.
+
+---
+
+### P2. Data preprocessing and Batch Correction
+
+* Input: `Adjusted_Protein_A26.RData`
+* Output: `PostCombat_A26_Protein.xlsx`
+  (427 samples × 9990 variables)
+* Code: `Analysis_BatchEffect_A26_pro_adj.Rmd`
+
+Steps:
+
+* Remove outlier `ID117530`
+* LOD/2 imputation
+* Dilution factor
+* ComBat batch correction
+* PCA analysis
+
+---
+
+## Combined Analysis
+
+### C3. Heldout Preprocessing
+
+* Output: `Heldout_Updated.xlsx` (267 samples selected)
+* Code: `HeldoutPreprocessing.R`
+
+Key idea:
+
+* Robust PCA-based selection using MAD-normalized distance
+* Select samples closest to robust center
+
+---
+
+### C4. Sample Selection
+
+* Output: `a26.RData`
+
+  * metabolomics: 267 × 328
+  * proteomics: 267 × 9990
+* Code: `CombineClustering.R`
+
+---
+
+### C5. Clustering Analysis
+
+* Output: `A26_PChclust.RData`
+* Code: `CombineClustering.R`
+
+Contains:
+
+* group
+* score
+* loading
+* cluster summary
+* variance explained
+
+---
+
+### C6. Spatial Sparse CCA
+
+* Code: `A26_analysis_sCCA_laplacians.Rmd`
+* Result: 233 matched samples
+
+---
+
+# A27 Analysis Pipeline
+
+## Metabolomics
+
+### M1. Data preprocessing and Batch Correction
+
+* Input: `10788-Q500 Data.xlsx`
+* Output: `PostCombat_A27_Metabolite_beforeHeldout.xlsx`
+  (548 × 343)
+* Code: `Analysis_BatchEffect_A27_met_adj.Rmd`
+
+Steps:
+
+* Missingness filtering
+* Remove outlier 212
+* LOD/2 imputation
+* Dilution factor
+* Log transform
+* Subtract SPQC
+* ComBat
+* PCA
+
+---
+
+## Proteomics
+
+### P1. Data Reformatting (requires Duke Library data)
+
+* Input:
+  `10788_SNE_combine_final_012026_Report_protein_export (Normal).tsv`
+
+* Output:
+  `Adjusted_Protein_A27.RData`
+  (566 samples × 10,253 variables)
+
+* Code: `Reformatting_A27_pro.R`
+
+This step converts **log2-transformed long-format proteomics data** into a **wide-format dataset**, which serves as the starting point for all downstream proteomics analyses.
+
+---
+
+### P2. Data preprocessing and Batch Correction
+
+* Input: `Adjusted_Protein_A27.RData`
+* Output: `PostCombat_A27_Protein.xlsx`
+  (566 × 10,253)
+* Code: `Analysis_BatchEffect_A27_pro_adj.Rmd`
+
+Steps:
+
+* LOD/2 imputation
+* Dilution factor
+* ComBat
+* PCA
+
+---
+
+## Combined Analysis
+
+### C3. Heldout Preprocessing
+
+* Output: `Heldout_Updated_a27.xlsx` (527 samples)
+* Code: `HeldoutPreprocessing.R`
+
+---
+
+### C4. Sample Selection
+
+* Output: `a27.RData`
+
+  * metabolomics: 527 × 342
+  * proteomics: 527 × 10,253
+* Code: `CombineClustering.R`
+
+---
+
+### C5. Clustering Analysis
+
+* Output: `A27_PChclust.RData`
+* Code: `CombineClustering.R`
+
+---
+
+### C6. Spatial Sparse CCA
+
+* Code: `A27_analysis_sCCA_laplacians.Rmd`
+* Result: 508 matched samples
+
+---
+
+## Reproducibility Summary
+
+To fully reproduce the analysis:
+
+1. Obtain raw proteomics files from Duke Library
+2. Run P1 (reformatting scripts)
+3. Run preprocessing (M1, P2)
+4. Run combined analysis (C3–C6)
+5. Follow `DIAGRAM.md` for full pipeline
+6. Generate figures using scripts referenced in repository `README_Figures.md`
+
+Users interested only in reproducing figures may use processed data included in this repository without rerunning the raw data reformatting step.
