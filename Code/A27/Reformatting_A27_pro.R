@@ -1,12 +1,12 @@
 library(tidyr)
-a27.pro <- read_tsv("../../../data/10788_SNE_combine_final_012026_Report_protein_export (Normal).tsv")
+a27.pro <- read_tsv("../../../data/A27_SNE_combine_protein.tsv")
 # SAME DukeID: "ID124351_01_SPD60_OA10222_10788_040325" "ID124351_01_SPD60_OA10222_10788_050725", REMOVE 050725 ONE. 
 a27.pro <- a27.pro[!a27.pro$R.FileName == "ID124351_01_SPD60_OA10222_10788_050725",]
 
 a27.pro <- data.frame(a27.pro)
 a27.pro.select1 <- a27.pro[, c("R.FileName", "PG.ProteinAccessions", "PG.Quantity")]
 # add the plate to the data
-plate.df <- read_tsv("../data/20260120_122736_Identifications.tsv")
+plate.df <- read_tsv("../../../data/20260120_122736_Identifications.tsv")
 plate.df <- data.frame(plate.df)
 plate.df$FileName <- sub("\\.htrms$", "", plate.df$FileName)
 plate.df <- plate.df[, c("FileName", "Plate.", "SPQC.type")]
@@ -36,6 +36,6 @@ pro.a27.adj <- wide_data
 colnames(pro.a27.adj)[1:3] <- c("pro.sample", "pro.plate", "pro.sampletype")
 
 
-save(pro.a27.adj, file = "Adjusted_Protein_A27.RData") #  566 x 10253
+save(pro.a27.adj, file = "../../data/Adjusted_Protein_A27.RData") #  566 x 10253
 
 

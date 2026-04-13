@@ -4,7 +4,7 @@
 ## A26
 ### Metabolomics
 - M1. Data preprocessing and Batch Correction
-    - Preprocess raw data `10412-Q500 Data.xlsx` and create batch corrected data (403 samples $\times$ 328 variables data frame) `PostCombat_A26_Metabolite_beforeHeldout.xlsx` (code: `Analysis_BatchEffect_A26_met_adj.Rmd`)
+    - Preprocess raw data `A26-Q500 Data.xlsx` and create batch corrected data (403 samples $\times$ 328 variables data frame) `PostCombat_A26_Metabolite_beforeHeldout.xlsx` (code: `Analysis_BatchEffect_A26_met_adj.Rmd`)
     - Steps:
         - Remove sample 244, 96, 188
         - For TG metabolites, remove those missing > 70%; for other metabolites, remove those missing > 85%. 
@@ -18,9 +18,9 @@
 
 ### Proteomics
 - P1. Data Reformatting
-    - Convert log2transformed raw long data `Bonnie Proteomics with QC variables.txt` into raw wide data `Adjusted_Protein_A26.RData` (428 samples $\times$ 9990 variables data frame) **[code: `Reformatting_A26_pro.R`]**
+    - Convert log2transformed long data `A26 Proteomics with QC variables.txt` into wide data `Adjusted_Protein_A26.RData` (428 samples $\times$ 9990 variables data frame) **[code: `Reformatting_A26_pro.R`]**
 - P2. Data preprocessing and Batch Correction
-    - Preprocess reformatted raw data and create batch corrected data `PostCombat_A26_Protein.xlsx` (427 samples $\times$ 9990 variables data frame) **[code: `Analysis_BatchEffect_A26_pro_adj.Rmd`]**
+    - Preprocess reformatted large protein level quantification data and create batch corrected data `PostCombat_A26_Protein.xlsx` (427 samples $\times$ 9990 variables data frame) **[code: `Analysis_BatchEffect_A26_pro_adj.Rmd`]**
     - Steps:
         - Remove outlier `ID117530`
         - Impute LOD/2
@@ -50,7 +50,7 @@
 ## A27
 ### Metabolomics
 - M1. Data preprocessing and Batch Correction
-    - Preprocess raw data `10788-Q500 Data.xlsx` and create batch corrected data (548 samples $\times$ 343 variables data frame) `PostCombat_A27_Metabolite_beforeHeldout.xlsx` (code: `Analysis_BatchEffect_A27_met_adj.Rmd`)
+    - Preprocess raw data `A27-Q500 Data.xlsx` and create batch corrected data (548 samples $\times$ 343 variables data frame) `PostCombat_A27_Metabolite_beforeHeldout.xlsx` (code: `Analysis_BatchEffect_A27_met_adj.Rmd`)
     - Steps:
         - For TG metabolites, remove those missing > 70%; for other metabolites, remove those missing > 85%, remove outlier 212
         - Impute LOD/2
@@ -62,9 +62,9 @@
 
 ### Proteomics
 - P1. Data Reformatting
-    - Convert log2transformed raw long data `10788_SNE_combine_final_012026_Report_protein_export (Normal).tsv` into raw wide data `Adjusted_Protein_A27.RData` (566 samples $\times$ 10253 variables data frame) **[code: `Reformatting_A27_pro.R`]**
+    - Convert log2transformed long data `A27_SNE_combine_protein.tsv` into wide data `Adjusted_Protein_A27.RData` (566 samples $\times$ 10253 variables data frame) **[code: `Reformatting_A27_pro.R`]**
 - P2. Data preprocessing and Batch Correction
-    - Preprocess reformatted raw data and create batch corrected data `PostCombat_A27_Protein.xlsx` (566 samples $\times$ 10253 variables data frame) **[code: `Analysis_BatchEffect_A27_pro_adj.Rmd`]**
+    - Preprocess reformatted large protein level quantification data and create batch corrected data `PostCombat_A27_Protein.xlsx` (566 samples $\times$ 10253 variables data frame) **[code: `Analysis_BatchEffect_A27_pro_adj.Rmd`]**
     - Steps:
         - Impute LOD/2
         - Dilution factor

@@ -64,7 +64,7 @@ Steps for Combat:
 
 ```{r load metabolomic A26}
 load("../../../data/data_A22.RData")
-meta_met.a26 <- read_excel("../../../data/10412-Q500 Data.xlsx", sheet = "1. 10412 Raw Data", skip=1)
+meta_met.a26 <- read_excel("../../../data/A26-Q500 Data.xlsx", sheet = "1. 10412 Raw Data", skip=1)
 met_data.a26 <- meta_met.a26[!meta_met.a26$`Sample identification` %in% c(grep("Q500\\(XL\\)_QC", meta_met.a26$`Sample identification`, value = TRUE)), ] # Analysis ID
 a26.met.sampletype <- ifelse(grepl("SPQC", met_data.a26$`Sample description`), "SPQC", "Non-SPQC")
 met_data.a26 <- cbind(met_data.a26$`Sample description`, a26.met.sampletype, met_data.a26$`Submission name`, met_data.a26[, -c(1:11)])

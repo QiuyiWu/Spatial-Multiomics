@@ -57,7 +57,7 @@ Steps for Combat:
 
 
 ```{r load metabolomic A27}
-meta_met.a27 <- read_excel("../../data/10788-Q500 Data.xlsx", sheet = "1. 10788 Raw Data", skip=1)
+meta_met.a27 <- read_excel("../../data/A27-Q500 Data.xlsx", sheet = "1. 10788 Raw Data", skip=1)
 met_data.a27 <- cbind(meta_met.a27$`Sample description`,  meta_met.a27$`Submission name`, meta_met.a27[, -c(1:11)])
 colnames(met_data.a27)[1:2] <- c("Sample", "Plate")
 met_data.a27$Plate <- sub("^plate", "Plate", met_data.a27$Plate)

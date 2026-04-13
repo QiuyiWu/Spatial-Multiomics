@@ -1,6 +1,6 @@
 library(tidyr)
 
-a26.pro <- read_tsv("../../../data/Bonnie Proteomics with QC variables.txt")
+a26.pro <- read_tsv("../../../data/A26 Proteomics with QC variables.txt")
 a26.pro <- data.frame(a26.pro)
 a26.pro <- a26.pro[, c("R.Condition", "PG.ProteinAccessions", "Y", "Plate", "ID.of.Bonnie.metadata", "PG.Qvalue", "PG.NrOfPrecursorsUsedForQuantification")]
 # Remove SPQC_tech 

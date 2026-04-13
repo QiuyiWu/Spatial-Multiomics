@@ -11,10 +11,10 @@ This repository contains the full analysis pipeline for the Spatial Multiomics s
 * spatial sparse CCA (spCCA)
 * figure generation for the manuscript
 
-⚠️ **Important:** Two large raw proteomics input files are **not included in this repository** due to file size limitations. They are deposited separately in the Duke Library:
+⚠️ **Important:** Two large protein level quantification proteomics input files are **not included in this repository** due to file size limitations. They are deposited separately in the Duke Library:
 
-* `10788_SNE_combine_final_012026_Report_protein_export (Normal).tsv`
-* `Bonnie Proteomics with QC variables.txt`
+* `A26 Proteomics with QC variables.txt`
+* `A27_SNE_combine_protein.tsv`
 
 These files are **only required for the initial reformatting step** (P1 below).
 
@@ -32,7 +32,7 @@ https://github.com/QiuyiWu/Spatial-Multiomics/blob/main/README_Figures.md
 
 ### Key dependency structure
 
-* Raw data (Duke Library) → required for **P1 reformatting**
+* Large protein level quantification proteomics data (Duke Library) → required for **P1 reformatting**
 * Pipeline (`DIAGRAM.md`) → defines full workflow
 * This repository → contains all downstream analysis and figure generation
 
@@ -46,7 +46,7 @@ Users should run the pipeline **sequentially** to ensure all intermediate data o
 
 ### M1. Data preprocessing and Batch Correction
 
-* Input: `10412-Q500 Data.xlsx`
+* Input: `A26-Q500 Data.xlsx`
 * Output: `PostCombat_A26_Metabolite_beforeHeldout.xlsx`
   (403 samples × 328 variables)
 * Code: `Analysis_BatchEffect_A26_met_adj.Rmd`
@@ -69,7 +69,7 @@ Steps:
 
 ### P1. Data Reformatting (requires Duke Library data)
 
-* Input: `Bonnie Proteomics with QC variables.txt`
+* Input: `A26 Proteomics with QC variables.txt`
 * Output: `Adjusted_Protein_A26.RData`
   (428 samples × 9990 variables)
 * Code: `Reformatting_A26_pro.R`
@@ -147,7 +147,7 @@ Contains:
 
 ### M1. Data preprocessing and Batch Correction
 
-* Input: `10788-Q500 Data.xlsx`
+* Input: `A27-Q500 Data.xlsx`
 * Output: `PostCombat_A27_Metabolite_beforeHeldout.xlsx`
   (548 × 343)
 * Code: `Analysis_BatchEffect_A27_met_adj.Rmd`
@@ -170,7 +170,7 @@ Steps:
 ### P1. Data Reformatting (requires Duke Library data)
 
 * Input:
-  `10788_SNE_combine_final_012026_Report_protein_export (Normal).tsv`
+  `A27_SNE_combine_protein.tsv`
 
 * Output:
   `Adjusted_Protein_A27.RData`

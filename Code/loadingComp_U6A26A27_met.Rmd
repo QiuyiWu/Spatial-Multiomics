@@ -176,7 +176,7 @@ Steps for PCA:
 
 
 ```{r load metabolomic A26}
-meta_met.a26 <- read_excel("../../data/10412-Q500 Data.xlsx", sheet = "1. 10412 Raw Data", skip=1)
+meta_met.a26 <- read_excel("../../data/A26-Q500 Data.xlsx", sheet = "1. 10412 Raw Data", skip=1)
 # only keep Q500(XL)_QC3
 met_data.a26 <- meta_met.a26[
   !meta_met.a26$`Sample identification` %in%
@@ -311,7 +311,7 @@ Steps for PCA:
 
 
 ```{r load metabolomic a27}
-meta_met.a27 <- read_excel("../../data/10788-Q500 Data.xlsx", sheet = "1. 10788 Raw Data", skip=1)
+meta_met.a27 <- read_excel("../../data/A27-Q500 Data.xlsx", sheet = "1. 10788 Raw Data", skip=1)
 # only keep Q500(XL)_QC3
 met_data.a27 <- meta_met.a27[
   !meta_met.a27$`Sample identification` %in%
