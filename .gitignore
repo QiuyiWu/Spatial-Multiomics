@@ -3,3 +3,7 @@
 .RData
 .Ruserdata
 .DS_Store
+
+# Generated manuscript figures and supplementary Table S3 exports
+/Figure/
+Supp_Table_S3*.xlsx
