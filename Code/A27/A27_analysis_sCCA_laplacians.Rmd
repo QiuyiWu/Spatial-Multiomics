@@ -30,8 +30,19 @@ library(spdep)
 library(patchwork)
 library(sRDA)
 library(ggrepel)
+library(here)
 
 knitr::opts_chunk$set(echo=TRUE, message=FALSE, cache=FALSE, warning=FALSE)
+
+## ---- map panel export parameters (Fig 3 / S3 / S4) ----
+## Panels composited in Photoshop; U/V labels + panel letters added there.
+export_maps <- TRUE
+export_dir  <- here::here("Figure", "A27_components")
+fmt         <- "tiff"
+dpi         <- 600
+panel_w     <- 80    # mm; coord_equal self-sizes the map, white pad -> crop in PS
+panel_h     <- 80
+dir.create(export_dir, recursive = TRUE, showWarnings = FALSE)
 ```
 
 
@@ -75,12 +86,12 @@ Finally, because the mapping from the sheet `AnalysisID_Matrix` in `A26_Bonnie_F
 # A27 Omics Reconstruction
 
 ```{r omics map}
-heldout_updated <- as.data.frame(read_excel("../data/Heldout_Updated_a27.xlsx"))
+heldout_updated <- as.data.frame(read_excel(here::here("Data", "Heldout_Updated_a27.xlsx")))
 heldout_updated <- heldout_updated[, c(1:3)]
-map.df <- data.frame(read_excel("../data/A27_Frizzle_Flatmap_Grid_20260317.xlsx", sheet = "AnalysisID_Matrix", col_names = F))
+map.df <- data.frame(read_excel(here::here("Data", "A27_Frizzle_Flatmap_Grid_20260317.xlsx"), sheet = "AnalysisID_Matrix", col_names = F))
 map.df <- as.matrix(sapply(map.df, as.numeric))
  
-load("../data/a27.RData")
+load(here::here("Data", "a27.RData"))
 
 
 # Modify MAP based on HELDOUT: Build a lookup table of all IDs → finalID
@@ -104,8 +115,11 @@ map.df<- matrix(as.numeric(final_vec), nrow = nrow(map.df), ncol = ncol(map.df))
 
 
 
-load("../data/A27_PChclust.RData")
-rownames(a27.pro.cluster$score) <- rownames(a27.met.cluster$score)
+load(here::here("Data", "a27_PChclust.RData"))
+stopifnot(identical(
+  rownames(a27.pro.cluster$score),
+  rownames(a27.met.cluster$score)
+))
 
 get_sample_coordinates <- function(block_matrix) {
   coords <- which(!is.na(block_matrix), arr.ind = TRUE)
@@ -229,8 +243,8 @@ a27.pro.cluster$score <- a27.pro.cluster$score[rownames(a27.pro.cluster$score) %
 #   nfposi = 3,
 #   nfnega = 0
 # )
-# save(spca_delaunay_metCluster,  file = "../data/sPCA_a27metCluster.RData")
-load("../data/sPCA_a27metCluster.RData")
+# save(spca_delaunay_metCluster,  file = here::here("Data", "sPCA_a27metCluster.RData"))
+load(here::here("Data", "sPCA_a27metCluster.RData"))
 
 # Standardize both datasets (center + scale)
 X <- a27.pro.cluster$score
@@ -420,6 +434,8 @@ penaltyz <- perm_out$bestpenaltyz
 scca_res <- CCA(Xtc, Ytc, typex = "standard", typez = "standard",
                K = 10, penaltyx = penaltyx, penaltyz = penaltyz)
 
+save(scca_res, file = here::here("Data", "a27_score.RData"))
+
 ```
 
 <!-- ![Average Correlation](data/averageCorrelation.png){width=90%} -->
@@ -478,17 +494,26 @@ plot_spcca_component <- function(i, scca_res, Xtc, Ytc, map.df, X, Y, a27.pro.cl
   p_u <- ggplot(u_df, aes_string("Column", "Row", fill = paste0("spCCA_U", i))) +
   geom_raster() + coord_equal() +
   scale_fill_viridis_c(option = "plasma", na.value = "grey90") +
-  labs(title = paste0("spCCA Proteomic Score (U", i, ")"), x = NULL, y = NULL, fill = "Score") +
-  theme_minimal() + theme( panel.grid = element_blank())
+  labs(title = NULL, x = NULL, y = NULL, fill = "Score") +   # title removed; "U{i}" label added in Photoshop
+  theme_minimal() + theme(panel.grid = element_blank(), axis.text = element_blank(), axis.ticks = element_blank())
   
   p_v <- ggplot(v_df, aes_string("Column", "Row", fill = paste0("spCCA_V", i))) +
   geom_raster() + coord_equal() +
   scale_fill_viridis_c(option = "plasma", na.value = "grey90") +
-  labs(title = paste0("spCCA Metabolomic Score (V", i, ")"), x = NULL, y = NULL, fill = "Score") +
-  theme_minimal() + theme( panel.grid = element_blank())
+  labs(title = NULL, x = NULL, y = NULL, fill = "Score") +   # title removed; "V{i}" label added in Photoshop
+  theme_minimal() + theme(panel.grid = element_blank(), axis.text = element_blank(), axis.ticks = element_blank())
   
   
   print(p_u.cluster[[1]] + p_u.cluster[[2]] + p_u.cluster[[3]] ) 
+  if (isTRUE(get0("export_maps", ifnotfound = FALSE))) {
+    ggsave(file.path(export_dir, paste0("a27_U", i, ".", fmt)), p_u,
+           width = panel_w, height = panel_h, units = "mm",
+           dpi = dpi, bg = "white", device = fmt, compression = "lzw")
+    ggsave(file.path(export_dir, paste0("a27_V", i, ".", fmt)), p_v,
+           width = panel_w, height = panel_h, units = "mm",
+           dpi = dpi, bg = "white", device = fmt, compression = "lzw")
+  }
+
   print(p_v + p_u)
   
   
