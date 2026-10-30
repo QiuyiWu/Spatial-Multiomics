@@ -1,0 +1,11 @@
+{
+  "title": "Spatial-Multiomics: analysis code and processed data for Wu, Brigande, Lutz, Shi & Disney, Scientific Reports",
+  "upload_type": "software",
+  "description": "Analysis pipeline (preprocessing, batch correction, sample selection, variable clustering, spatially regularised sparse CCA, figure generation) and processed data for the paper 'Integrated metabolomics and proteomics from voxelated cortical hemispheres of adult rhesus monkeys' (Wu, Brigande, Lutz, Shi and Disney). Two large raw protein-level quantification files are deposited in the Duke Research Data Repository (see README).",
+  "creators": [
+    {"name": "Wu, Qiuyi", "affiliation": "Duke University", "orcid": "0000-0002-9273-4700"}
+  ],
+  "keywords": ["spatial multiomics", "metabolomics", "proteomics", "rhesus monkey", "macaque", "cerebral cortex", "sparse CCA"],
+  "license": "MIT",
+  "access_right": "open"
+}
