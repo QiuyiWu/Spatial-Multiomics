@@ -364,13 +364,13 @@ combat_corrected_scaled <- combat_corrected
 
 # save data
 
-# combat_corrected_scaled <- cbind( pro.a27.adj[,1:3], t(combat_corrected_scaled))
-# combat_corrected_unscaled <- cbind( pro.a27.adj[,1:3], t(combat_corrected_unscaled))
-# library(openxlsx)
-# write.xlsx(
-#   list("combat_corrected_unscaled" = combat_corrected_unscaled, "combat_corrected_scaled" = combat_corrected_scaled),
-#   file = "PostCombat_A27_Protein.xlsx"
-# )
+combat_corrected_scaled <- cbind( pro.a27.adj[,1:3], t(combat_corrected_scaled))
+combat_corrected_unscaled <- cbind( pro.a27.adj[,1:3], t(combat_corrected_unscaled))
+library(openxlsx)
+write.xlsx(
+  list("combat_corrected_unscaled" = combat_corrected_unscaled,
+       "combat_corrected_scaled"   = combat_corrected_scaled),
+  file = here::here("Data", "PostCombat_a27_Protein.xlsx"))
 
 
 ```

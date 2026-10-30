@@ -13,13 +13,45 @@ output:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, fig_caption = TRUE, warning = FALSE, message = FALSE)
+library(here)
+
+## ---- Fig 4 (per-panel corr maps) + S5 (decay boxplots) export parameters ----
+## Fig 4: export INDIVIDUAL correlation-map panels, matching the sr-sCCA map scripts
+##        (80x80 mm, 600 dpi, TIFF/LZW; coord_equal self-sizes the map -> crop in PS).
+##        A27 shows {1st,3rd,5th} neighbours by design (vs A26 {1,2,3}); panels are named
+##        by TRUE neighbour order (_nbr1/_nbr3/_nbr5). Outer layout + labels done in PS.
+##        (Was: assembled triptychs; reversed per request.)
+## S5: NOT auto-wrapped for A27 (multiple candidate decay plots; see flags).
+##     Use the same gated tiff() pattern as A26 once panels are confirmed.
+fig4_export <- TRUE
+s5_export   <- TRUE
+fig_dir <- here::here("Figure")
+fmt     <- "tiff"
+dpi     <- 600
+panel_w_mm <- 80   # per-panel now (was fig4_w_mm 150 for the whole triptych)
+panel_h_mm <- 80
+s5_w_mm   <- 120
+s5_h_mm   <- 90
+
+## per-panel exporter -- parallels the ggsave loop in the sr-sCCA map scripts.
+## title NULL on each panel -> neighbour label added in PS; `orders` sets the filename
+## suffix so subsampled panels keep their TRUE neighbour order (e.g. orders = c(1,3,5)).
+export_panels <- function(panels, prefix, orders = seq_along(panels), subdir = "SampleSize") {
+  outdir <- file.path(fig_dir, subdir)
+  dir.create(outdir, showWarnings = FALSE, recursive = TRUE)
+  for (i in seq_along(panels)) {
+    ggsave(file.path(outdir, paste0(prefix, "_nbr", orders[i], ".", fmt)), panels[[i]],
+           width = panel_w_mm, height = panel_h_mm, units = "mm",
+           dpi = dpi, bg = "white", device = fmt, compression = "lzw")
+  }
+}
 ```
 
 
 
 
 ```{r lib, warning=FALSE, message=FALSE}
-rm(list=ls())
+#rm(list=ls())
 
 # for data formatting
 library(tidyverse)
@@ -44,7 +76,7 @@ library(readxl)
 
 
 ```{r preparation}
-heldout_updated <- readxl::read_xlsx("data/Heldout_Updated_a27.xlsx") %>% as.data.frame() %>% .[, c(1:3)]
+heldout_updated <- readxl::read_xlsx(here::here("Data", "Heldout_Updated_a27.xlsx")) %>% as.data.frame() %>% .[, c(1:3)]
 
 id_map <- heldout_updated %>%
   tidyr::pivot_longer(
@@ -60,10 +92,10 @@ lookup <- setNames(id_map$finalID, id_map$ID)
 
 
 ###########
-a27.met.data <- as.data.frame(read_excel("data/PostCombat_a27_Metabolite_beforeHeldout.xlsx"))
-a27.pro.data <- as.data.frame(read_excel("data/PostCombat_a27_Protein.xlsx", sheet = "combat_corrected_unscaled"))
+a27.met.data <- as.data.frame(read_excel(here::here("Data", "PostCombat_a27_Metabolite_beforeHeldout.xlsx")))
+a27.pro.data <- as.data.frame(read_excel(here::here("Data", "PostCombat_a27_Protein.xlsx"), sheet = "combat_corrected_unscaled"))
 # convert Duke ID to Analysis ID
-dukeid.df <- data.frame(read_excel("data/A27_Frizzle_Flatmap_Grid_20260317.xlsx", sheet = "Decoder"))
+dukeid.df <- data.frame(read_excel(here::here("Data", "A27_Frizzle_Flatmap_Grid_20260317.xlsx"), sheet = "Decoder"))
 dukeid.df1 <- dukeid.df[, c("AnalysisID", "DukeID")]
 dukeid.df2 <- dukeid.df[, c("SplitAnalysisID", "SplitDukeID")]
 colnames(dukeid.df2) <- c("AnalysisID", "DukeID")
@@ -76,7 +108,7 @@ a27.pro.data <- a27.pro.data %>%
   mutate(DukeID = AnalysisID) %>%       
   select(-AnalysisID)   
 
-heldout_updated <- as.data.frame(read_excel("data/Heldout_Updated_a27.xlsx"))
+heldout_updated <- as.data.frame(read_excel(here::here("Data", "Heldout_Updated_a27.xlsx")))
 
 a27.met.data <- a27.met.data[a27.met.data$Sample %in% unique(heldout_updated$finalID ), ]
 a27.pro.data <- a27.pro.data[a27.pro.data$DukeID %in% unique(heldout_updated$finalID ), ]
@@ -88,7 +120,7 @@ rownames(a27.pro.data) <- a27.pro.data$DukeID
 
 
 ############
-load("data/sPCA_a27metCluster.RData")
+load(here::here("Data", "sPCA_a27metCluster.RData"))
 
 nb <- spca_delaunay_metCluster$lw$neighbours  # adjacency list
 # convert to binary adjacency matrix
@@ -259,7 +291,7 @@ plot(df.a27.met$order, df.a27.met$mean,
      type = "b", pch = 16,
      xaxt = "n",
      xlab = "Neighbor order",
-     ylab = "Average metabolomic correlation", 
+     ylab = "Mean metabolomic correlation", 
      main = "Decay of A27 Metabolomic similarity with neighbor order")
 
 axis(1, at = 1:5, labels = c("1st", "2nd", "3rd", "4th", "5th"))
@@ -277,32 +309,23 @@ boxplot(box_data,
 ```{r plot1}
 df.a27.met.select <- df.a27.met[c(1,3,5),]
 box_data.select <- list(cors.1,  cors.3, cors.5)
+if (isTRUE(get0("s5_export", ifnotfound = FALSE))) {
+  tiff(file.path(fig_dir, "S5_a27_met.tiff"), width = s5_w_mm, height = s5_h_mm,
+       units = "mm", res = dpi, bg = "white", compression = "lzw")
+}
 plot(1:3, df.a27.met.select$mean,
-     xlim = c(0.5, 3.5),
-     ylim = yl.met,
-     type = "b", pch = 16,
-     xaxt = "n",
-     xlab = "Neighbor order",
-     ylab = "Average metabolomic correlation", 
-     main = "Decay of A27 Metabolomic similarity with neighbor order")
-
+     xlim = c(0.5, 3.5), ylim = yl.met, type = "b", pch = 16, xaxt = "n",
+     xlab = "", ylab = "", main = "")
 axis(1, at = 1:3, labels = c("1st", "3rd", "5th"))
-
-boxplot(box_data.select,
-        add = TRUE,
-        at = 1:3,
-        boxwex = 0.45,
-        outline = FALSE,
-        col = rgb(0, 0, 0, 0.15),
-        border = "gray40",
-        axes = FALSE)
-
+boxplot(box_data.select, add = TRUE, at = 1:3, boxwex = 0.45, outline = FALSE,
+        col = rgb(0, 0, 0, 0.15), border = "gray40", axes = FALSE)
+if (isTRUE(get0("s5_export", ifnotfound = FALSE))) dev.off()
 ```
 
 
 
 ```{r map met}
-map.df <- as.matrix(readxl::read_xlsx("data/A27_Frizzle_Flatmap_Grid_20260317.xlsx", sheet = "AnalysisID_Matrix", col_names = F))
+map.df <- as.matrix(readxl::read_xlsx(here::here("Data", "A27_Frizzle_Flatmap_Grid_20260317.xlsx"), sheet = "AnalysisID_Matrix", col_names = F))
 map_chr <- as.character(map.df)
 replacement <- lookup[map_chr]
 map_chr <- ifelse(!is.na(replacement), replacement, map_chr)
@@ -368,14 +391,17 @@ plot_map <- function(mat, title = "") {
     geom_raster() +
     scale_y_reverse() +
     coord_equal() +
-    scale_fill_gradient2(low = "blue", mid = "white",
-    high = "red",
+   #  scale_fill_distiller(palette = "RdBu", limits = c(-1, 1), na.value = "grey90") +
+   # # (RdBu runs red-high by default; add direction = -1 if you want blue=negative/red=positive)
+    scale_fill_gradient2(low = "#2166ac", mid = "white",
+    high = "#b2182b",
     midpoint = 0,
     limits = c(-1, 1),
-    na.value = "grey90"
+    na.value = "grey70"
   ) +
-    labs(title = title, x = NULL, y = NULL, fill = "avg cor") +
-    theme_minimal()
+    labs(title = title, x = NULL, y = NULL, fill = "Average\ncorrelation") +
+    theme_minimal() +
+    theme(panel.grid = element_blank(), axis.text = element_blank(), axis.ticks = element_blank())
 }
 
 (p1 <- plot_map(cor1_map, "A27 Metabolites 1st Neighbors Correlation Map"))
@@ -390,25 +416,15 @@ plot_map <- function(mat, title = "") {
 
 
 ```{r plot2}
-library(patchwork)
-
-p1 <- plot_map(cor1_map, "") +
-  ggtitle("1st Neighbor") +
-  theme(plot.title = element_text(hjust = 0.5))
-
-p2 <- plot_map(cor3_map, "") +
-  ggtitle("3rd Neighbor") +
-  theme(plot.title = element_text(hjust = 0.5))
-
-p3 <- plot_map(cor5_map, "") +
-  ggtitle("5th Neighbor") +
-  theme(plot.title = element_text(hjust = 0.5))
-
-(p1 | p2 | p3) +
-  plot_annotation(
-    title = "A27 Metabolites Correlation Map",
-    theme = theme(plot.title = element_text(size = 26, hjust = 0.5))
-  )
+# Individual panels; A27 figure shows neighbours 1,3,5 by design -> exported with true-order
+# names (_nbr1/_nbr3/_nbr5). Titles NULL -> labels added in PS. To include all five, add
+# cor2_map/cor4_map to the list and orders = 1:5.
+p_a27_met <- list(plot_map(cor1_map, NULL),
+                  plot_map(cor3_map, NULL),
+                  plot_map(cor5_map, NULL))
+if (isTRUE(get0("fig4_export", ifnotfound = FALSE)))
+  export_panels(p_a27_met, "cor_a27_met", orders = c(1, 3, 5))
+p_a27_met[[1]]; p_a27_met[[2]]; p_a27_met[[3]]   # inline preview
 ```
 
 
@@ -499,7 +515,7 @@ plot(df.a27.pro$order, df.a27.pro$mean,
      type = "b", pch = 16,
      xaxt = "n",
      xlab = "Neighbor order",
-     ylab = "Average Proteomic correlation", 
+     ylab = "Mean proteomic correlation", 
      main = "Decay of A27 Proteomic similarity with neighbor order")
 
 axis(1, at = 1:5, labels = c("1st", "2nd", "3rd", "4th", "5th"))
@@ -552,7 +568,7 @@ cor5_map <- paint_to_map(map.df, setNames(cor5.pro, as.character(names(cor5.pro)
 Use loading to aggregate proteins to clusters.
 
 ```{r pro cluster, eval=FALSE}
-a27.pro.cluster <- readxl::read_xlsx("data/pro_cluster_contribution_a27.xlsx", sheet = 1) %>% data.frame()
+a27.pro.cluster <- readxl::read_xlsx(here::here("Data", "pro_cluster_contribution_a27.xlsx"), sheet = 1) %>% data.frame()
 
 make_sample_by_cluster_weighted_sum <- function(X.sub.pro, a27.pro.cluster) {
   X <- as.matrix(X.sub.pro)
@@ -608,7 +624,7 @@ plot(df.a27.pro$order, df.a27.pro$mean,
      type = "b", pch = 16,
      xaxt = "n",
      xlab = "Neighbor order",
-     ylab = "Average Cluster-level proteomic correlation",
+     ylab = "Mean cluster-level proteomic correlation",
      main = "Decay of a27 Proteomic Cluster similarity with neighbor order")
 
 axis(1, at = 1:5, labels = c("1st", "2nd", "3rd", "4th", "5th"))
@@ -627,25 +643,17 @@ boxplot(box_data,
 ```{r plot3}
 df.a27.pro.select <- df.a27.pro[c(1,3,5),]
 box_data.select <- list(cors.1,  cors.3, cors.5)
+if (isTRUE(get0("s5_export", ifnotfound = FALSE))) {
+  tiff(file.path(fig_dir, "S5_a27_procluster.tiff"), width = s5_w_mm, height = s5_h_mm,
+       units = "mm", res = dpi, bg = "white", compression = "lzw")
+}
 plot(1:3, df.a27.pro.select$mean,
-     xlim = c(0.5, 3.5),
-     ylim = yl.pro,
-     type = "b", pch = 16,
-     xaxt = "n",
-     xlab = "Neighbor order",
-     ylab = "Average metabolomic correlation", 
-     main = "Decay of A27 Proteomic Cluster similarity with neighbor order")
-
+     xlim = c(0.5, 3.5), ylim = yl.pro, type = "b", pch = 16, xaxt = "n",
+     xlab = "", ylab = "", main = "")
 axis(1, at = 1:3, labels = c("1st", "3rd", "5th"))
-
-boxplot(box_data.select,
-        add = TRUE,
-        at = 1:3,
-        boxwex = 0.45,
-        outline = FALSE,
-        col = rgb(0, 0, 0, 0.15),
-        border = "gray40",
-        axes = FALSE)
+boxplot(box_data.select, add = TRUE, at = 1:3, boxwex = 0.45, outline = FALSE,
+        col = rgb(0, 0, 0, 0.15), border = "gray40", axes = FALSE)
+if (isTRUE(get0("s5_export", ifnotfound = FALSE))) dev.off()
 
 ```
 
@@ -684,21 +692,11 @@ cor5_map <- paint_to_map(map.df, setNames(cor5.pro, as.character(names(cor5.pro)
 
 
 ```{r plot4}
-p1 <- plot_map(cor1_map, "") +
-  ggtitle("1st Neighbor") +
-  theme(plot.title = element_text(hjust = 0.5))
-
-p2 <- plot_map(cor3_map, "") +
-  ggtitle("3rd Neighbor") +
-  theme(plot.title = element_text(hjust = 0.5))
-
-p3 <- plot_map(cor5_map, "") +
-  ggtitle("5th Neighbor") +
-  theme(plot.title = element_text(hjust = 0.5))
-
-(p1 | p2 | p3) +
-  plot_annotation(
-    title = "A27 Protein Clusters Correlation Map",
-    theme = theme(plot.title = element_text(size = 26, hjust = 0.5))
-  )
+# Individual panels; neighbours 1,3,5 by design -> true-order names (_nbr1/_nbr3/_nbr5).
+p_a27_procluster <- list(plot_map(cor1_map, NULL),
+                         plot_map(cor3_map, NULL),
+                         plot_map(cor5_map, NULL))
+if (isTRUE(get0("fig4_export", ifnotfound = FALSE)))
+  export_panels(p_a27_procluster, "cor_a27_procluster", orders = c(1, 3, 5))
+p_a27_procluster[[1]]; p_a27_procluster[[2]]; p_a27_procluster[[3]]   # inline preview
 ```

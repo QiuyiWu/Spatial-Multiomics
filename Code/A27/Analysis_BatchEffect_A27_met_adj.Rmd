@@ -57,7 +57,7 @@ Steps for Combat:
 
 
 ```{r load metabolomic A27}
-meta_met.a27 <- read_excel("../../data/A27-Q500 Data.xlsx", sheet = "1. 10788 Raw Data", skip=1)
+meta_met.a27 <- read_excel(here::here("Data", "A27-Q500 Data.xlsx"), sheet = "1. 10788 Raw Data", skip=1)
 met_data.a27 <- cbind(meta_met.a27$`Sample description`,  meta_met.a27$`Submission name`, meta_met.a27[, -c(1:11)])
 colnames(met_data.a27)[1:2] <- c("Sample", "Plate")
 met_data.a27$Plate <- sub("^plate", "Plate", met_data.a27$Plate)
@@ -185,8 +185,8 @@ df_corrected <- t(combat_corrected)
 a27.met.data <- data.frame(cbind(met_data.a27.spqcScaled[,c(1:2)], df_corrected))
 colnames(a27.met.data) = colnames(met_data.a27.spqcScaled)
 
-# library(openxlsx)
-# write.xlsx(a27.met.data,"PostCombat_a27_Metabolite_beforeHeldout.xlsx")
+library(openxlsx)
+write.xlsx(a27.met.data, here::here("Data", "PostCombat_a27_Metabolite_beforeHeldout.xlsx"))
                          
 # PCA + PLOT
 #df_corrected <- df_corrected[, which(var_values > 0)]  # Keep nonzero variance columns
