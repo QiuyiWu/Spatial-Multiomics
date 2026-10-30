@@ -286,24 +286,28 @@ w27_pro_common <- pro_feat_wt_a27[common_pro,]
 u_A26_from_A27 <- X26_pro_common %*% w27_pro_common
 rownames(u_A26_from_A27) <- rownames(X26_pro_common)
 
-# --- Task 2: harmonize A26 metabolite names to A27's make.names convention ---
-# A26 names are raw (`DG(18:2_18:4)`, `SM C22:3`); A27 is make.names'd. Exact intersect
-# matched 67/328; make.names(A26) lifts to 289. Name-only (PChclust clustered on cor(x),
-# names are labels) -> scores/loadings numerically unchanged. Applied to BOTH the join key
-# (loading rownames) and a26.met.data cols (indexed at a26.met.data[, common_met]).
-stopifnot(setequal(rownames(a26.met.cluster$loading), colnames(a26.met.data)[-(1:3)]))  # line-c guarantee
-rownames(a26.met.cluster$loading) <- make.names(rownames(a26.met.cluster$loading))
-colnames(a26.met.data)[-(1:3)]    <- make.names(colnames(a26.met.data)[-(1:3)])
-stopifnot(sum(duplicated(rownames(a26.met.cluster$loading))) == 0,
-          sum(duplicated(colnames(a26.met.data)))            == 0)
+# Normalize metabolite labels before comparing or joining them. The saved
+# loadings may already use make.names(), while the data retain raw labels.
+# This follows the data-column normalization in Qiuyi's working version.
+n26_loading <- make.names(rownames(a26.met.cluster$loading))
+n26_data <- make.names(colnames(a26.met.data)[-(1:3)])
+n27_weights <- make.names(rownames(met_feat_wt_a27))
+stopifnot(!anyDuplicated(n26_loading), !anyDuplicated(n26_data),
+          !anyDuplicated(n27_weights), setequal(n26_loading, n26_data))
+rownames(a26.met.cluster$loading) <- n26_loading
+colnames(a26.met.data)[-(1:3)] <- n26_data
+rownames(met_feat_wt_a27) <- n27_weights
+stopifnot(!anyDuplicated(colnames(a26.met.data)))
 
-common_met <- intersect(rownames(a26.met.cluster$loading), rownames(a27.met.cluster$loading))
-X26_met_common <- as.matrix(a26.met.data[, common_met])
-w27_met_common <- met_feat_wt_a27[common_met,]
+common_met <- intersect(n26_loading, n27_weights)
+stopifnot(length(common_met) == 289L)
+X26_met_common <- as.matrix(a26.met.data[, common_met, drop = FALSE])
+w27_met_common <- met_feat_wt_a27[common_met, , drop = FALSE]
+stopifnot(identical(colnames(X26_met_common), rownames(w27_met_common)))
 v_A26_from_A27 <- X26_met_common %*% w27_met_common
 rownames(v_A26_from_A27) <- rownames(X26_met_common)
 
-length(common_met)                                   # expect 289
+length(common_met)
 
 # (1) OUTCOME — does V recover? submitted ~ V1 [-10, 5], V3 [-5, 2.5]; bug ~ [-2, 2]
 apply(v_A26_from_A27[, c(1, 3)], 2, range)
