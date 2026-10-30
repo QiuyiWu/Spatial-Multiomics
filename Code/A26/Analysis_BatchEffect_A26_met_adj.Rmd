@@ -63,8 +63,8 @@ Steps for Combat:
 
 
 ```{r load metabolomic A26}
-#load("../../../data/data_A22.RData")
-meta_met.a26 <- read_excel(here::here("Data", "A26-Q500 Data.xlsx"), sheet = "1. 10412 Raw Data", skip=1)
+load("../../../data/data_A22.RData")
+meta_met.a26 <- read_excel("../../../data/A26-Q500 Data.xlsx", sheet = "1. 10412 Raw Data", skip=1)
 met_data.a26 <- meta_met.a26[!meta_met.a26$`Sample identification` %in% c(grep("Q500\\(XL\\)_QC", meta_met.a26$`Sample identification`, value = TRUE)), ] # Analysis ID
 a26.met.sampletype <- ifelse(grepl("SPQC", met_data.a26$`Sample description`), "SPQC", "Non-SPQC")
 met_data.a26 <- cbind(met_data.a26$`Sample description`, a26.met.sampletype, met_data.a26$`Submission name`, met_data.a26[, -c(1:11)])
@@ -166,8 +166,8 @@ df_corrected <- t(combat_corrected)
 a26.met.data <- data.frame(cbind(met_data.a26.spqcScaled[,c(1:3)], df_corrected))
 colnames(a26.met.data) = colnames(met_data.a26.spqcScaled)
 
-library(openxlsx)
-write.xlsx(a26.met.data, here::here("Data", "PostCombat_A26_Metabolite_beforeHeldout.xlsx"))
+# library(openxlsx)
+# write.xlsx(a26.met.data,"../../data/PostCombat_A26_Metabolite_beforeHeldout.xlsx")
 
 # PCA + PLOT
 #df_corrected <- df_corrected[, which(var_values > 0)]  # Keep nonzero variance columns

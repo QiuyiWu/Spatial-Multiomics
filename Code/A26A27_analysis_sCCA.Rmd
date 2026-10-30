@@ -30,28 +30,18 @@ library(spdep)
 library(patchwork)
 library(sRDA)
 library(ggrepel)
-library(here)
 
 knitr::opts_chunk$set(echo=TRUE, message=FALSE, cache=FALSE, warning=FALSE)
-
-## ---- projection map export parameters (Fig 3e-f: A27 -> A26) ----
-export_maps <- TRUE
-export_dir  <- here::here("Figure", "projection")
-dir.create(export_dir, showWarnings = FALSE, recursive = TRUE)
-fmt         <- "tiff"
-dpi         <- 600
-panel_w     <- 80    # mm
-panel_h     <- 80
 ```
 
 
 
 ```{r omics map}
-heldout_updated <- as.data.frame(read_excel(here::here("Data", "Heldout_Updated_a26.xlsx")))
+heldout_updated <- as.data.frame(read_excel("../data/Heldout_Updated_a26.xlsx"))
 heldout_updated <- heldout_updated[, c(2:5)]
-map.df <- data.frame(read_excel(here::here("Data", "A26_Bonnie_Flatmap_Grid_20260315.xlsx"), sheet = "AnalysisID_Matrix", col_names = F))
+map.df <- data.frame(read_excel("../data/A26_Bonnie_Flatmap_Grid_20260315.xlsx", sheet = "AnalysisID_Matrix", col_names = F))
 map.df <- as.matrix(sapply(map.df, as.numeric))
-load(here::here("Data", "a26.RData"))
+load("../data/a26.RData")
 
 
 # Modify MAP based on HELDOUT: Build a lookup table of all IDs → finalID
@@ -73,14 +63,8 @@ final_vec <- ifelse(!is.na(replacement), replacement, map_char)  # keep original
 map.df<- matrix(as.numeric(final_vec), nrow = nrow(map.df), ncol = ncol(map.df))
 
 
-load(here::here("Data", "A26_PChclust.RData"))
-# make sure A26 metabolite sample names are made consistent with A26 protein sample names
-stopifnot(
-  identical(
-    rownames(a26.pro.cluster$score),
-    rownames(a26.met.cluster$score)
-  )
-)
+load("../data/A26_PChclust.RData")
+rownames(a26.pro.cluster$score) <- rownames(a26.met.cluster$score)
 
 get_sample_coordinates <- function(block_matrix) {
   coords <- which(!is.na(block_matrix), arr.ind = TRUE)
@@ -200,7 +184,7 @@ a26.pro.cluster$score <- a26.pro.cluster$score[rownames(a26.pro.cluster$score) %
 #   nfnega = 0
 # )
 # save(spca_delaunay_metCluster,  file = "sPCA_a26metCluster.RData")
-load(here::here("Data", "sPCA_a26metCluster.RData"))
+load("../data/sPCA_a26metCluster.RData")
 
 # Standardize both datasets (center + scale)
 X <- a26.pro.cluster$score
@@ -270,8 +254,8 @@ Ytc <- Y_tilde
 
 
 # load A27 score weights
-load(here::here("Data", "a27_score.RData"))
-load(here::here("Data", "a27_PChclust.RData"))
+load("../data/a27_score.RData")
+load("../data/A27_PChclust.RData")
 scca_res_a27 <- scca_res
 ai27 <- scca_res_a27$u
 bi27 <- scca_res_a27$v
@@ -286,32 +270,13 @@ w27_pro_common <- pro_feat_wt_a27[common_pro,]
 u_A26_from_A27 <- X26_pro_common %*% w27_pro_common
 rownames(u_A26_from_A27) <- rownames(X26_pro_common)
 
-# --- Task 2: harmonize A26 metabolite names to A27's make.names convention ---
-# A26 names are raw (`DG(18:2_18:4)`, `SM C22:3`); A27 is make.names'd. Exact intersect
-# matched 67/328; make.names(A26) lifts to 289. Name-only (PChclust clustered on cor(x),
-# names are labels) -> scores/loadings numerically unchanged. Applied to BOTH the join key
-# (loading rownames) and a26.met.data cols (indexed at a26.met.data[, common_met]).
-stopifnot(setequal(rownames(a26.met.cluster$loading), colnames(a26.met.data)[-(1:3)]))  # line-c guarantee
-rownames(a26.met.cluster$loading) <- make.names(rownames(a26.met.cluster$loading))
-colnames(a26.met.data)[-(1:3)]    <- make.names(colnames(a26.met.data)[-(1:3)])
-stopifnot(sum(duplicated(rownames(a26.met.cluster$loading))) == 0,
-          sum(duplicated(colnames(a26.met.data)))            == 0)
-
 common_met <- intersect(rownames(a26.met.cluster$loading), rownames(a27.met.cluster$loading))
 X26_met_common <- as.matrix(a26.met.data[, common_met])
 w27_met_common <- met_feat_wt_a27[common_met,]
 v_A26_from_A27 <- X26_met_common %*% w27_met_common
 rownames(v_A26_from_A27) <- rownames(X26_met_common)
 
-length(common_met)                                   # expect 289
 
-# (1) OUTCOME — does V recover? submitted ~ V1 [-10, 5], V3 [-5, 2.5]; bug ~ [-2, 2]
-apply(v_A26_from_A27[, c(1, 3)], 2, range)
-
-# (2) WHY — fraction of A27's V-weight retained by the 289-match (governs the scale)
-wc <- sapply(c(1, 3), function(i)
-  sum(abs(met_feat_wt_a27[common_met, i])) / sum(abs(met_feat_wt_a27[, i])))
-setNames(wc, c("V1", "V3"))
 
 
 for (i in 1:10) {
@@ -323,8 +288,8 @@ for (i in 1:10) {
   p_u <- ggplot(u_df, aes_string("Column", "Row", fill = paste0("spCCA_U", i))) +
   geom_raster() + scale_x_reverse() + coord_equal() +
   scale_fill_viridis_c(option = "plasma", na.value = "grey90") +
-  labs(title = NULL, x = NULL, y = NULL, fill = "Score") +   # title removed; "U{i}" label added in Photoshop
-  theme_minimal() + theme(panel.grid = element_blank(), axis.text = element_blank(), axis.ticks = element_blank())
+  labs(title = paste0("Proteomic Score (U", i, ")"), x = NULL, y = NULL, fill = "Score") +
+  theme_minimal() + theme( panel.grid = element_blank())
 
 
   v_scores <- v_A26_from_A27[,i]
@@ -335,18 +300,10 @@ for (i in 1:10) {
   p_v <- ggplot(v_df, aes_string("Column", "Row", fill = paste0("spCCA_V", i))) +
   geom_raster() + scale_x_reverse() + coord_equal() +
   scale_fill_viridis_c(option = "plasma", na.value = "grey90") +
-  labs(title = NULL, x = NULL, y = NULL, fill = "Score") +   # title removed; "V{i}" label added in Photoshop
-  theme_minimal() + theme(panel.grid = element_blank(), axis.text = element_blank(), axis.ticks = element_blank())
+  labs(title = paste0("Metabolomic Score (V", i, ")"), x = NULL, y = NULL, fill = "Score") +
+  theme_minimal() + theme( panel.grid = element_blank())
   
 
-  if (isTRUE(get0("export_maps", ifnotfound = FALSE))) {
-    ggsave(file.path(export_dir, paste0("proj_U", i, ".", fmt)), p_u,
-           width = panel_w, height = panel_h, units = "mm",
-           dpi = dpi, bg = "white", device = fmt, compression = "lzw")
-    ggsave(file.path(export_dir, paste0("proj_V", i, ".", fmt)), p_v,
-           width = panel_w, height = panel_h, units = "mm",
-           dpi = dpi, bg = "white", device = fmt, compression = "lzw")
-  }
 print(p_v + p_u)  
 }
 
