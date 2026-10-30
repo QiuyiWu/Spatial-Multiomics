@@ -39,7 +39,7 @@ a26.pro.data$DukeID <- as.numeric(substr(a26.pro.data$DukeID, 3,8))
 # Join and replace DukeID with AnalysisID
 a26.pro.data <- a26.pro.data %>%
   left_join(dukeid.df, by = "DukeID") %>%
-  mutate(DukeID = AnalysisID) %>%       
+  mutate(DukeID = AnalysisID) %>%       # Replace values with AnalysisIDs
   select(-AnalysisID)                   
 
 heldout_updated <- as.data.frame(read_excel("../data/Heldout_Updated_a26.xlsx"))
@@ -47,8 +47,22 @@ heldout_updated <- as.data.frame(read_excel("../data/Heldout_Updated_a26.xlsx"))
 a26.met.data <- a26.met.data[a26.met.data$Sample %in% unique(heldout_updated$finalID ), ]
 a26.pro.data <- a26.pro.data[a26.pro.data$DukeID %in% unique(heldout_updated$finalID ), ]
 
-rownames(a26.met.data) <- a26.met.data$Sample
-rownames(a26.pro.data) <- a26.pro.data$DukeID
+
+
+# Align protein rows to metabolomics sample order
+a26.pro.data <- a26.pro.data[
+  match(a26.met.data$Sample, a26.pro.data$DukeID),
+  , drop = FALSE
+]
+
+stopifnot(identical(
+  as.character(a26.met.data$Sample),
+  as.character(a26.pro.data$DukeID)
+))
+
+rownames(a26.met.data) <- as.character(a26.met.data$Sample)
+rownames(a26.pro.data) <- as.character(a26.pro.data$DukeID)
+
 # save(a26.met.data, a26.pro.data, file = "a26.RData")
 
 
@@ -173,7 +187,6 @@ a26.met.cluster <- PChclust.score(x, group)
 
 # PRO data
 pro_matrix <- data.frame(pro_data)
-rownames(pro_matrix) <- pro_matrix$AnalysisID
 pro_matrix <- pro_matrix[,-(1:3)]
 # remove constant variable
 pro_matrix <- pro_matrix[,apply(pro_matrix,2,sd)!=0]

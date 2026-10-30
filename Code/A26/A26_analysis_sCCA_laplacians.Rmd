@@ -422,6 +422,7 @@ penaltyz <- perm_out$bestpenaltyz
 scca_res <- CCA(Xtc, Ytc, typex = "standard", typez = "standard",
                K = 10, penaltyx = penaltyx, penaltyz = penaltyz)
 
+# save(scca_res, file = "new_data/a26_score.RData")
 ```
 
 <!-- ![Average Correlation](data/averageCorrelation.png){width=90%} -->
@@ -570,35 +571,35 @@ plot_spcca_component <- function(i, scca_res, Xtc, Ytc, map.df, X, Y, a26.pro.cl
 
 
 # #write_xlsx(pro_tb,"pro_cluster.xlsx")
-# 
+#
 # met_tb <- as.data.frame(scca_res$v)
 # met_tb <- cbind(Cluster = colnames(Y), met_tb)
-# 
+#
 # #write_xlsx(met_tb,"met_cluster.xlsx")
-# 
+#
 # group.met <- a26.met.cluster$group
 # loading.met <- a26.met.cluster$loading
 # df.met <- data.frame(
 #     Feature = rownames(loading.met),
 #     Cluster = group.met[rownames(loading.met)],
 #     Loading = apply(loading.met, 1, function(x) x[x!=0]))
-# 
+#
 # df.met <- df.met[order(df.met$Cluster, -abs(df.met$Loading)), ]
 # df.met <- df.met %>%
 #     dplyr::group_by(Cluster) %>%
 #     dplyr::mutate(Contribution = abs(Loading) / sum(abs(Loading))) %>%
 #     dplyr::ungroup()
 # write_xlsx(df.met,"met_cluster_contribution.xlsx")
-# 
-# 
-# 
+#
+#
+#
 # group.pro <- a26.pro.cluster$group
 # loading.pro <- a26.pro.cluster$loading
 # df.pro <- data.frame(
 #   Feature = rownames(loading.pro),
 #   Cluster = group.pro[rownames(loading.pro)],
 #   Loading = apply(loading.pro, 1, function(x) x[x!=0]))
-# 
+#
 # df.pro <- df.pro[order(df.pro$Cluster, -abs(df.pro$Loading)), ]
 # df.pro <- df.pro %>%
 #   dplyr::group_by(Cluster) %>%
@@ -612,43 +613,43 @@ plot_spcca_component <- function(i, scca_res, Xtc, Ytc, map.df, X, Y, a26.pro.cl
 
 
 # library(openxlsx)
-# 
+#
 # # Create two new Excel workbooks
 # wb_pro <- createWorkbook()
 # wb_met <- createWorkbook()
-# 
+#
 # for (i in 1:10) {
 #   ai <- scca_res$u[, i]
 #   bi <- scca_res$v[, i]
-# 
+#
 #   # Feature-level weights
 #   pro_feat_wt <- a26.pro.cluster$loading %*% ai
 #   met_feat_wt <- a26.met.cluster$loading %*% bi
-# 
+#
 #   # Convert to data frame (single column)
 #   pro_df <- data.frame(loading = abs(as.numeric(pro_feat_wt)),
 #                        row.names = rownames(a26.pro.cluster$loading))
 #   met_df <- data.frame(loading = abs(as.numeric(met_feat_wt)),
 #                        row.names = rownames(a26.met.cluster$loading))
-# 
+#
 #   # Sort by absolute value descending
 #   pro_df <- pro_df[order(pro_df$loading, decreasing = TRUE), , drop = FALSE]
 #   met_df <- met_df[order(met_df$loading, decreasing = TRUE), , drop = FALSE]
-# 
-# 
+#
+#
 #   # Add worksheet names like Component1, Component2, ...
 #   addWorksheet(wb_pro, paste0("Component", i))
 #   addWorksheet(wb_met, paste0("Component", i))
-# 
+#
 #   # Write data (one column per sheet)
 #   writeData(wb_pro, sheet = i, x = pro_df, rowNames = TRUE)
 #   writeData(wb_met, sheet = i, x = met_df, rowNames = TRUE)
 # }
-# 
+#
 # # Save two Excel files
 # saveWorkbook(wb_pro, "../data/A26protein_abs_loadings.xlsx", overwrite = TRUE)
 # saveWorkbook(wb_met, "../data/A26metabolite_abs_loadings.xlsx", overwrite = TRUE)
-# 
+#
 
 ```
 
@@ -814,13 +815,13 @@ plot_cca_component <- function(i, cca_res, Xc, Yc, map.df, X, Y, a26.pro.cluster
   p_u <- ggplot(u_df, aes_string("Column", "Row", fill = paste0("CCA_U", i))) +
   geom_raster() + scale_x_reverse() + coord_equal() +
   scale_fill_viridis_c(option = "plasma", na.value = "grey90") +
-  labs(title = paste0("Sparse spCCA Proteomic Score (U", i, ")"), x = NULL, y = NULL, fill = "Score") +
+  labs(title = paste0("Sparse CCA Proteomic Score (U", i, ")"), x = NULL, y = NULL, fill = "Score") +
   theme_minimal() + theme( panel.grid = element_blank())
 
   p_v <- ggplot(v_df, aes_string("Column", "Row", fill = paste0("CCA_V", i))) +
   geom_raster() + scale_x_reverse() + coord_equal() +
   scale_fill_viridis_c(option = "plasma", na.value = "grey90") +
-  labs(title = paste0("Sparse spCCA Metabolomic Score (V", i, ")"), x = NULL, y = NULL, fill = "Score") +
+  labs(title = paste0("Sparse CCA Metabolomic Score (V", i, ")"), x = NULL, y = NULL, fill = "Score") +
   theme_minimal() + theme( panel.grid = element_blank())
 
   print(p_v + p_u)
@@ -907,6 +908,62 @@ plot_cca_component(10, cca_res, Xc, Yc, map.df, X, Y, a26.pro.cluster, a26.met.c
 
 
 
+```{r selected protein clusters}
+# Table S3: all FINAL A26 protein clusters containing at least 10 proteins.
 
+build_s3 <- function(cluster_object, min_proteins = 10L,
+                     expected_clusters = 73L) {
+  group <- cluster_object$group
+  loading <- cluster_object$loading
+  stopifnot(!is.null(names(group)), !anyNA(group),
+            !anyDuplicated(names(group)), !is.null(rownames(loading)),
+            !anyDuplicated(rownames(loading)),
+            all(names(group) %in% rownames(loading)))
+
+  sizes <- sort(table(group), decreasing = TRUE)
+  cluster_id <- names(sizes)[sizes >= min_proteins]
+  if (!is.null(expected_clusters) && length(cluster_id) != expected_clusters) {
+    stop("Expected ", expected_clusters, " clusters but found ", length(cluster_id),
+         ". Check that you loaded the final A26 clustering object; do not force a count.")
+  }
+  stopifnot(all(cluster_id %in% colnames(loading)))
+
+  sheets <- lapply(cluster_id, function(id) {
+    proteins <- names(group)[group == id]
+    weights <- as.numeric(loading[proteins, id])
+    stopifnot(length(proteins) >= min_proteins, all(is.finite(weights)),
+              abs(sum(weights^2) - 1) < 1e-8)
+    d <- data.frame(
+      protein_accession = proteins,
+      loading = weights,
+      stringsAsFactors = FALSE
+    )
+    # Rank within each worksheet by absolute loading, retaining the signed values.
+    d <- d[order(-abs(d$loading), d$protein_accession), , drop = FALSE]
+    rownames(d) <- NULL
+    d
+  })
+  names(sheets) <- cluster_id
+  sheets
+}
+
+export_s3 <- function(cluster_object, output_file,
+                      min_proteins = 10L, expected_clusters = 73L) {
+  sheets <- build_s3(cluster_object, min_proteins, expected_clusters)
+  if (file.exists(output_file)) {
+    stop("Output already exists; choose a new filename: ", output_file)
+  }
+  writexl::write_xlsx(sheets, path = output_file)
+  message("Saved ", length(sheets), " cluster worksheets to: ", output_file)
+  invisible(sheets)
+}
+
+load("../data/A26_PChclust.RData")
+
+# # Export the updated supplementary table
+# export_s3(cluster_object = a26.pro.cluster,
+#   output_file = "Supp_Table_S3_protein_clusters_min10_UPDATED.xlsx")
+
+```
 
 
