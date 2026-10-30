@@ -27,7 +27,7 @@ by *Qiuyi Wu\*, Alev M. Brigande\*, Michael W. Lutz, Pixu Shi, and Anita A. Disn
   `SampleSize_A27_spearman.Rmd`
 
 - **Figure 5**: PCA of metabolomics with blood present (U5) vs. perfused samples (A26, A27)  
-  `loadingComp_U6A26A27_met.Rmd`
+  `loadingComp_U5A26A27_met.Rmd`
 
 ---
 
