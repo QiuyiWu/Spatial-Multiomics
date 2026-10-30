@@ -42,7 +42,21 @@ library(ggplot2)
 library(dplyr)
 library(tidyr)
 
+library(here)
 knitr::opts_chunk$set(echo=TRUE, message=FALSE, cache=FALSE, warning=FALSE)
+
+## ---- Fig 5 export parameters (single-panel combined-subject PCA, outliers removed) ----
+## ---- shared PCA style: keep IDENTICAL across Fig 2 / Fig 5 / S2 (also set in PCA_Figure.R) ----
+pca_pt_size    <- 2    # in-plot point size (ggplot units)
+pca_legend_pt  <- 3    # legend key point size (matches 4-panel)
+pca_legend_txt <- 9    # legend text size, pt (matches 4-panel)
+
+fig_fmt  <- "tiff"
+fig_dpi  <- 600
+fig_w_mm <- 89    # single-column width (your spec; ~ one PCA panel, measured ~90 mm wide)
+# height = width / aspect. Single-panel aspect ~1.35 (layout-derived) -> plot ~65 mm;
+# +~7 mm for the top legend strip -> 73. If you drop the legend (caption instead), use ~66.
+fig_h_mm <- 73
 ```
 
 If we wan to compare A26, A27, U5, we need to remove the batch effect in these three datasets, so here we subtract the average of Q500 level 3 samples.
@@ -63,10 +77,10 @@ Steps for PCA:
 
 ```{r load metabolomic u5}
 # load FIA data
-meta_met.u5fia <- read_excel("../../data/5583 FIA Q500 Data.xlsx", sheet = "5583 FIA Q500 Data", skip=1)
+meta_met.u5fia <- read_excel(here::here("Data", "5583 FIA Q500 Data.xlsx"), sheet = "5583 FIA Q500 Data", skip=1)
 met_data.u5fia <- as.data.frame(meta_met.u5fia[c(6:80, 92:94), ])
 # load UPLC data
-meta_met.u5uplc <- read_excel("../../data/5583 UPLC Q500 Data.xlsx", sheet = "5583 UPLC Q500 Data", skip=1)
+meta_met.u5uplc <- read_excel(here::here("Data", "5583 UPLC Q500 Data.xlsx"), sheet = "5583 UPLC Q500 Data", skip=1)
 met_data.u5uplc <- as.data.frame(meta_met.u5uplc[c(6:80, 92:94), ])
 # combine two data
 met_data.u5 <- cbind(met_data.u5fia, met_data.u5uplc[, 12:219])
@@ -176,7 +190,7 @@ Steps for PCA:
 
 
 ```{r load metabolomic A26}
-meta_met.a26 <- read_excel("../../data/A26-Q500 Data.xlsx", sheet = "1. 10412 Raw Data", skip=1)
+meta_met.a26 <- read_excel(here::here("Data", "A26-Q500 Data.xlsx"), sheet = "1. 10412 Raw Data", skip=1)
 # only keep Q500(XL)_QC3
 met_data.a26 <- meta_met.a26[
   !meta_met.a26$`Sample identification` %in%
@@ -311,7 +325,7 @@ Steps for PCA:
 
 
 ```{r load metabolomic a27}
-meta_met.a27 <- read_excel("../../data/A27-Q500 Data.xlsx", sheet = "1. 10788 Raw Data", skip=1)
+meta_met.a27 <- read_excel(here::here("Data", "A27-Q500 Data.xlsx"), sheet = "1. 10788 Raw Data", skip=1)
 # only keep Q500(XL)_QC3
 met_data.a27 <- meta_met.a27[
   !meta_met.a27$`Sample identification` %in%
@@ -531,17 +545,28 @@ pca_data.comb$z_PC2 <- scale(pca_data.comb$PC2)
 pc1_var <- round(100 * summary(pca_combined)$importance[2, 1], 1)
 pc2_var <- round(100 * summary(pca_combined)$importance[2, 2], 1)
 
+# Randomize point draw order so no subject systematically overplots another.
+# Seeded because this figure is a committed manuscript input (must be reproducible).
+#set.seed(20250705)
+#pca_data.comb <- pca_data.comb[sample(nrow(pca_data.comb)), ]
 
 # Plot without outliers
-ggplot(pca_data.comb, aes(x = PC1, y = PC2, color = Subject)) +
-  geom_point(size = 2) +
-  labs(
-    title = "PCA Plot of Combined Metabolome Data before ComBat  (Outliers Removed)",
-    x = paste0("PC1 (", pc1_var, "% variance)"),
-    y = paste0("PC2 (", pc2_var, "% variance)")
-  ) +
+subject_cols <- c(U5 = "#000000", A26 = "#e69f00", A27 = "#56b4e9")
+
+p_fig5 <- ggplot(pca_data.comb, aes(PC1, PC2, color = Subject)) +
+  geom_point(size = pca_pt_size) +
+  scale_color_manual(values = subject_cols) +
+  guides(color = guide_legend(override.aes = list(size = pca_legend_pt))) +
+  labs(x = paste0("PC1 (", pc1_var, "% variance)"),
+       y = paste0("PC2 (", pc2_var, "% variance)")) +
   theme_minimal() +
-  scale_color_manual(values = c("U5" = "purple", "A26" = "cyan3", "A27" = "red"))
+  theme(legend.position = "top",
+        legend.title = element_blank(),
+        legend.text  = element_text(size = pca_legend_txt))
+p_fig5
+ggsave(here::here("Figure", paste0("fig5_pca.", fig_fmt)), plot = p_fig5,
+       width = fig_w_mm, height = fig_h_mm, units = "mm",
+       dpi = fig_dpi, bg = "white", device = fig_fmt, compression = "lzw")
 
 
 loadings <- pca_combined$rotation[, 1]   # PC1 loadings
@@ -619,8 +644,8 @@ ggplot(top_features,
 
 
 ```{r a26}
-load("../../data/a26_score.RData")
-load("../../data/A26_PChclust.RData")
+load(here::here("Data", "a26_score.RData"))
+load(here::here("Data", "A26_PChclust.RData"))
 scca_res_a26 <- scca_res
 bi26 <- scca_res_a26$v
 
@@ -661,8 +686,8 @@ print(cor_results.a26[, c("Correlation", "P_value")])
 
 
 ```{r a27}
-load("../../data/a27_score.RData")
-load("../../data/A27_PChclust.RData")
+load(here::here("Data", "a27_score.RData"))
+load(here::here("Data", "a27_PChclust.RData"))
 scca_res_a27 <- scca_res
 bi27 <- scca_res_a27$v
 
