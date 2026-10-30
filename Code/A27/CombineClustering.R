@@ -55,8 +55,20 @@ heldout_updated <- as.data.frame(read_excel("../data/Heldout_Updated_a27.xlsx"))
 a27.met.data <- a27.met.data[a27.met.data$Sample %in% unique(heldout_updated$finalID ), ]
 a27.pro.data <- a27.pro.data[a27.pro.data$DukeID %in% unique(heldout_updated$finalID ), ]
 
-rownames(a27.met.data) <- a27.met.data$Sample
-rownames(a27.pro.data) <- a27.pro.data$DukeID
+# Align protein rows to metabolomics sample order
+a27.pro.data <- a27.pro.data[
+  match(a27.met.data$Sample, a27.pro.data$DukeID),
+  , drop = FALSE
+]
+
+stopifnot(identical(
+  as.character(a27.met.data$Sample),
+  as.character(a27.pro.data$DukeID)
+))
+
+rownames(a27.met.data) <- as.character(a27.met.data$Sample)
+rownames(a27.pro.data) <- as.character(a27.pro.data$DukeID)
+
 # save(a27.met.data, a27.pro.data, file = "a27.RData")
 
 
@@ -185,7 +197,6 @@ a27.met.cluster <- PChclust.score(x, group)
 
 # PRO data
 pro_matrix <- data.frame(pro_data)
-rownames(pro_matrix) <- pro_matrix$AnalysisID
 pro_matrix <- pro_matrix[,-(1:3)]
 # remove constant variable
 pro_matrix <- pro_matrix[,apply(pro_matrix,2,sd)!=0]
@@ -194,7 +205,7 @@ x <- pro_matrix
 group <- PChclust(x, method.hclust="average", min_pc1_var=0.7, min_cluster_size = 1)
 a27.pro.cluster <- PChclust.score(x, group)
 
-save(a27.met.cluster, a27.pro.cluster, file = "../data/a27_PChclust.RData")
+#save(a27.met.cluster, a27.pro.cluster, file = "../data/a27_PChclust.RData")
 
 
 

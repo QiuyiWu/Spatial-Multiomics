@@ -598,6 +598,7 @@ plot_spcca_component <- function(i, scca_res, Xtc, Ytc, map.df, X, Y, a27.pro.cl
 # write_xlsx(df.pro,"pro_cluster_contribution.xlsx")
 
 
+# save(scca_res, file = "data/a27_score.RData")
 ```
 
 
@@ -762,13 +763,13 @@ plot_cca_component <- function(i, cca_res, Xc, Yc, map.df, X, Y, a27.pro.cluster
   p_u <- ggplot(u_df, aes_string("Column", "Row", fill = paste0("CCA_U", i))) +
   geom_raster() + coord_equal() +
   scale_fill_viridis_c(option = "plasma", na.value = "grey90") +
-  labs(title = paste0("Sparse spCCA Proteomic Score (U", i, ")"), x = NULL, y = NULL, fill = "Score") +
+  labs(title = paste0("Sparse CCA Proteomic Score (U", i, ")"), x = NULL, y = NULL, fill = "Score") +
   theme_minimal() + theme( panel.grid = element_blank())
 
   p_v <- ggplot(v_df, aes_string("Column", "Row", fill = paste0("CCA_V", i))) +
   geom_raster() + coord_equal() +
   scale_fill_viridis_c(option = "plasma", na.value = "grey90") +
-  labs(title = paste0("Sparse spCCA Metabolomic Score (V", i, ")"), x = NULL, y = NULL, fill = "Score") +
+  labs(title = paste0("Sparse CCA Metabolomic Score (V", i, ")"), x = NULL, y = NULL, fill = "Score") +
   theme_minimal() + theme( panel.grid = element_blank())
 
   print(p_v + p_u)
