@@ -98,20 +98,6 @@ preservation in a temporary folder:
 Rscript Code/tests/test_reproduction_mode.R
 ```
 
-## What ProteinFix changes
-
-Both reformatted proteomics inputs are already on the log2 scale when P2 starts. A26's input supplies log2 values; A27's P1 script applies `log2()` to its intensity column.
-
-P2 replaces missing values within each protein with:
-
-```r
-min(x, na.rm = TRUE) - 1
-```
-
-Subtracting one on the log2 scale corresponds to **half the minimum observed intensity** on the original intensity scale. Dividing the log2 value by two does not implement that rule. The dilution adjustment follows imputation, then ordinary ComBat is applied without SPQC subtraction for the protein outputs used downstream.
-
-Metabolomics imputation occurs before its log2 transformation and uses half the minimum observed intensity on the original scale. This is an observed-minimum rule, not a measured assay limit of detection.
-
 ## Inputs and execution order
 
 Processed inputs are included under `Data/` through Git LFS. To reproduce downstream analyses, start at the appropriate saved stage. To reproduce proteomics from the long-format source files, complete P1 first; see the external-input notes below.
