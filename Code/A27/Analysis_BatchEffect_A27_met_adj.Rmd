@@ -222,3 +222,31 @@ ggplot(pca_data, aes(x=PC1, y=PC2, color=color_indicator)) +
 
 ```
 
+```{r export met_a27 PCA data}
+# Reproducible Figure 2 (post) and Figure S2 (pre) inputs.
+# Pre includes retained QC samples; post follows the script's QC exclusions.
+# Values are log2 transformed before SPQC subtraction and ComBat.
+pre_met_a27 <- as.matrix(met_data.a27.unscaling[, -seq_len(2)])
+post_met_a27 <- as.matrix(df_corrected)
+pre_met_a27_metadata <- data.frame(sample_id = as.character(met_data.a27.unscaling$Sample),
+  plate = as.character(met_data.a27.unscaling$Plate),
+  sample_type = ifelse(met_data.a27.unscaling$Sample == "10788 SPQC -Frizzle", "SPQC", "Non-SPQC"))
+post_met_a27_metadata <- data.frame(sample_id = as.character(met_data.a27.spqcScaled$Sample),
+  plate = as.character(met_data.a27.spqcScaled$Plate),
+  sample_type = rep("Non-SPQC", nrow(df_corrected)))
+
+# Keep an explicit row key for every matrix and its corresponding metadata.
+rownames(pre_met_a27_metadata) <- make.unique(paste(
+  pre_met_a27_metadata$plate, pre_met_a27_metadata$sample_id, sep = "::"))
+rownames(post_met_a27_metadata) <- make.unique(paste(
+  post_met_a27_metadata$plate, post_met_a27_metadata$sample_id, sep = "::"))
+rownames(pre_met_a27) <- rownames(pre_met_a27_metadata)
+rownames(post_met_a27) <- rownames(post_met_a27_metadata)
+stopifnot(nrow(pre_met_a27) == nrow(pre_met_a27_metadata),
+          nrow(post_met_a27) == nrow(post_met_a27_metadata),
+          identical(colnames(pre_met_a27), colnames(post_met_a27)),
+          all(is.finite(pre_met_a27)), all(is.finite(post_met_a27)))
+save(pre_met_a27, post_met_a27,
+     pre_met_a27_metadata, post_met_a27_metadata,
+     file = here::here("Data", "met_a27_PCAdata.RData"))
+```

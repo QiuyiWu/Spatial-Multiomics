@@ -77,6 +77,8 @@ make_pca_plot <- function(data_mat, legend_group, title_text) {
   colnames(pca_df) <- c("PC1", "PC2")
 
   var_exp <- 100 * (pca_res$sdev^2 / sum(pca_res$sdev^2))
+  message(title_text, ": n=", nrow(data_mat), ", analytes=", ncol(data_mat),
+          ", PC1=", round(var_exp[1], 1), "%, PC2=", round(var_exp[2], 1), "%")
 
   pca_df$LegendGroup <- factor(legend_group, levels = legend_levels)
 
@@ -101,62 +103,33 @@ make_pca_plot <- function(data_mat, legend_group, title_text) {
 }
 
 
-pre_met_a26 <- pre_met_a26[-c(404:406), ]
+# Matrices contain only analytes; metadata is exported alongside each stage.
+# Pre and post metabolomics have different QC sample sets, so use their own metadata.
+normalize_plate <- function(x) {
+  x <- as.character(x)
+  x[x == "S-trap batch 1"] <- "2"
+  x[x == "S-trap batch 2"] <- "7"
+  x <- ifelse(grepl("^[1-7]$", x), paste("Plate", x), x)
+  gsub("^plate\\s*", "Plate ", x, ignore.case = TRUE)
+}
 
-plate_a26met <- pre_met_a26$color_indicator
-plate_a26met <- gsub("^plate", "Plate", plate_a26met)
-plate_a26met <- gsub("^Plate\\s*", "Plate ", plate_a26met)
+pca_panel <- function(dataset, stage, title_text) {
+  data_mat <- get(paste(stage, dataset, sep = "_"))
+  metadata <- get(paste(stage, dataset, "metadata", sep = "_"))
+  stopifnot(is.matrix(data_mat), is.numeric(data_mat),
+            nrow(data_mat) == nrow(metadata),
+            identical(rownames(data_mat), rownames(metadata)),
+            all(is.finite(data_mat)))
+  legend_group <- ifelse(metadata$sample_type == "SPQC", "SPQC",
+                         normalize_plate(metadata$plate))
+  stopifnot(!anyNA(legend_group), all(legend_group %in% legend_levels))
+  make_pca_plot(data_mat, legend_group, paste(title_text, stage))
+}
 
-legend_a26met <- ifelse(pre_met_a26$sample_type == "SPQC", "SPQC", plate_a26met)
-
-p.a26met <- make_pca_plot(
-  data_mat = post_met_a26,
-  legend_group = legend_a26met,
-  title_text = "A26 Metabolomics"
-)
-
-plate_a26pro <- pre_pro_a26$pro.plate
-plate_a26pro <- gsub("^Plate", "Plate ", plate_a26pro)   # Plate1 -> Plate 1
-
-legend_a26pro <- ifelse(pre_pro_a26$pro.sampletype == "SPQC", "SPQC", plate_a26pro)
-
-p.a26pro <- make_pca_plot(
-  data_mat = post_pro_a26,
-  legend_group = legend_a26pro,
-  title_text = "A26 Proteomics"
-)
-
-plate_a27met <- pre_met_a27$color_indicator
-plate_a27met <- gsub("^plate", "Plate", plate_a27met)
-plate_a27met <- gsub("^Plate\\s*", "Plate ", plate_a27met)
-
-type_a27met <- ifelse(grepl("SPQC", pre_met_a27$sampleID), "SPQC", "Non-SPQC")
-legend_a27met <- ifelse(type_a27met == "SPQC", "SPQC", plate_a27met)
-
-p.a27met <- make_pca_plot(
-  data_mat = post_met_a27,
-  legend_group = legend_a27met,
-  title_text = "A27 Metabolomics"
-)
-
-plate_a27pro <- as.character(pre_pro_a27$pro.plate)
-
-plate_a27pro[plate_a27pro == "1"] <- "Plate 1"
-plate_a27pro[plate_a27pro == "3"] <- "Plate 3"
-plate_a27pro[plate_a27pro == "4"] <- "Plate 4"
-plate_a27pro[plate_a27pro == "5"] <- "Plate 5"
-plate_a27pro[plate_a27pro == "6"] <- "Plate 6"
-plate_a27pro[plate_a27pro == "S-trap batch 1"] <- "Plate 2"
-plate_a27pro[plate_a27pro == "S-trap batch 2"] <- "Plate 7"
-
-legend_a27pro <- ifelse(pre_pro_a27$pro.sampletype == "SPQC", "SPQC", plate_a27pro)
-
-p.a27pro <- make_pca_plot(
-  data_mat = post_pro_a27,
-  legend_group = legend_a27pro,
-  title_text = "A27 Proteomics"
-)
-
+p.a26met <- pca_panel("met_a26", "post", "A26 Metabolomics")
+p.a26pro <- pca_panel("pro_a26", "post", "A26 Proteomics")
+p.a27met <- pca_panel("met_a27", "post", "A27 Metabolomics")
+p.a27pro <- pca_panel("pro_a27", "post", "A27 Proteomics")
 
 # -----------------------------
 # Combine legend + panels
@@ -256,32 +229,10 @@ ggsave(
 ################################ Figures for Pre-Combat ################################################
 
 
-p.a26met <- make_pca_plot(
-  data_mat = pre_met_a26[, -c(1:3)],
-  legend_group = legend_a26met,
-  title_text = "A26 Metabolomics"
-)
-
-
-p.a26pro <- make_pca_plot(
-  data_mat = pre_pro_a26[, -c(1:3)],
-  legend_group = legend_a26pro,
-  title_text = "A26 Proteomics"
-)
-
-
-p.a27met <- make_pca_plot(
-  data_mat = pre_met_a27[, -c(631:633)],
-  legend_group = legend_a27met,
-  title_text = "A27 Metabolomics"
-)
-
-p.a27pro <- make_pca_plot(
-  data_mat = pre_pro_a27[, -c(1:4)],
-  legend_group = legend_a27pro,
-  title_text = "A27 Proteomics"
-)
-
+p.a26met <- pca_panel("met_a26", "pre", "A26 Metabolomics")
+p.a26pro <- pca_panel("pro_a26", "pre", "A26 Proteomics")
+p.a27met <- pca_panel("met_a27", "pre", "A27 Metabolomics")
+p.a27pro <- pca_panel("pro_a27", "pre", "A27 Proteomics")
 
 # -----------------------------
 # Combine legend + panels

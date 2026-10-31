@@ -180,3 +180,31 @@ pca_data$sample <- as.numeric(met_data.a26.spqcScaled$Sample)
 
 ```
 
+```{r export met_a26 PCA data}
+# Reproducible Figure 2 (post) and Figure S2 (pre) inputs.
+# Pre includes retained QC samples; post follows the script's QC exclusions.
+# Values are log2 transformed before SPQC subtraction and ComBat.
+pre_met_a26 <- as.matrix(met_data.a26.unscaling[, -seq_len(3)])
+post_met_a26 <- as.matrix(df_corrected)
+pre_met_a26_metadata <- data.frame(sample_id = as.character(met_data.a26.unscaling$Sample),
+  plate = as.character(met_data.a26.unscaling$Plate),
+  sample_type = as.character(met_data.a26.unscaling$sampleType))
+post_met_a26_metadata <- data.frame(sample_id = as.character(met_data.a26.spqcScaled$Sample),
+  plate = as.character(met_data.a26.spqcScaled$Plate),
+  sample_type = as.character(met_data.a26.spqcScaled$sampleType))
+
+# Keep an explicit row key for every matrix and its corresponding metadata.
+rownames(pre_met_a26_metadata) <- make.unique(paste(
+  pre_met_a26_metadata$plate, pre_met_a26_metadata$sample_id, sep = "::"))
+rownames(post_met_a26_metadata) <- make.unique(paste(
+  post_met_a26_metadata$plate, post_met_a26_metadata$sample_id, sep = "::"))
+rownames(pre_met_a26) <- rownames(pre_met_a26_metadata)
+rownames(post_met_a26) <- rownames(post_met_a26_metadata)
+stopifnot(nrow(pre_met_a26) == nrow(pre_met_a26_metadata),
+          nrow(post_met_a26) == nrow(post_met_a26_metadata),
+          identical(colnames(pre_met_a26), colnames(post_met_a26)),
+          all(is.finite(pre_met_a26)), all(is.finite(post_met_a26)))
+save(pre_met_a26, post_met_a26,
+     pre_met_a26_metadata, post_met_a26_metadata,
+     file = here::here("Data", "met_a26_PCAdata.RData"))
+```
