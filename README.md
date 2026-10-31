@@ -55,7 +55,7 @@ Steps:
 
 * Remove samples 244, 96, 188
 * Missingness filtering (TG >70%, others >85%)
-* LOD/2 imputation
+* half the minimum observed intensity
 * Dilution factor adjustment
 * Remove 3 SPQC outliers
 * Log transform
@@ -88,7 +88,7 @@ This step converts **log2-transformed raw long-format proteomics data** into a *
 Steps:
 
 * Remove outlier `ID117530`
-* LOD/2 imputation
+* half the minimum observed intensity
 * Dilution factor
 * ComBat batch correction
 * PCA analysis
@@ -156,7 +156,7 @@ Steps:
 
 * Missingness filtering
 * Remove outlier 212
-* LOD/2 imputation
+* half the minimum observed intensity
 * Dilution factor
 * Log transform
 * Subtract SPQC
@@ -191,7 +191,7 @@ This step converts **long-format proteomics data** into a **log2-transformed wid
 
 Steps:
 
-* LOD/2 imputation
+* half the minimum observed intensity
 * Dilution factor
 * ComBat
 * PCA
