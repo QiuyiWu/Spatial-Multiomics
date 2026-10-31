@@ -51,24 +51,36 @@ run_animal <- function(animal) {
 }
 a26 <- run_animal('A26'); a27 <- run_animal('A27')
 dev.off()
-make_group <- function(result,type,letter) {
-  plots <- lapply(seq_along(result$orders),function(i) result[[type]][[i]] +
-    labs(title=as.character(result$orders[i])) +
-    theme(legend.position='none',plot.title=element_text(hjust=.5,size=12),plot.margin=margin(2,2,2,2)))
-  triplet <- plot_grid(plotlist=plots,nrow=1)
-  ggdraw() + draw_plot(triplet,x=.025,y=0,width=.975,height=.88) +
-    draw_label(letter,x=.01,y=.99,hjust=0,vjust=1,fontface='bold',size=18) +
-    draw_label('Neighbor order',x=.51,y=.96,size=11)
+# Reference styling uses a shared blue-white-red correlation scale.
+style_map <- function(p, order = NULL) {
+  p + scale_fill_gradient2(low = "#4000FF", mid = "white", high = "#FF0000",
+    midpoint = 0, limits = c(-1, 1), breaks = seq(-1, 1, .5),
+    labels = sprintf("%.1f", seq(-1, 1, .5)), na.value = "grey90") +
+    labs(title = order, fill = "avg cor") +
+    theme(legend.position = "none", plot.title = element_text(hjust = 0, size = 12),
+      axis.text = element_text(size = 3, colour = "grey55"),
+      plot.margin = margin(2, 2, 2, 2))
 }
-legend <- get_legend(a26$met[[1]] + labs(fill='Average\nSpearman\ncorrelation') +
- theme(legend.position='right',legend.title=element_text(size=10),legend.text=element_text(size=9)))
+make_group <- function(result,type,letter) {
+  ordinals <- c("1st", "2nd", "3rd", "4th", "5th")
+  plots <- lapply(seq_along(result$orders),function(i)
+    style_map(result[[type]][[i]], ordinals[result$orders[i]]))
+  triplet <- plot_grid(plotlist=plots,nrow=1)
+  ggdraw() + draw_plot(triplet,x=.055,y=0,width=.945,height=.97) +
+    draw_label(letter,x=.01,y=1,hjust=0,vjust=1,fontface='bold',size=18)
+}
+legend <- get_legend(style_map(a26$met[[1]]) +
+ theme(legend.position='right',legend.title=element_text(size=9),
+       legend.text=element_text(size=8), legend.key.width=grid::unit(3,'mm'),
+       legend.key.height=grid::unit(5,'mm')))
 body <- plot_grid(make_group(a26,'met','a'),make_group(a26,'pro','b'),
                   make_group(a27,'met','c'),make_group(a27,'pro','d'),ncol=2)
-fig <- ggdraw() + draw_plot(body,x=.055,y=.04,width=.865,height=.89) +
- draw_label('Metabolomics',x=.27,y=.97,size=16) +
- draw_label('Proteomics',x=.70,y=.97,size=16) +
- draw_label('A26',x=.025,y=.705,size=15,fontface='bold',angle=90) +
- draw_label('A27',x=.025,y=.26,size=15,fontface='bold',angle=90) +
- draw_plot(legend,x=.92,y=.32,width=.08,height=.35)
-ggsave(file.path(out,'Figure4_corrected.tiff'),fig,width=15,height=9,units='in',dpi=600,compression='lzw',bg='white')
-ggsave(file.path(out,'Figure4_corrected.png'),fig,width=15,height=9,units='in',dpi=180,bg='white')
+fig <- ggdraw() + draw_plot(body,x=.06,y=.075,width=.865,height=.865) +
+ draw_label('Metabolomics',x=.28,y=.97,size=16) +
+ draw_label('Proteomics',x=.71,y=.97,size=16) +
+ draw_label('A26',x=.035,y=.73,size=15) +
+ draw_label('A27',x=.035,y=.295,size=15) +
+ draw_label('Neighbor order',x=.5,y=.035,size=16) +
+ draw_plot(legend,x=.925,y=.34,width=.075,height=.35)
+ggsave(file.path(out,'Figure4_corrected.tiff'),fig,width=15,height=8,units='in',dpi=600,compression='lzw',bg='white')
+ggsave(file.path(out,'Figure4_corrected.png'),fig,width=15,height=8,units='in',dpi=180,bg='white')
