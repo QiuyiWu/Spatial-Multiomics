@@ -1,12 +1,13 @@
+source(here::here("Code", "pipeline_paths.R"))
 library(ggplot2)
 library(ggpubr)
 library(scales)
 library(here)
 
-load(here::here("Data", "met_a26_PCAdata.RData"))
-load(here::here("Data", "met_a27_PCAdata.RData"))
-load(here::here("Data", "pro_a26_PCAdata.RData"))
-load(here::here("Data", "pro_a27_PCAdata.RData"))
+load(proteinfix_input('met_a26_PCAdata.RData'))
+load(proteinfix_input('met_a27_PCAdata.RData'))
+load(proteinfix_input('pro_a26_PCAdata.RData'))
+load(proteinfix_input('pro_a27_PCAdata.RData'))
 
 # -----------------------------
 # Figure export parameters (Fig 2 = post, S2 = pre)

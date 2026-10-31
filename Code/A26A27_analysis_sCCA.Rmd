@@ -11,6 +11,7 @@ output:
 ---
 
 ```{r setup, include=FALSE}
+source(here::here("Code", "pipeline_paths.R"))
 library(Hmisc)
 library(sRDA)
 library(PMA)
@@ -48,11 +49,11 @@ panel_h     <- 80
 
 
 ```{r omics map}
-heldout_updated <- as.data.frame(read_excel(here::here("Data", "Heldout_Updated_a26.xlsx")))
+heldout_updated <- as.data.frame(read_excel(proteinfix_input('Heldout_Updated_a26.xlsx')))
 heldout_updated <- heldout_updated[, c(2:5)]
-map.df <- data.frame(read_excel(here::here("Data", "A26_Bonnie_Flatmap_Grid_20260315.xlsx"), sheet = "AnalysisID_Matrix", col_names = F))
+map.df <- data.frame(read_excel(proteinfix_input('A26_Bonnie_Flatmap_Grid_20260315.xlsx'), sheet = "AnalysisID_Matrix", col_names = F))
 map.df <- as.matrix(sapply(map.df, as.numeric))
-load(here::here("Data", "a26.RData"))
+load(proteinfix_input('a26.RData'))
 
 
 # Modify MAP based on HELDOUT: Build a lookup table of all IDs → finalID
@@ -74,7 +75,7 @@ final_vec <- ifelse(!is.na(replacement), replacement, map_char)  # keep original
 map.df<- matrix(as.numeric(final_vec), nrow = nrow(map.df), ncol = ncol(map.df))
 
 
-load(here::here("Data", "A26_PChclust.RData"))
+load(proteinfix_input('A26_PChclust.RData'))
 # make sure A26 metabolite sample names are made consistent with A26 protein sample names
 stopifnot(
   identical(
@@ -203,7 +204,7 @@ a26.pro.cluster$score <- a26.pro.cluster$score[rownames(xy_ordered), , drop = FA
 #   nfnega = 0
 # )
 # save(spca_delaunay_metCluster,  file = "sPCA_a26metCluster.RData")
-load(here::here("Data", "sPCA_a26metCluster.RData"))
+load(proteinfix_input('sPCA_a26metCluster.RData'))
 stopifnot(identical(rownames(spca_delaunay_metCluster$xy), rownames(xy_ordered)),
           isTRUE(all.equal(unname(as.matrix(spca_delaunay_metCluster$xy)),
                            unname(as.matrix(xy_ordered)))))
@@ -277,8 +278,8 @@ Ytc <- Y_tilde
 
 
 # load A27 score weights
-load(here::here("Data", "a27_score.RData"))
-load(here::here("Data", "A27_PChclust.RData"))
+load(proteinfix_input('a27_score.RData'))
+load(proteinfix_input('A27_PChclust.RData'))
 scca_res_a27 <- scca_res
 ai27 <- scca_res_a27$u
 bi27 <- scca_res_a27$v
@@ -334,7 +335,7 @@ stopifnot(all(is.finite(u_A26_from_A27)), all(is.finite(v_A26_from_A27)),
 saveRDS(list(protein_scores = u_A26_from_A27, metabolite_scores = v_A26_from_A27,
              shared_proteins = common_pro, shared_metabolites = common_met,
              map = map.df, source_model = "Data/a27_score.RData"),
-        here::here("Data", "A27_to_A26_projection.rds"))
+        proteinfix_output('A27_to_A26_projection.rds'))
 
 for (i in 1:10) {
   u_scores <- u_A26_from_A27[,i]

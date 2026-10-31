@@ -11,6 +11,7 @@ output:
 ---
 
 ```{r setup, include=FALSE}
+source(here::here("Code", "pipeline_paths.R"))
 library(Hmisc)
 library(sRDA)
 library(PMA)
@@ -57,7 +58,7 @@ Steps for Combat:
 
 
 ```{r load metabolomic A27}
-meta_met.a27 <- read_excel(here::here("Data", "A27-Q500 Data.xlsx"), sheet = "1. 10788 Raw Data", skip=1)
+meta_met.a27 <- read_excel(proteinfix_input('A27-Q500 Data.xlsx'), sheet = "1. 10788 Raw Data", skip=1)
 met_data.a27 <- cbind(meta_met.a27$`Sample description`,  meta_met.a27$`Submission name`, meta_met.a27[, -c(1:11)])
 colnames(met_data.a27)[1:2] <- c("Sample", "Plate")
 met_data.a27$Plate <- sub("^plate", "Plate", met_data.a27$Plate)
@@ -186,7 +187,7 @@ a27.met.data <- data.frame(cbind(met_data.a27.spqcScaled[,c(1:2)], df_corrected)
 colnames(a27.met.data) = colnames(met_data.a27.spqcScaled)
 
 library(openxlsx)
-write.xlsx(a27.met.data, here::here("Data", "PostCombat_a27_Metabolite_beforeHeldout.xlsx"))
+write.xlsx(a27.met.data, proteinfix_output('PostCombat_a27_Metabolite_beforeHeldout.xlsx'))
                          
 # PCA + PLOT
 #df_corrected <- df_corrected[, which(var_values > 0)]  # Keep nonzero variance columns
@@ -248,5 +249,5 @@ stopifnot(nrow(pre_met_a27) == nrow(pre_met_a27_metadata),
           all(is.finite(pre_met_a27)), all(is.finite(post_met_a27)))
 save(pre_met_a27, post_met_a27,
      pre_met_a27_metadata, post_met_a27_metadata,
-     file = here::here("Data", "met_a27_PCAdata.RData"))
+     file = proteinfix_output('met_a27_PCAdata.RData'))
 ```

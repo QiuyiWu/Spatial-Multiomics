@@ -11,6 +11,7 @@ output:
 ---
 
 ```{r setup, include=FALSE}
+source(here::here("Code", "pipeline_paths.R"))
 library(Hmisc)
 library(sRDA)
 library(PMA)
@@ -77,10 +78,10 @@ Steps for PCA:
 
 ```{r load metabolomic u5}
 # load FIA data
-meta_met.u5fia <- read_excel(here::here("Data", "5583 FIA Q500 Data.xlsx"), sheet = "5583 FIA Q500 Data", skip=1)
+meta_met.u5fia <- read_excel(proteinfix_input('5583 FIA Q500 Data.xlsx'), sheet = "5583 FIA Q500 Data", skip=1)
 met_data.u5fia <- as.data.frame(meta_met.u5fia[c(6:80, 92:94), ])
 # load UPLC data
-meta_met.u5uplc <- read_excel(here::here("Data", "5583 UPLC Q500 Data.xlsx"), sheet = "5583 UPLC Q500 Data", skip=1)
+meta_met.u5uplc <- read_excel(proteinfix_input('5583 UPLC Q500 Data.xlsx'), sheet = "5583 UPLC Q500 Data", skip=1)
 met_data.u5uplc <- as.data.frame(meta_met.u5uplc[c(6:80, 92:94), ])
 # combine two data
 met_data.u5 <- cbind(met_data.u5fia, met_data.u5uplc[, 12:219])
@@ -190,7 +191,7 @@ Steps for PCA:
 
 
 ```{r load metabolomic A26}
-meta_met.a26 <- read_excel(here::here("Data", "A26-Q500 Data.xlsx"), sheet = "1. 10412 Raw Data", skip=1)
+meta_met.a26 <- read_excel(proteinfix_input('A26-Q500 Data.xlsx'), sheet = "1. 10412 Raw Data", skip=1)
 # only keep Q500(XL)_QC3
 met_data.a26 <- meta_met.a26[
   !meta_met.a26$`Sample identification` %in%
@@ -325,7 +326,7 @@ Steps for PCA:
 
 
 ```{r load metabolomic a27}
-meta_met.a27 <- read_excel(here::here("Data", "A27-Q500 Data.xlsx"), sheet = "1. 10788 Raw Data", skip=1)
+meta_met.a27 <- read_excel(proteinfix_input('A27-Q500 Data.xlsx'), sheet = "1. 10788 Raw Data", skip=1)
 # only keep Q500(XL)_QC3
 met_data.a27 <- meta_met.a27[
   !meta_met.a27$`Sample identification` %in%
@@ -644,8 +645,8 @@ ggplot(top_features,
 
 
 ```{r a26}
-load(here::here("Data", "a26_score.RData"))
-load(here::here("Data", "A26_PChclust.RData"))
+load(proteinfix_input('a26_score.RData'))
+load(proteinfix_input('A26_PChclust.RData'))
 scca_res_a26 <- scca_res
 bi26 <- scca_res_a26$v
 
@@ -686,8 +687,8 @@ print(cor_results.a26[, c("Correlation", "P_value")])
 
 
 ```{r a27}
-load(here::here("Data", "a27_score.RData"))
-load(here::here("Data", "A27_PChclust.RData"))
+load(proteinfix_input('a27_score.RData'))
+load(proteinfix_input('A27_PChclust.RData'))
 scca_res_a27 <- scca_res
 bi27 <- scca_res_a27$v
 

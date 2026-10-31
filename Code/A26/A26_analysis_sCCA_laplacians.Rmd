@@ -11,6 +11,7 @@ output:
 ---
 
 ```{r setup, include=FALSE}
+source(here::here("Code", "pipeline_paths.R"))
 library(Hmisc)
 library(sRDA)
 library(PMA)
@@ -93,11 +94,11 @@ Intersecting the current C4-selected samples with the heldout-updated `AnalysisI
 # A26 Omics Reconstruction
 
 ```{r omics map}
-heldout_updated <- as.data.frame(read_excel(here::here("Data", "Heldout_Updated_a26.xlsx")))
+heldout_updated <- as.data.frame(read_excel(proteinfix_input('Heldout_Updated_a26.xlsx')))
 heldout_updated <- heldout_updated[, c(2:5)]
-map.df <- data.frame(read_excel(here::here("Data", "A26_Bonnie_Flatmap_Grid_20260315.xlsx"), sheet = "AnalysisID_Matrix", col_names = F))
+map.df <- data.frame(read_excel(proteinfix_input('A26_Bonnie_Flatmap_Grid_20260315.xlsx'), sheet = "AnalysisID_Matrix", col_names = F))
 map.df <- as.matrix(sapply(map.df, as.numeric))
-load(here::here("Data", "a26.RData"))
+load(proteinfix_input('a26.RData'))
 
 
 # Modify MAP based on HELDOUT: Build a lookup table of all IDs → finalID
@@ -119,7 +120,7 @@ final_vec <- ifelse(!is.na(replacement), replacement, map_char)  # keep original
 map.df<- matrix(as.numeric(final_vec), nrow = nrow(map.df), ncol = ncol(map.df))
 
 
-load(here::here("Data", "A26_PChclust.RData"))
+load(proteinfix_input('A26_PChclust.RData'))
 stopifnot(identical(
   rownames(a26.pro.cluster$score),
   rownames(a26.met.cluster$score)
@@ -240,15 +241,10 @@ a26.met.cluster$score <- a26.met.cluster$score[rownames(xy_ordered), , drop = FA
 a26.pro.cluster$score <- a26.pro.cluster$score[rownames(xy_ordered), , drop = FALSE]
 
 
-# Rebuild the Delaunay graph in the current sample/coordinate order.
-# type = 1 is Delaunay; explicit options avoid an interactive graph selection.
-spca_delaunay_metCluster <- adegenet::spca(
-  x = a26.met.cluster$score, xy = xy_ordered,
-  center = TRUE, scale = TRUE, scannf = FALSE,
-  nfposi = 3, nfnega = 0, type = 1, ask = FALSE, plot.nb = FALSE
+# Reuse the validated saved graph unless rebuilding is explicitly requested.
+spca_delaunay_metCluster <- proteinfix_graph(
+  "sPCA_a26metCluster.RData", a26.met.cluster$score, xy_ordered
 )
-save(spca_delaunay_metCluster,
-     file = here::here("Data", "sPCA_a26metCluster.RData"))
 
 # Standardize both datasets (center + scale)
 X <- a26.pro.cluster$score
@@ -443,7 +439,7 @@ penaltyz <- perm_out$bestpenaltyz
 scca_res <- PMA::CCA(Xtc, Ytc, typex = "standard", typez = "standard",
                K = 10, penaltyx = penaltyx, penaltyz = penaltyz)
 
-save(scca_res, file = here::here("Data", "a26_score.RData"))
+save(scca_res, file = proteinfix_output('a26_score.RData'))
 
 # save(scca_res, file = "new_data/a26_score.RData")
 ```
@@ -679,8 +675,8 @@ plot_spcca_component <- function(i, scca_res, Xtc, Ytc, map.df, X, Y, a26.pro.cl
 # }
 #
 # # Save two Excel files
-# saveWorkbook(wb_pro, here::here("Data", "A26protein_abs_loadings.xlsx"), overwrite = TRUE)
-# saveWorkbook(wb_met, here::here("Data", "A26metabolite_abs_loadings.xlsx"), overwrite = TRUE)
+# saveWorkbook(wb_pro, proteinfix_output('A26protein_abs_loadings.xlsx'), overwrite = TRUE)
+# saveWorkbook(wb_met, proteinfix_output('A26metabolite_abs_loadings.xlsx'), overwrite = TRUE)
 #
 
 ```
@@ -992,7 +988,7 @@ export_s3 <- function(cluster_object, output_file,
   invisible(sheets)
 }
 
-load(here::here("Data", "A26_PChclust.RData"))
+load(proteinfix_input('A26_PChclust.RData'))
 
 # # Export the updated supplementary table
 # export_s3(cluster_object = a26.pro.cluster,

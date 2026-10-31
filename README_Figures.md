@@ -1,6 +1,6 @@
 # Manuscript figures and supplementary Table S3
 
-Use the **ProteinFix** branch with Git LFS inputs downloaded and the R environment restored. Run commands from the repository root. [README.md](README.md) documents the analysis stages; [DIAGRAM.md](DIAGRAM.md) shows their dependencies.
+Use the **ProteinFix** branch with Git LFS inputs downloaded and the R environment restored. Run commands from the repository root. Data inputs/outputs follow the shared reproduction/update mode described in [README.md](README.md#reproduction-mode-and-reference-updates). [README.md](README.md) documents the analysis stages; [DIAGRAM.md](DIAGRAM.md) shows their dependencies.
 
 The commands below use the activated project library. Adding `--vanilla` bypasses the repository's `renv` startup and requires a separate explicit package setup.
 
@@ -28,7 +28,7 @@ Run the four preprocessing Rmds under `Code/A26/` and `Code/A27/` if the saved P
 Rscript Code/PCA_Figure.R
 ```
 
-Each preprocessing Rmd saves numeric `pre_*` and `post_*` matrices plus matching `pre_*_metadata` and `post_*_metadata` tables. Metadata include `sample_id`, `plate`, and `sample_type`; row names match their matrix.
+Each preprocessing Rmd saves, to the configured data-output directory, numeric `pre_*` and `post_*` matrices plus matching `pre_*_metadata` and `post_*_metadata` tables. Metadata include `sample_id`, `plate`, and `sample_type`; row names match their matrix.
 
 | Data file | Pre-ComBat samples × analytes | Post-ComBat samples × analytes |
 | --- | --- | --- |
@@ -53,14 +53,14 @@ Rscript Code/regenerate_C6_outputs.R A26 /absolute/path/to/CorrectedFigure
 Rscript Code/regenerate_C6_outputs.R A27 /absolute/path/to/CorrectedFigure
 ```
 
-The driver runs the spatial-model chunks of each C6 Rmd and the corresponding section of `Code/sr_sCCA_figures.R`. It rebuilds the Delaunay graph with `adegenet::spca()` (also requiring `adespatial`), uses seed 123 and 25 tuning permutations, and fits 10 components. It does not run the Rmds' separate nonspatial CCA comparison.
+The driver runs the spatial-model chunks of each C6 Rmd and the corresponding section of `Code/sr_sCCA_figures.R`. It loads and validates the saved Delaunay graph by default (optional rebuilding uses `adegenet::spca()` and `adespatial`), uses seed 123 and 25 tuning permutations, and fits 10 components. It does not run the Rmds' separate nonspatial CCA comparison.
 
 Outputs include:
 
 - `A26_components/A26_comp1.png` through `A26_comp10.png`.
 - `A27_components/A27_comp1.png` through `A27_comp10.png`.
-- Current spatial-model weights in `Data/a26_score.RData` and `Data/a27_score.RData`.
-- Rebuilt graphs in `Data/sPCA_a26metCluster.RData` and `Data/sPCA_a27metCluster.RData`.
+- Current spatial-model weights named `a26_score.RData` and `a27_score.RData` in the configured data-output directory.
+- When explicitly requested, rebuilt `sPCA_a26metCluster.RData` and `sPCA_a27metCluster.RData` in the configured data-output directory.
 - Tuning summaries, plotting state, session information, and diagnostics in `Figure/C6_diagnostics/`.
 
 The paired maps place metabolite scores V on the left and protein scores U on the right. PNGs use the supplied plotting code's orientation, plasma palette, 25 × 20 cm size, and 300 dpi resolution. The graph uses one coordinate per sample; all repeated sample cells are retained when rendering the flatmap.
@@ -76,7 +76,7 @@ options(proteinfix.projection_export_dir = "/absolute/path/to/output")
 rmarkdown::render("Code/A26A27_analysis_sCCA.Rmd", knit_root_dir = getwd())
 ```
 
-For components 1–10, it exports `proj_U*.tiff` and `proj_V*.tiff` at 600 dpi and paired `A27_to_A26_comp*.png` files at 300 dpi. Numerical results are saved in `Data/A27_to_A26_projection.rds` in the original fitted-model sign convention.
+For components 1–10, it exports `proj_U*.tiff` and `proj_V*.tiff` at 600 dpi and paired `A27_to_A26_comp*.png` files at 300 dpi. Numerical results are saved as `A27_to_A26_projection.rds` in the configured data-output directory in the original fitted-model sign convention.
 
 ### Composite layout and display signs
 

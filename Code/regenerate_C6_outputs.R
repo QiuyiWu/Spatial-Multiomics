@@ -1,6 +1,7 @@
 # Run from the repository root, for example:
 # Rscript --vanilla Code/regenerate_C6_outputs.R A26 /path/to/CorrectedFigure
-# Recomputes the spatial C6 model (seed 123, 25 permutations, 10 components),
+# Fits the spatial C6 model using a validated saved graph by default
+# (seed 123, 25 permutations, 10 components),
 # then runs the corresponding section of the supplied sr_sCCA_figures.R.
 args <- commandArgs(trailingOnly = TRUE)
 stopifnot(length(args) >= 2)

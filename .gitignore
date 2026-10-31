@@ -7,3 +7,6 @@
 # Generated manuscript figures and supplementary Table S3 exports
 /Figure/
 Supp_Table_S3*.xlsx
+
+# Regenerated analysis outputs; reference Data/ stays tracked
+/outputs/reproduction/

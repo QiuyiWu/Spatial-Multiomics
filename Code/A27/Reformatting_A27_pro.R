@@ -1,3 +1,4 @@
+source(here::here("Code", "pipeline_paths.R"))
 library(tidyr)
 a27.pro <- read_tsv("../../../data/A27_SNE_combine_protein.tsv")
 # SAME DukeID: "ID124351_01_SPD60_OA10222_10788_040325" "ID124351_01_SPD60_OA10222_10788_050725", REMOVE 050725 ONE. 
@@ -36,6 +37,6 @@ pro.a27.adj <- wide_data
 colnames(pro.a27.adj)[1:3] <- c("pro.sample", "pro.plate", "pro.sampletype")
 
 
-save(pro.a27.adj, file = "../../data/Adjusted_Protein_A27.RData") #  566 x 10253
+save(pro.a27.adj, file = proteinfix_output("Adjusted_Protein_A27.RData")) #  566 x 10253
 
 

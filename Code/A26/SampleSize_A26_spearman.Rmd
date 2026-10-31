@@ -12,6 +12,7 @@ output:
 ---
 
 ```{r setup, include=FALSE}
+source(here::here("Code", "pipeline_paths.R"))
 knitr::opts_chunk$set(echo = TRUE, fig_caption = TRUE, warning = FALSE, message = FALSE)
 library(here)
 source(here::here("Code", "exact_neighbor_orders.R"))
@@ -74,7 +75,7 @@ library(readxl)
 
 
 ```{r preparation}
-heldout_updated <- readxl::read_xlsx(here::here("Data", "Heldout_Updated_a26.xlsx")) %>% as.data.frame() %>% .[, c(2:5)]
+heldout_updated <- readxl::read_xlsx(proteinfix_input('Heldout_Updated_a26.xlsx')) %>% as.data.frame() %>% .[, c(2:5)]
 
 id_map <- heldout_updated %>%
   select(Mapped_AnalysisID, HeldOut_AnalysisID1, HeldOut_AnalysisID2, finalID) %>%
@@ -94,10 +95,10 @@ lookup <- setNames(id_map$finalID, id_map$ID)
 
 
 # finally 267 samples
-a26.met.data <- as.data.frame(read_excel(here::here("Data", "PostCombat_A26_Metabolite_beforeHeldout.xlsx")))
-a26.pro.data <- as.data.frame(read_excel(here::here("Data", "PostCombat_A26_Protein.xlsx"), sheet = "combat_corrected_unscaled"))
+a26.met.data <- as.data.frame(read_excel(proteinfix_input('PostCombat_A26_Metabolite_beforeHeldout.xlsx')))
+a26.pro.data <- as.data.frame(read_excel(proteinfix_input('PostCombat_A26_Protein.xlsx'), sheet = "combat_corrected_unscaled"))
 # convert Duke ID to Analysis ID
-dukeid.df <- data.frame(read_excel(here::here("Data", "A26_Bonnie_Flatmap_Grid_20260315.xlsx"), sheet = "Proteome_DukeIDs"))[, -1]
+dukeid.df <- data.frame(read_excel(proteinfix_input('A26_Bonnie_Flatmap_Grid_20260315.xlsx'), sheet = "Proteome_DukeIDs"))[, -1]
 colnames(a26.pro.data)[1] <- "DukeID"
 a26.pro.data$DukeID <- as.numeric(substr(a26.pro.data$DukeID, 3,8))
 # Join and replace DukeID with AnalysisID
@@ -106,7 +107,7 @@ a26.pro.data <- a26.pro.data %>%
   mutate(DukeID = AnalysisID) %>%       
   select(-AnalysisID)                   
 
-heldout_updated <- as.data.frame(read_excel(here::here("Data", "Heldout_Updated_a26.xlsx")))
+heldout_updated <- as.data.frame(read_excel(proteinfix_input('Heldout_Updated_a26.xlsx')))
 
 a26.met.data <- a26.met.data[a26.met.data$Sample %in% unique(heldout_updated$finalID ), ]
 a26.pro.data <- a26.pro.data[a26.pro.data$DukeID %in% unique(heldout_updated$finalID ), ]
@@ -118,7 +119,7 @@ rownames(a26.pro.data) <- a26.pro.data$DukeID
 
 
 ############
-load(here::here("Data", "sPCA_a26metCluster.RData"))
+load(proteinfix_input('sPCA_a26metCluster.RData'))
 
 nb <- spca_delaunay_metCluster$lw$neighbours  # adjacency list
 # convert to binary adjacency matrix
@@ -299,7 +300,7 @@ if (isTRUE(get0("s5_export", ifnotfound = FALSE))) dev.off()
 
 
 ```{r map met}
-map.df <- as.matrix(readxl::read_xlsx(here::here("Data", "A26_Bonnie_Flatmap_Grid_20260315.xlsx"), sheet = "AnalysisID_Matrix", col_names = F))
+map.df <- as.matrix(readxl::read_xlsx(proteinfix_input('A26_Bonnie_Flatmap_Grid_20260315.xlsx'), sheet = "AnalysisID_Matrix", col_names = F))
 map_chr <- as.character(map.df)
 replacement <- lookup[map_chr]
 map_chr <- ifelse(!is.na(replacement), replacement, map_chr)

@@ -1,3 +1,4 @@
+source(here::here("Code", "pipeline_paths.R"))
 library(tidyr)
 
 a26.pro <- read_tsv("../../../data/A26 Proteomics with QC variables.txt")
@@ -36,6 +37,6 @@ pro.a26.adj$pro.plate <- ifelse(pro.a26.adj$pro.plate == 1, "Plate1",
 
 
 
-save(pro.a26.adj, file = "Adjusted_Protein_A26.RData")
+save(pro.a26.adj, file = proteinfix_output("Adjusted_Protein_A26.RData"))
 
 

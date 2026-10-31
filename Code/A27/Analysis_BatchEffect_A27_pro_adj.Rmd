@@ -11,6 +11,7 @@ output:
 ---
 
 ```{r setup, include=FALSE}
+source(here::here("Code", "pipeline_paths.R"))
 library(Hmisc)
 library(sRDA)
 library(PMA)
@@ -43,7 +44,7 @@ For the Frizzle data, to visualize batch effect, produce a PCA plot on the prote
 ## Proteomics Data
 
 ```{r load proteomics A27}
-load(here::here("Data", "Adjusted_Protein_A27.RData"))
+load(proteinfix_input('Adjusted_Protein_A27.RData'))
 pro.comb.num <- as.data.frame(lapply(pro.a27.adj[,-c(1:4)], function(x) as.numeric(as.character(x))))
 ```
 
@@ -370,7 +371,7 @@ library(openxlsx)
 write.xlsx(
   list("combat_corrected_unscaled" = combat_corrected_unscaled,
        "combat_corrected_scaled"   = combat_corrected_scaled),
-  file = here::here("Data", "PostCombat_a27_Protein.xlsx"))
+  file = proteinfix_output('PostCombat_a27_Protein.xlsx'))
 
 
 ```
@@ -401,5 +402,5 @@ stopifnot(nrow(pre_pro_a27) == nrow(pre_pro_a27_metadata),
           all(is.finite(pre_pro_a27)), all(is.finite(post_pro_a27)))
 save(pre_pro_a27, post_pro_a27,
      pre_pro_a27_metadata, post_pro_a27_metadata,
-     file = here::here("Data", "pro_a27_PCAdata.RData"))
+     file = proteinfix_output('pro_a27_PCAdata.RData'))
 ```

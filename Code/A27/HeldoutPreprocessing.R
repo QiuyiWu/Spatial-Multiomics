@@ -1,3 +1,4 @@
+source(here::here("Code", "pipeline_paths.R"))
 # Run from the repository root using source("Code/A27/HeldoutPreprocessing.R").
 library(readxl)
 library(dplyr)
@@ -20,7 +21,7 @@ library(openxlsx)
 ######################################## 
 ############ Metabolomics Data #########
 ######################################## 
-a27.met.data <- read_excel(here::here("Data", "PostCombat_a27_Metabolite_beforeHeldout.xlsx"))
+a27.met.data <- read_excel(proteinfix_input('PostCombat_a27_Metabolite_beforeHeldout.xlsx'))
 
 
 #Function to detect outliers based on median ± k * MAD （detect outliers based on the median ± k × MAD (Median Absolute Deviation)）
@@ -64,7 +65,7 @@ ggplot(pca_met, aes(x=PC1, y=PC2, colour = plate  )) + #, color=color_indicator)
 ############ Proteomics Data ########### 
 ######################################## 
 
-a27.pro.data <- read_excel(here::here("Data", "PostCombat_a27_Protein.xlsx"), sheet = "combat_corrected_unscaled")
+a27.pro.data <- read_excel(proteinfix_input('PostCombat_a27_Protein.xlsx'), sheet = "combat_corrected_unscaled")
 
 # PCA + PLOT
 pca_pro <- prcomp(a27.pro.data[,-c(1:3)], scale. = TRUE)
@@ -75,7 +76,7 @@ pca_pro$color_indicator <- ifelse(pca_pro$sample_type == "SPQC", "black", pca_pr
 pca_pro$sample <- a27.pro.data$pro.sample
 
 # convert Duke ID to Analysis ID
-dukeid.df <- data.frame(read_excel(here::here("Data", "A27_Frizzle_Flatmap_Grid_20260317.xlsx"), sheet = "Decoder"))
+dukeid.df <- data.frame(read_excel(proteinfix_input('A27_Frizzle_Flatmap_Grid_20260317.xlsx'), sheet = "Decoder"))
 dukeid.df1 <- dukeid.df[, c("AnalysisID", "DukeID")]
 dukeid.df2 <- dukeid.df[, c("SplitAnalysisID", "SplitDukeID")]
 colnames(dukeid.df2) <- c("AnalysisID", "DukeID")
@@ -134,7 +135,7 @@ pca_met <- pca_met[pca_met$sample %in% common_samples,]
 
 
 # HELDOUT
-heldout.df <- data.frame(read_excel(here::here("Data", "A27_Frizzle_Flatmap_Grid_20260317.xlsx"), sheet = "Decoder"))
+heldout.df <- data.frame(read_excel(proteinfix_input('A27_Frizzle_Flatmap_Grid_20260317.xlsx'), sheet = "Decoder"))
 heldout.df <- heldout.df[, c("AnalysisID", "SplitAnalysisID")]
 colnames(heldout.df) <- c("Mapped_AnalysisID", "HeldOut_AnalysisID1")
 
@@ -201,5 +202,5 @@ k_table_wide <- heldout.df %>%
     k_held1   = lookup_k(HeldOut_AnalysisID1)
   )
 
-write.xlsx(k_table_wide, here::here("Data", "Heldout_Updated_a27.xlsx"))
+write.xlsx(k_table_wide, proteinfix_output('Heldout_Updated_a27.xlsx'))
 

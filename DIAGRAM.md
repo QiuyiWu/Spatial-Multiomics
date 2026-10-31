@@ -12,7 +12,7 @@ flowchart TD
   P2 --> C3
   C3 --> C4[C4: aligned selected samples]
   C4 --> C5[C5: analyte clustering]
-  C5 --> C6[C6: rebuild spatial graph and fit sr-sCCA]
+  C5 --> C6[C6: validate saved graph and fit sr-sCCA]
   C6 --> Maps[Component maps, cross-animal projection, Table S3]
   M1 --> PCA[Saved pre/post PCA matrices]
   P2 --> PCA
@@ -47,3 +47,12 @@ The M1/P2 PCA exports precede heldout selection. C3 selects candidates; C4 appli
 ## External inputs
 
 P1 retains legacy paths requiring local adjustment. A27 P1 also reads `20260120_122736_Identifications.tsv`; this annotation input is not tracked in the repository. See [external-input documentation](README_DukeLibrary.md).
+
+## Output modes
+
+Reproduction mode writes generated data to `outputs/reproduction/Data/` by default.
+Downstream stages prefer those regenerated inputs and otherwise use `Data/` references.
+Use a fresh run folder for an independent rerun, then compare with
+`Code/compare_reproduction.R`. Update mode deliberately replaces files in `Data/`.
+Graph rebuilding requires a separate explicit option; saved graphs are validated
+and loaded by default. See [mode configuration](README.md#reproduction-mode-and-reference-updates).

@@ -27,9 +27,76 @@ git lfs pull
 renv::restore()
 ```
 
-The repository's `.Rprofile` activates `renv`. Install `renv` first if it is unavailable. Use the recorded R version where possible; operating-system dependencies for spatial and compiled packages may also be required. The lockfile includes `adegenet`, the runtime-required `adespatial`, and their dependencies, needed to rebuild the C6 sPCA graphs.
+The repository's `.Rprofile` activates `renv`. Install `renv` first if it is unavailable. Use the recorded R version where possible; operating-system dependencies for spatial and compiled packages may also be required. The lockfile includes `adegenet`, the runtime-required `adespatial`, and their dependencies for optional C6 graph rebuilding.
 
 The commands below assume the restored project environment. `Rscript --vanilla` bypasses `.Rprofile`; use it only if the intended packages have been loaded by another explicit setup.
+
+## Reproduction mode and reference updates
+
+The pipeline defaults to **reproduction mode**. Generated data artifacts go to
+`outputs/reproduction/Data/`, leaving committed `Data/` files intact. This applies
+to P1 output objects, M1/P2 workbooks and PCA objects, C3 selections, C4/C5 objects,
+C6 fitted weights, optional rebuilt graphs, and cross-animal projection results.
+Figures retain their documented figure/output directories.
+
+`Code/pipeline_paths.R` routes downstream reads to a regenerated file in the same
+run folder when present, otherwise to the committed `Data/` reference. Every
+resolved input and output path is printed. This permits starting from any saved
+stage; for an independent full rerun, use a new empty run folder and execute the
+stages in order so old run files cannot be reused accidentally.
+
+Configure one R session with:
+
+```r
+options(proteinfix.mode = "reproduce",
+        proteinfix.run_dir = here::here("outputs", "reproduction"))
+```
+
+For commands in separate R processes, share the configuration through environment
+variables (use an absolute run path):
+
+```sh
+export PROTEINFIX_MODE=reproduce
+export PROTEINFIX_RUN_DIR=/absolute/path/to/reproduction-run
+```
+
+C6 **loads saved spatial graphs by default** and checks sample IDs, order,
+coordinates, and adjacency validity. An incompatible graph stops the analysis;
+it is not silently reused or rebuilt. To deliberately rebuild:
+
+```r
+options(proteinfix.rebuild_graph = TRUE)
+```
+
+or set `PROTEINFIX_REBUILD_GRAPH=true` for command-line runs. Rebuilt graphs follow
+the same output routing. `adegenet` and `adespatial` are needed for this optional
+rebuild, not the default graph-loading step.
+
+After regeneration, compare data contents with committed references:
+
+```sh
+Rscript Code/compare_reproduction.R /absolute/path/to/reproduction-run
+```
+
+The report is written to the run folder's `comparison.csv`. It compares workbook
+sheets and values, R data objects, and graph IDs/coordinates/neighbors with numeric
+tolerance 1e-8. Binary serialization and Excel timestamps are not used as evidence
+of a numerical change. The report covers files present in that run folder; it does
+not certify that every pipeline stage was run. Investigate differences before
+updating reference data; fitted-component sign changes can require interpretation.
+
+**Update mode is explicit and does replace reference files.** Set
+`options(proteinfix.mode = "update")` or `PROTEINFIX_MODE=update`, then rerun the
+intended stage. Update-mode reads and writes use `Data/`. Reset to reproduction
+mode afterward and review the resulting Git diff before committing. No existing
+references are promoted automatically.
+
+To check routing, C3/C4 results, graph validation/rebuilding, and reference-file
+preservation in a temporary folder:
+
+```sh
+Rscript Code/tests/test_reproduction_mode.R
+```
 
 ## What ProteinFix changes
 
@@ -56,7 +123,7 @@ Processed inputs are included under `Data/` through Git LFS. To reproduce downst
 | A26 | [Reformatting_A26_pro.R](Code/A26/Reformatting_A26_pro.R) | `A26 Proteomics with QC variables.txt` | `pro.a26.adj` in `Data/Adjusted_Protein_A26.RData` |
 | A27 | [Reformatting_A27_pro.R](Code/A27/Reformatting_A27_pro.R) | `A27_SNE_combine_protein.tsv` and `20260120_122736_Identifications.tsv` | `pro.a27.adj` in `Data/Adjusted_Protein_A27.RData` |
 
-The P1 scripts retain legacy relative input/output paths. Set these paths to your input locations and the repository's `Data/` directory before running them. They also assume some functions are already attached; load `readr`, `dplyr`, and `tidyr` in a clean session. The A27 identification file supplies plate and SPQC annotations and is an additional required input; its availability must be checked separately from the two large quantification files.
+The P1 scripts retain legacy relative input paths. Set the input paths to your file locations before running them; save destinations follow the shared mode configuration. They also assume some functions are already attached; load `readr`, `dplyr`, and `tidyr` in a clean session. The A27 identification file supplies plate and SPQC annotations and is an additional required input; its availability must be checked separately from the two large quantification files.
 
 A26 P1 produces 428 samples and 9,990 protein variables. A27 P1 produces 566 samples and 10,253 protein variables. Metadata columns are additional.
 
@@ -125,9 +192,9 @@ Rscript Code/regenerate_C6_outputs.R A26 /absolute/path/to/CorrectedFigure
 Rscript Code/regenerate_C6_outputs.R A27 /absolute/path/to/CorrectedFigure
 ```
 
-The driver runs the spatial-analysis chunks of the corresponding `*_analysis_sCCA_laplacians.Rmd`, rebuilding the Delaunay graph with `adegenet::spca()`. It uses seed 123, 25 tuning permutations, and 10 components. Spatially matched sample counts are 233 for A26 and 508 for A27.
+The driver runs the spatial-analysis chunks of the corresponding `*_analysis_sCCA_laplacians.Rmd`, loading and validating the saved Delaunay graph by default (or rebuilding it when explicitly requested). It uses seed 123, 25 tuning permutations, and 10 components. Spatially matched sample counts are 233 for A26 and 508 for A27.
 
-The driver saves the current graphs and spatial-model weights under `Data/`, exports paired component maps into `A26_components/` and `A27_components/`, and writes diagnostics under `Figure/C6_diagnostics/`. The A26 run also exports Table S3. It does not run the separate nonspatial CCA comparison. See [figure reproduction](README_Figures.md) for output names, presentation conventions, and supplementary-table annotations.
+The driver saves spatial-model weights, and graphs only when explicitly rebuilt, to the configured data-output directory, exports paired component maps into `A26_components/` and `A27_components/`, and writes diagnostics under `Figure/C6_diagnostics/`. The A26 run also exports Table S3. It does not run the separate nonspatial CCA comparison. See [figure reproduction](README_Figures.md) for output names, presentation conventions, and supplementary-table annotations.
 
 ## Manuscript figures
 

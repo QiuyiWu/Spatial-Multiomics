@@ -1,3 +1,4 @@
+source(here::here("Code", "pipeline_paths.R"))
 
 library(Hmisc)
 library(sRDA)
@@ -30,10 +31,10 @@ library(htmltools)
 # C4. Selecting Mapping Samples ######
 ##################################################
 # finally 267 samples
-a26.met.data <- as.data.frame(read_excel(here::here("Data", "PostCombat_A26_Metabolite_beforeHeldout.xlsx")))
-a26.pro.data <- as.data.frame(read_excel(here::here("Data", "PostCombat_A26_Protein.xlsx"), sheet = "combat_corrected_unscaled"))
+a26.met.data <- as.data.frame(read_excel(proteinfix_input('PostCombat_A26_Metabolite_beforeHeldout.xlsx')))
+a26.pro.data <- as.data.frame(read_excel(proteinfix_input('PostCombat_A26_Protein.xlsx'), sheet = "combat_corrected_unscaled"))
 # convert Duke ID to Analysis ID
-dukeid.df <- data.frame(read_excel(here::here("Data", "A26_Bonnie_Flatmap_Grid_20260315.xlsx"), sheet = "Proteome_DukeIDs"))[, -1]
+dukeid.df <- data.frame(read_excel(proteinfix_input('A26_Bonnie_Flatmap_Grid_20260315.xlsx'), sheet = "Proteome_DukeIDs"))[, -1]
 colnames(a26.pro.data)[1] <- "DukeID"
 a26.pro.data$DukeID <- as.numeric(substr(a26.pro.data$DukeID, 3,8))
 # Join and replace DukeID with AnalysisID
@@ -42,7 +43,7 @@ a26.pro.data <- a26.pro.data %>%
   mutate(DukeID = AnalysisID) %>%       # Replace values with AnalysisIDs
   select(-AnalysisID)                   
 
-heldout_updated <- as.data.frame(read_excel(here::here("Data", "Heldout_Updated_a26.xlsx")))
+heldout_updated <- as.data.frame(read_excel(proteinfix_input('Heldout_Updated_a26.xlsx')))
 
 a26.met.data <- a26.met.data[a26.met.data$Sample %in% unique(heldout_updated$finalID ), ]
 a26.pro.data <- a26.pro.data[a26.pro.data$DukeID %in% unique(heldout_updated$finalID ), ]
@@ -72,7 +73,7 @@ stopifnot(!anyNA(heldout_updated$finalID),
           setequal(as.character(a26.met.data$Sample), as.character(heldout_updated$finalID)),
           all(is.finite(as.matrix(a26.met.data[, -seq_len(3)]))),
           all(is.finite(as.matrix(a26.pro.data[, -(1:3)]))))
-save(a26.met.data, a26.pro.data, file = here::here("Data", "a26.RData"))
+save(a26.met.data, a26.pro.data, file = proteinfix_output('a26.RData'))
 
 
 ##################################################
@@ -179,7 +180,7 @@ PChclust.score <- function(x, group){
 
 
 ### LOAD DATA
-load(here::here("Data", "a26.RData"))
+load(proteinfix_input('a26.RData'))
 met_data <- a26.met.data 
 pro_data <- a26.pro.data 
 
@@ -212,7 +213,7 @@ stopifnot(identical(rownames(a26.met.cluster$score), rownames(a26.pro.cluster$sc
           all(is.finite(a26.met.cluster$score)), all(is.finite(a26.pro.cluster$score)),
           all(is.finite(a26.met.cluster$loading)), all(is.finite(a26.pro.cluster$loading)))
 save(a26.met.cluster, a26.pro.cluster,
-     file = here::here("Data", "A26_PChclust.RData"))
+     file = proteinfix_output('A26_PChclust.RData'))
 
 
 
