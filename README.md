@@ -126,8 +126,10 @@ Filter both metabolomics and proteomics to the `finalID` selections recorded in 
 
 ### C5. Clustering Analysis
 
-* Output: `A26_PChclust.RData`
-* Code: `CombineClustering.R`
+* Output: `Data/A26_PChclust.RData`
+* Code: C5 section of `Code/A26/CombineClustering.R`
+* Input: `Data/a26.RData` from C4, with aligned samples across modalities.
+* Settings: Spearman correlations, average linkage, and a 70% PC1 variance threshold. Constant protein variables are excluded before clustering.
 
 Contains:
 
@@ -230,8 +232,10 @@ Filter both metabolomics and proteomics to the `finalID` selections recorded in 
 
 ### C5. Clustering Analysis
 
-* Output: `A27_PChclust.RData`
-* Code: `CombineClustering.R`
+* Output: `Data/A27_PChclust.RData`
+* Code: C5 section of `Code/A27/CombineClustering.R`
+* Input: `Data/a27.RData` from C4, with aligned samples across modalities.
+* Settings: Spearman correlations, average linkage, and a 70% PC1 variance threshold. Constant protein variables are excluded before clustering.
 
 ---
 

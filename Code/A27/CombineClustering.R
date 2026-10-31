@@ -187,8 +187,7 @@ PChclust.score <- function(x, group){
 
 
 ### LOAD DATA
-setwd("~/Documents/Research/Postdoc/BrainMultiomic/A27")
-load("../data/a27.RData")
+load(here::here("Data", "a27.RData"))
 met_data <- a27.met.data 
 pro_data <- a27.pro.data 
 
@@ -196,7 +195,7 @@ pro_data <- a27.pro.data
 # MET data
 met_matrix <- data.frame(met_data)
 rownames(met_matrix) <- met_data$Sample
-met_matrix <- met_matrix[,-(1:3)]
+met_matrix <- met_matrix[,-(1:2)]
 met_matrix <- scale(met_matrix)
 x <- met_matrix
 group <- PChclust(x, method.hclust="average", min_pc1_var=0.7, min_cluster_size = 1)
@@ -214,7 +213,14 @@ x <- pro_matrix
 group <- PChclust(x, method.hclust="average", min_pc1_var=0.7, min_cluster_size = 1)
 a27.pro.cluster <- PChclust.score(x, group)
 
-#save(a27.met.cluster, a27.pro.cluster, file = "../data/a27_PChclust.RData")
+# Validate C5 outputs before exporting them for downstream analyses.
+stopifnot(identical(rownames(a27.met.cluster$score), rownames(a27.pro.cluster$score)),
+          setequal(names(a27.met.cluster$group), colnames(met_matrix)),
+          setequal(names(a27.pro.cluster$group), colnames(pro_matrix)),
+          all(is.finite(a27.met.cluster$score)), all(is.finite(a27.pro.cluster$score)),
+          all(is.finite(a27.met.cluster$loading)), all(is.finite(a27.pro.cluster$loading)))
+save(a27.met.cluster, a27.pro.cluster,
+     file = here::here("Data", "A27_PChclust.RData"))
 
 
 

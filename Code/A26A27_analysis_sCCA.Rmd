@@ -271,7 +271,7 @@ Ytc <- Y_tilde
 
 # load A27 score weights
 load(here::here("Data", "a27_score.RData"))
-load(here::here("Data", "a27_PChclust.RData"))
+load(here::here("Data", "A27_PChclust.RData"))
 scca_res_a27 <- scca_res
 ai27 <- scca_res_a27$u
 bi27 <- scca_res_a27$v

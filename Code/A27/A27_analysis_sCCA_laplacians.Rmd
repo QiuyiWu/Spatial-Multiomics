@@ -115,7 +115,7 @@ map.df<- matrix(as.numeric(final_vec), nrow = nrow(map.df), ncol = ncol(map.df))
 
 
 
-load(here::here("Data", "a27_PChclust.RData"))
+load(here::here("Data", "A27_PChclust.RData"))
 stopifnot(identical(
   rownames(a27.pro.cluster$score),
   rownames(a27.met.cluster$score)

@@ -179,6 +179,7 @@ PChclust.score <- function(x, group){
 
 
 ### LOAD DATA
+load(here::here("Data", "a26.RData"))
 met_data <- a26.met.data 
 pro_data <- a26.pro.data 
 
@@ -204,7 +205,14 @@ x <- pro_matrix
 group <- PChclust(x, method.hclust="average", min_pc1_var=0.7, min_cluster_size = 1)
 a26.pro.cluster <- PChclust.score(x, group)
 
-#save(a26.met.cluster, a26.pro.cluster, file = "../data/A26_PChclust.RData")
+# Validate C5 outputs before exporting them for downstream analyses.
+stopifnot(identical(rownames(a26.met.cluster$score), rownames(a26.pro.cluster$score)),
+          setequal(names(a26.met.cluster$group), colnames(met_matrix)),
+          setequal(names(a26.pro.cluster$group), colnames(pro_matrix)),
+          all(is.finite(a26.met.cluster$score)), all(is.finite(a26.pro.cluster$score)),
+          all(is.finite(a26.met.cluster$loading)), all(is.finite(a26.pro.cluster$loading)))
+save(a26.met.cluster, a26.pro.cluster,
+     file = here::here("Data", "A26_PChclust.RData"))
 
 
 

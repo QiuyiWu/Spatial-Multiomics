@@ -687,7 +687,7 @@ print(cor_results.a26[, c("Correlation", "P_value")])
 
 ```{r a27}
 load(here::here("Data", "a27_score.RData"))
-load(here::here("Data", "a27_PChclust.RData"))
+load(here::here("Data", "A27_PChclust.RData"))
 scca_res_a27 <- scca_res
 bi27 <- scca_res_a27$v
 
