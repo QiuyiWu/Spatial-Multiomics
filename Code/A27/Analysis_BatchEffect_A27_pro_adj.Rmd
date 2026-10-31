@@ -68,9 +68,9 @@ datatable(missingNumber.pro,
 
 
 
-# LOD/2 imputation for the missingness 
+# half minimum observed intensity imputation for the missingness
 pro.comb.num[] <- apply(pro.comb.num, 2, function(x) {
-  x[is.na(x)] <- min(x, na.rm = TRUE)/2
+  x[is.na(x)] <- min(x, na.rm = TRUE)-1
   return(x)
 })
 
