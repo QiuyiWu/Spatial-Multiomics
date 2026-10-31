@@ -178,7 +178,7 @@ Steps:
 
 * Code: `Reformatting_A27_pro.R`
 
-This step converts **log2-transformed long-format proteomics data** into a **wide-format dataset**, which serves as the starting point for all downstream proteomics analyses.
+This step converts **long-format proteomics data** into a **log2-transformed wide-format dataset**, which serves as the starting point for all downstream proteomics analyses.
 
 ---
 
