@@ -22,7 +22,7 @@ A deposit URL or accession is not recorded here. Obtain the files from the study
 1. Obtain the quantification files and the A27 annotation file.
 2. Load `readr`, `dplyr`, and `tidyr` in a clean R session.
 3. Adjust the scripts' legacy relative paths to the downloaded inputs.
-4. Choose the reproduction/update mode described in [README.md](README.md#reproduction-mode-and-reference-updates). P1 saves `Adjusted_Protein_A26.RData` and `Adjusted_Protein_A27.RData` to that mode’s data-output directory.
+4. Choose the reproduction/update mode described in [REPRODUCIBILITY.md](REPRODUCIBILITY.md#reproduction-mode-and-reference-updates). P1 saves `Adjusted_Protein_A26.RData` and `Adjusted_Protein_A27.RData` to that mode’s data-output directory.
 5. Run the scripts, then continue with M1/P2 and C3–C6 as described in [README.md](README.md).
 
 The saved objects contain metadata in addition to 9,990 A26 or 10,253 A27 protein variables. Both outputs are on the log2 scale before P2 imputation.

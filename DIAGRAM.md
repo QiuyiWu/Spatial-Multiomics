@@ -1,6 +1,6 @@
-# ProteinFix workflow
+# QCFix workflow
 
-For setup, inputs, dimensions, and commands, see [README.md](README.md). For manuscript exports, see [README_Figures.md](README_Figures.md).
+For setup, inputs, dimensions, and commands, see [REPRODUCIBILITY.md](REPRODUCIBILITY.md). For manuscript exports, see [README_Figures.md](README_Figures.md).
 
 ```mermaid
 flowchart TD
@@ -55,4 +55,4 @@ Downstream stages prefer those regenerated inputs and otherwise use `Data/` refe
 Use a fresh run folder for an independent rerun, then compare with
 `Code/compare_reproduction.R`. Update mode deliberately replaces files in `Data/`.
 Graph rebuilding requires a separate explicit option; saved graphs are validated
-and loaded by default. See [mode configuration](README.md#reproduction-mode-and-reference-updates).
+and loaded by default. See [mode configuration](REPRODUCIBILITY.md#reproduction-mode-and-reference-updates).

@@ -1,6 +1,6 @@
 # Manuscript figures and supplementary Table S3
 
-Use the **QCFix** branch with Git LFS inputs downloaded and the R environment restored. Run commands from the repository root. Data inputs/outputs follow the shared reproduction/update mode described in [README.md](README.md#reproduction-mode-and-reference-updates). [README.md](README.md) documents the analysis stages; [DIAGRAM.md](DIAGRAM.md) shows their dependencies.
+Use the **QCFix** branch with Git LFS inputs downloaded and the R environment restored. Run commands from the repository root. Data inputs/outputs follow the shared reproduction/update mode described in [REPRODUCIBILITY.md](REPRODUCIBILITY.md#reproduction-mode-and-reference-updates). [README.md](README.md) documents the analysis stages; [DIAGRAM.md](DIAGRAM.md) shows their dependencies.
 
 The commands below use the activated project library. Adding `--vanilla` bypasses the repository's `renv` startup and requires a separate explicit package setup.
 
