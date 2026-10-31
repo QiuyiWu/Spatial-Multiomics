@@ -61,7 +61,7 @@ Steps:
 * Log transform
 * Subtract SPQC
 * ComBat batch correction
-* PCA analysis (exclude HeldOut_AnalysisIDs)
+* PCA analysis (before heldout selection)
 
 ---
 
@@ -91,13 +91,15 @@ Steps:
 * Imputation: half the minimum observed intensity
 * Dilution factor
 * ComBat batch correction
-* PCA analysis
+* PCA analysis (before heldout selection)
 
 ---
 
 ## Combined Analysis
 
 ### C3. Heldout Preprocessing
+
+Compare eligible mapped and heldout candidates and record the selected `finalID` for each spatial location.
 
 * Output: `Data/Heldout_Updated_a26.xlsx` (267 samples selected)
 * Code: `Code/A26/HeldoutPreprocessing.R`
@@ -111,6 +113,8 @@ Key idea:
 ---
 
 ### C4. Sample Selection
+
+Filter both metabolomics and proteomics to the `finalID` selections recorded in C3.
 
 * Output: `a26.RData`
 
@@ -162,7 +166,7 @@ Steps:
 * Log transform
 * Subtract SPQC
 * ComBat
-* PCA
+* PCA analysis (before heldout selection)
 
 ---
 
@@ -195,13 +199,15 @@ Steps:
 * Imputation: half the minimum observed intensity
 * Dilution factor
 * ComBat
-* PCA
+* PCA analysis (before heldout selection)
 
 ---
 
 ## Combined Analysis
 
 ### C3. Heldout Preprocessing
+
+Compare eligible mapped and heldout candidates and record the selected `finalID` for each spatial location.
 
 * Output: `Data/Heldout_Updated_a27.xlsx` (527 samples)
 * Code: `Code/A27/HeldoutPreprocessing.R`
@@ -211,6 +217,8 @@ Steps:
 ---
 
 ### C4. Sample Selection
+
+Filter both metabolomics and proteomics to the `finalID` selections recorded in C3.
 
 * Output: `a27.RData`
 
