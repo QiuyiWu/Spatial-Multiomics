@@ -15,6 +15,7 @@ output:
 knitr::opts_chunk$set(echo = TRUE, fig_caption = TRUE, warning = FALSE, message = FALSE)
 library(here)
 source(here::here("Code", "exact_neighbor_orders.R"))
+source(here::here("Code", "protein_cluster_contributions.R"))
 
 ## ---- Fig 4 (per-panel corr maps) + S5 (decay boxplots) export parameters ----
 ## Fig 4: individual raw metabolite/protein correlation-map panels.
@@ -570,8 +571,8 @@ if (isTRUE(get0("fig4_export", ifnotfound = FALSE)))
 
 Use loading to aggregate proteins to clusters.
 
-```{r pro cluster, eval=FALSE}
-a27.pro.cluster <- readxl::read_xlsx(here::here("Data", "pro_cluster_contribution_a27.xlsx"), sheet = 1) %>% data.frame()
+```{r pro cluster}
+a27.pro.cluster <- protein_cluster_contributions("A27")
 
 make_sample_by_cluster_weighted_sum <- function(X.sub.pro, a27.pro.cluster) {
   X <- as.matrix(X.sub.pro)

@@ -97,3 +97,21 @@ Constant protein columns are omitted because their standardized values are undef
 Graph shells are checked against igraph shortest paths, and per-sample means are
 checked against a separately computed sample correlation matrix. Result RDS files
 and diagnostic plots are saved alongside the figure.
+
+### Reproduce corrected Figure S5
+
+```sh
+Rscript --vanilla Code/regenerate_FigureS5.R /path/to/output
+```
+
+The S5 runner executes the preparation, feature standardization, and protein-cluster
+aggregation from the same two SampleSize Rmds used for Figure 4. It uses current C5
+protein loadings from `A26_PChclust.RData` and `A27_PChclust.RData`, replacing the
+separately exported contribution workbooks. The left column summarizes metabolite
+correlations; the right summarizes correlations across loading-weighted protein
+clusters. Each box contains unique undirected sample-pair Spearman correlations
+for one exact neighbor order, not per-sample averages. Median bars and 1.5-IQR
+whiskers are shown without outlier symbols; connected dots indicate means. Orders
+are 1/2/3 for A26 and 1/3/5 for A27. TIFF (600 dpi), PNG, numeric RDS results, and
+diagnostic plots are exported. Direct sample-pair calculations verify a subset of
+the matrix-based Spearman results.
