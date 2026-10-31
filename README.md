@@ -99,8 +99,9 @@ Steps:
 
 ### C3. Heldout Preprocessing
 
-* Output: `Heldout_Updated.xlsx` (267 samples selected)
-* Code: `HeldoutPreprocessing.R`
+* Output: `Data/Heldout_Updated_a26.xlsx` (267 samples selected)
+* Code: `Code/A26/HeldoutPreprocessing.R`
+* Run from the repository root: `source("Code/A26/HeldoutPreprocessing.R")`
 
 Key idea:
 
@@ -202,8 +203,10 @@ Steps:
 
 ### C3. Heldout Preprocessing
 
-* Output: `Heldout_Updated_a27.xlsx` (527 samples)
-* Code: `HeldoutPreprocessing.R`
+* Output: `Data/Heldout_Updated_a27.xlsx` (527 samples)
+* Code: `Code/A27/HeldoutPreprocessing.R`
+* Run from the repository root: `source("Code/A27/HeldoutPreprocessing.R")`
+* Metabolomics PCA uses all 343 analytes, excluding only the two metadata columns.
 
 ---
 
