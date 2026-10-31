@@ -1,6 +1,6 @@
 # Manuscript figures and supplementary Table S3
 
-Use the **ProteinFix** branch with Git LFS inputs downloaded and the R environment restored. Run commands from the repository root. Data inputs/outputs follow the shared reproduction/update mode described in [README.md](README.md#reproduction-mode-and-reference-updates). [README.md](README.md) documents the analysis stages; [DIAGRAM.md](DIAGRAM.md) shows their dependencies.
+Use the **QCFix** branch with Git LFS inputs downloaded and the R environment restored. Run commands from the repository root. Data inputs/outputs follow the shared reproduction/update mode described in [README.md](README.md#reproduction-mode-and-reference-updates). [README.md](README.md) documents the analysis stages; [DIAGRAM.md](DIAGRAM.md) shows their dependencies.
 
 The commands below use the activated project library. Adding `--vanilla` bypasses the repository's `renv` startup and requires a separate explicit package setup.
 
@@ -78,9 +78,25 @@ rmarkdown::render("Code/A26A27_analysis_sCCA.Rmd", knit_root_dir = getwd())
 
 For components 1–10, it exports `proj_U*.tiff` and `proj_V*.tiff` at 600 dpi and paired `A27_to_A26_comp*.png` files at 300 dpi. Numerical results are saved as `A27_to_A26_projection.rds` in the configured data-output directory in the original fitted-model sign convention.
 
-### Composite layout and display signs
+### Composite layout
 
-The component export scripts produce paired maps, not the final six-panel Figure 3 or the two ten-panel supplementary composites. Assemble those manuscript layouts from the component PNGs.
+The component export scripts produce paired maps. Assemble the final manuscript TIFFs separately using the following workflow:
+
+| Final figure | Component PNGs used |
+| --- | --- |
+| `Figure3.tiff` | Selected PNGs from `A26_components/`, `A27_components/`, and `A27_to_A26_components/`; each folder contains components 1–10. |
+| `Figure S3.tiff` | All 10 PNGs from `A26_components/`. |
+| `Figure S4.tiff` | All 10 PNGs from `A27_components/`. |
+
+The committed scripts do not perform this final selection/layout/TIFF assembly. Preserve the selection, layout, and export settings with the manuscript assets to reproduce the assembled figures. The component PNGs are exported at 300 dpi; the separate 600-dpi TIFF panel settings below do not establish the effective resolution of these assembled figures.
+
+### Separate individual TIFF panel exports in the Rmds
+
+The A26 and A27 C6 Rmds also contain export blocks for individual U (protein) and V (metabolite) maps, controlled by `export_maps`, with `fmt = "tiff"` and `dpi = 600`. Their default destinations are `Figure/A26_components/a26_U*.tiff` and `a26_V*.tiff`, and `Figure/A27_components/a27_U*.tiff` and `a27_V*.tiff`. The projection Rmd similarly exports `proj_U*.tiff` and `proj_V*.tiff` alongside its paired PNGs.
+
+These individual TIFF panels are separate from the PNG inputs used for Figures 3, S3, and S4. `regenerate_C6_outputs.R` runs selected model chunks and the paired PNG plotting script; it does not execute the C6 Rmds' individual-map TIFF export blocks. Figures 4 and S5, by contrast, are exported directly as complete 600-dpi TIFF figures by their regeneration scripts; their PNG copies are additional outputs. Figure 5 is exported directly as TIFF by its PCA Rmd.
+
+### Display signs
 
 The corrected local presentation set also uses paired display-sign flips for A27 components 1 and 3 and their A27-to-A26 projections. These flips are presentation edits; the committed fitted models retain their original signs. They are not applied automatically by the export scripts. Record any sign orientation with the final manuscript assets and flip both U and V together.
 

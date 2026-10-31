@@ -1,4 +1,4 @@
-# Spatial Multiomics — ProteinFix
+# Spatial Multiomics — QCFix
 
 Analysis code for *Integrated metabolomics and proteomics from voxelated cortical hemispheres of adult rhesus monkeys*, by Qiuyi Wu, Alev M. Brigande, Michael W. Lutz, Pixu Shi, and Anita A. Disney.
 
@@ -14,7 +14,7 @@ Run analyses from the repository root. Files under `Data/` are tracked with Git 
 
 ```sh
 git lfs install
-git clone --branch ProteinFix https://github.com/QiuyiWu/Spatial-Multiomics.git
+git clone --branch QCFix https://github.com/QiuyiWu/Spatial-Multiomics.git
 cd Spatial-Multiomics
 git lfs pull
 ```
@@ -185,5 +185,20 @@ The driver saves spatial-model weights, and graphs only when explicitly rebuilt,
 ## Manuscript figures
 
 Figure 2 and S2 use the four pre/post PCA objects. Figure 3 and the additional component maps use C6 and the cross-animal projection. Figure 4 and S5 use corrected exact-distance neighbor groups. Figure 5 is a separate **metabolomics-only** U5/A26/A27 PCA; it does not use proteomics imputation.
+
+The manuscript export workflow distinguishes component PNGs from final TIFF figures:
+
+| Figure | Source and final export |
+| --- | --- |
+| 3 | Select component PNGs from `A26_components/`, `A27_components/`, and `A27_to_A26_components/` (10 PNGs per folder), then assemble and save `Figure3.tiff`. |
+| S3 | Assemble all 10 component PNGs from `A26_components/` and save `Figure S3.tiff`. |
+| S4 | Assemble all 10 component PNGs from `A27_components/` and save `Figure S4.tiff`. |
+| 4 | `Code/regenerate_Figure4.R` directly exports `Figure4_corrected.tiff` at 600 dpi, as well as a PNG copy. |
+| 5 | `Code/loadingComp_U5A26A27_met.Rmd` directly exports `Figure/fig5_pca.tiff` at 600 dpi. |
+| S5 | `Code/regenerate_FigureS5.R` directly exports `FigureS5_corrected.tiff` at 600 dpi, as well as a PNG copy. |
+
+`Code/sr_sCCA_figures.R`, invoked by `Code/regenerate_C6_outputs.R`, produces the A26/A27 paired component PNGs; it does not assemble the final TIFFs for Figures 3, S3, or S4. Those final layouts require a separate assembly step. The cross-animal Rmd produces the projection component PNGs.
+
+The A26/A27 C6 Rmds also contain separate 600-dpi TIFF exports for individual U (protein) and V (metabolite) maps (`a26_U*.tiff`, `a26_V*.tiff`, `a27_U*.tiff`, and `a27_V*.tiff`); the projection Rmd exports `proj_U*.tiff` and `proj_V*.tiff`. These are additional panel exports, not the PNG-based assembly workflow above. The C6 driver does not execute the Rmds' individual-map export blocks. The 600-dpi setting for those TIFF panels does not describe the resolution of the PNG-based final composites. See [README_Figures.md](README_Figures.md) for commands, output locations, and assembly details.
 
 `Figure/` and exported `Supp_Table_S3*.xlsx` workbooks are ignored by Git. Generated files in an external output folder are not automatically published to this branch. Follow [README_Figures.md](README_Figures.md) for the current reproducible exports and the remaining presentation steps.
