@@ -71,3 +71,9 @@ The driver evaluates the spatial-model chunks in the corresponding C6 Rmd, rebui
 Outputs are `A26_components/A26_comp1.png` through `A26_comp10.png`, and the analogous A27 files. The A26 run also creates `Supp_Table_S3_protein_clusters_min10_UPDATED.xlsx`: one worksheet per A26 protein cluster containing at least 10 proteins, with signed loadings ranked by absolute magnitude. Its worksheet count is derived from the current clustering, rather than fixed to the old count of 73. Choose a new output directory if the supplementary workbook already exists.
 
 The spatial model weights and rebuilt sPCA graphs are saved under `Data`. Intermediate plotting state, tuning summaries, and diagnostics are saved under the ignored `Figure/C6_diagnostics` folder. The driver does not run the Rmds' separate nonspatial CCA comparison.
+
+## A27-derived components projected onto A26
+
+`Code/A26A27_analysis_sCCA.Rmd` uses the current A27 C6 weights, A27 cluster loadings, and selected A26 data to project through the shared features. It verifies that the A26 spatial graph matches the current sample/coordinate order. The default export folder is `Figure/A27_to_A26_components`; it can be changed with `options(proteinfix.projection_export_dir = "/path/to/output")` before running the Rmd.
+
+For components 1–10 it exports `proj_U*.tiff` and `proj_V*.tiff` (600 dpi), plus paired `A27_to_A26_comp*.png` figures (300 dpi, V on the left and U on the right). Numerical results are saved to `Data/A27_to_A26_projection.rds` in the original fitted-model sign convention. Any optional display-only sign orientation should be recorded separately from these analytical results.
