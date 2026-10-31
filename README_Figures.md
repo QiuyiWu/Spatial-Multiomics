@@ -77,3 +77,23 @@ The spatial model weights and rebuilt sPCA graphs are saved under `Data`. Interm
 `Code/A26A27_analysis_sCCA.Rmd` uses the current A27 C6 weights, A27 cluster loadings, and selected A26 data to project through the shared features. It verifies that the A26 spatial graph matches the current sample/coordinate order. The default export folder is `Figure/A27_to_A26_components`; it can be changed with `options(proteinfix.projection_export_dir = "/path/to/output")` before running the Rmd.
 
 For components 1–10 it exports `proj_U*.tiff` and `proj_V*.tiff` (600 dpi), plus paired `A27_to_A26_comp*.png` figures (300 dpi, V on the left and U on the right). Numerical results are saved to `Data/A27_to_A26_projection.rds` in the original fitted-model sign convention. Any optional display-only sign orientation should be recorded separately from these analytical results.
+
+### Reproduce corrected Figure 4
+
+From the repository root, run:
+
+```sh
+Rscript --vanilla Code/regenerate_Figure4.R /path/to/output
+```
+
+This executes the raw metabolomics and proteomics Figure 4 sections of both
+`SampleSize_A26_spearman.Rmd` and `SampleSize_A27_spearman.Rmd`, then assembles the
+labeled TIFF (600 dpi) and PNG. The optional protein-cluster sections are not used.
+Neighbor order is exact shortest-path distance on the current spatial graph:
+self and all lower-order neighbors are excluded. A26 displays orders 1/2/3;
+A27 displays orders 1/3/5. Features are standardized across spatial samples before
+Spearman correlations across features are averaged over each sample's neighbors.
+Constant protein columns are omitted because their standardized values are undefined.
+Graph shells are checked against igraph shortest paths, and per-sample means are
+checked against a separately computed sample correlation matrix. Result RDS files
+and diagnostic plots are saved alongside the figure.
