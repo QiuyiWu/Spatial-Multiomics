@@ -1,4 +1,4 @@
-# Spatial Multiomics — ProteinFix
+# Spatial Multiomics 
 
 Analysis code for *Integrated metabolomics and proteomics from voxelated cortical hemispheres of adult rhesus monkeys*, by Qiuyi Wu, Alev M. Brigande, Michael W. Lutz, Pixu Shi, and Anita A. Disney.
 
