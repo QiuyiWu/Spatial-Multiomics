@@ -50,7 +50,7 @@ dir.create(export_dir, recursive = TRUE, showWarnings = FALSE)
 
 # Data Preprocessing
 
-Previously for metabomics data, we proceed with 85% cutoff for batch correction (combat), the PCA analysis, mapping of PCA scores on the brain map. Totally 591 metabolites, and 390 metabolites have missing value less than 85%, and 201 metabolites have missingness larger than 85%. Hence, we decide that for TG metabolites, remove those missing > 70%; for other metabolites, remove those missing > 85%. Combat is based on 328 samples (33 SPQC samples are removed after SPQC subtraction). 
+Previously for metabomics data, we proceed with 85% cutoff for batch correction (combat), the PCA analysis, mapping of PCA scores on the brain map. Totally 591 metabolites, and 390 metabolites have missing value less than 85%, and 201 metabolites have missingness larger than 85%. Hence, we decide that for TG metabolites, remove those missing > 70%; for other metabolites, remove those missing > 85%. The current ComBat output contains 403 non-SPQC samples and 328 metabolites.
 
 1. For TG metabolites, remove those missing > 70%; for other metabolites, remove those missing > 85%. Remove sample 244, 96, 188
 2. Impute LOD/2
@@ -87,7 +87,7 @@ In heldout step, we follow these steps:
 
 We took the intersection to retain only the common samples between the two datasets, resulting in 267 samples for the Clustering analysis (PChclust) procedure.
 
-Finally, because the mapping from the sheet `AnalysisID_Matrix` in `A26_Bonnie_Flatmap_Grid.xlsx` contains only 236 samples, **we ultimately obtained 231 matched samples across both datasets**.
+Intersecting the current C4-selected samples with the heldout-updated `AnalysisID_Matrix` in `A26_Bonnie_Flatmap_Grid_20260315.xlsx` gives **233 spatially matched samples across both datasets**.
 
 
 # A26 Omics Reconstruction
@@ -198,7 +198,9 @@ ggplot(pca_met, aes(x=PC1, y=PC2, color=color_indicator)) +
 
 
 # Proteomics
-pca_pro_corrected <- prcomp(a26.pro.data[,-c(1:3)], scale. = TRUE)
+pro_pca_input <- a26.pro.data[, -(1:3)]
+pro_pca_input <- pro_pca_input[, vapply(pro_pca_input, sd, numeric(1)) > 0, drop = FALSE]
+pca_pro_corrected <- prcomp(pro_pca_input, scale. = TRUE)
 pca_pro <- data.frame(pca_pro_corrected$x)  # PCA scores
 pca_pro$plate <- a26.pro.data$pro.plate 
 pca_pro$sample_type <- a26.pro.data$pro.sampletype 
@@ -234,27 +236,26 @@ ggplot(pca_pro, aes(x=PC1, y=PC2, color=color_indicator)) +
 
 
 ```{r spCCA cluster 1st component}
-a26.met.cluster$score <- a26.met.cluster$score[rownames(a26.met.cluster$score) %in% rownames(xy_ordered), ]
-a26.pro.cluster$score <- a26.pro.cluster$score[rownames(a26.pro.cluster$score) %in% rownames(xy_ordered), ]
+a26.met.cluster$score <- a26.met.cluster$score[rownames(xy_ordered), , drop = FALSE]
+a26.pro.cluster$score <- a26.pro.cluster$score[rownames(xy_ordered), , drop = FALSE]
 
 
-# spca_delaunay_metCluster <- adegenet::spca(
-#   x = a26.met.cluster$score,
-#   xy = xy_ordered,
-#   center = TRUE,
-#   scale = TRUE,
-#   scannf = FALSE,
-#   nfposi = 3,
-#   nfnega = 0
-# )
-# save(spca_delaunay_metCluster,  file = here::here("Data", "sPCA_a26metCluster.RData"))
-load(here::here("Data", "sPCA_a26metCluster.RData"))
+# Rebuild the Delaunay graph in the current sample/coordinate order.
+# type = 1 is Delaunay; explicit options avoid an interactive graph selection.
+spca_delaunay_metCluster <- adegenet::spca(
+  x = a26.met.cluster$score, xy = xy_ordered,
+  center = TRUE, scale = TRUE, scannf = FALSE,
+  nfposi = 3, nfnega = 0, type = 1, ask = FALSE, plot.nb = FALSE
+)
+save(spca_delaunay_metCluster,
+     file = here::here("Data", "sPCA_a26metCluster.RData"))
 
 # Standardize both datasets (center + scale)
 X <- a26.pro.cluster$score
 Y <- a26.met.cluster$score
 
-rownames(X) <- rownames(xy_ordered)
+stopifnot(identical(rownames(X), rownames(Y)),
+          identical(rownames(X), rownames(xy_ordered)))
 
 # Get coordinates and rownames
 coords <- as.matrix(xy_ordered)
@@ -272,6 +273,7 @@ for (i in 1:n) {
 }
 # degree vector
 d_vec <- rowSums(W_raw)
+stopifnot(nrow(W_raw) == nrow(X), all(d_vec > 0), isSymmetric(W_raw))
 # diagonal degree matrix
 D <- diag(d_vec)
 # Unnormalized Laplacian
@@ -426,16 +428,19 @@ Y_tilde <- W_half %*% Y
 
 Xtc <- X_tilde
 Ytc <- Y_tilde
+dimnames(Xtc) <- dimnames(X)
+dimnames(Ytc) <- dimnames(Y)
+stopifnot(all(is.finite(Xtc)), all(is.finite(Ytc)))
 
 set.seed(123)
-perm_out <- CCA.permute(Xtc, Ytc, typex = "standard", typez = "standard", nperms = 25, standardize = F)
+perm_out <- PMA::CCA.permute(Xtc, Ytc, typex = "standard", typez = "standard", nperms = 25, standardize = F)
 
 # Extract optimal penalties
 penaltyx <- perm_out$bestpenaltyx
 penaltyz <- perm_out$bestpenaltyz
 
 
-scca_res <- CCA(Xtc, Ytc, typex = "standard", typez = "standard",
+scca_res <- PMA::CCA(Xtc, Ytc, typex = "standard", typez = "standard",
                K = 10, penaltyx = penaltyx, penaltyz = penaltyz)
 
 save(scca_res, file = here::here("Data", "a26_score.RData"))
@@ -778,14 +783,14 @@ Yc <- scale(Y, center = TRUE, scale = TRUE)
 
 
 set.seed(123)
-perm_out <- CCA.permute(Xc, Yc, typex = "standard", typez = "standard", nperms = 25)
+perm_out <- PMA::CCA.permute(Xc, Yc, typex = "standard", typez = "standard", nperms = 25)
 
 # Extract optimal penalties
 penaltyx <- perm_out$bestpenaltyx
 penaltyz <- perm_out$bestpenaltyz
 
 
-cca_res <- CCA(Xc, Yc, typex = "standard", typez = "standard",
+cca_res <- PMA::CCA(Xc, Yc, typex = "standard", typez = "standard",
                K = 10, penaltyx = penaltyx, penaltyz = penaltyz)
 
 
@@ -939,7 +944,7 @@ plot_cca_component(10, cca_res, Xc, Yc, map.df, X, Y, a26.pro.cluster, a26.met.c
 # Table S3: all FINAL A26 protein clusters containing at least 10 proteins.
 
 build_s3 <- function(cluster_object, min_proteins = 10L,
-                     expected_clusters = 73L) {
+                     expected_clusters = NULL) {
   group <- cluster_object$group
   loading <- cluster_object$loading
   stopifnot(!is.null(names(group)), !anyNA(group),
@@ -975,12 +980,14 @@ build_s3 <- function(cluster_object, min_proteins = 10L,
 }
 
 export_s3 <- function(cluster_object, output_file,
-                      min_proteins = 10L, expected_clusters = 73L) {
+                      min_proteins = 10L, expected_clusters = NULL) {
   sheets <- build_s3(cluster_object, min_proteins, expected_clusters)
   if (file.exists(output_file)) {
     stop("Output already exists; choose a new filename: ", output_file)
   }
-  writexl::write_xlsx(sheets, path = output_file)
+  openxlsx::write.xlsx(sheets, file = output_file, colWidths = "auto",
+                       firstRow = TRUE,
+                       headerStyle = openxlsx::createStyle(textDecoration = "bold"))
   message("Saved ", length(sheets), " cluster worksheets to: ", output_file)
   invisible(sheets)
 }

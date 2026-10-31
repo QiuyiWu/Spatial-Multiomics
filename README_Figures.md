@@ -56,3 +56,18 @@ by *Qiuyi Wu\*, Alev M. Brigande\*, Michael W. Lutz, Pixu Shi, and Anita A. Disn
 - Neighbor correlation analyses (Figure 4 and S5) quantify spatial decay of metabolomic similarity across cortical samples.
 
 
+
+## Regenerating C6 component maps and Table S3
+
+From the repository root, run the spatial C6 analysis and the supplied plotting code for each animal:
+
+```sh
+Rscript --vanilla Code/regenerate_C6_outputs.R A26 /path/to/CorrectedFigure
+Rscript --vanilla Code/regenerate_C6_outputs.R A27 /path/to/CorrectedFigure
+```
+
+The driver evaluates the spatial-model chunks in the corresponding C6 Rmd, rebuilding the Delaunay graph from the current selected samples and coordinates. It retains seed 123, 25 tuning permutations, and 10 components. It then runs the appropriate animal section of `Code/sr_sCCA_figures.R`, preserving the supplied map orientation, labels, PNG format, 25 × 20 cm size, and 300 dpi resolution.
+
+Outputs are `A26_components/A26_comp1.png` through `A26_comp10.png`, and the analogous A27 files. The A26 run also creates `Supp_Table_S3_protein_clusters_min10_UPDATED.xlsx`: one worksheet per A26 protein cluster containing at least 10 proteins, with signed loadings ranked by absolute magnitude. Its worksheet count is derived from the current clustering, rather than fixed to the old count of 73. Choose a new output directory if the supplementary workbook already exists.
+
+The spatial model weights and rebuilt sPCA graphs are saved under `Data`. Intermediate plotting state, tuning summaries, and diagnostics are saved under the ignored `Figure/C6_diagnostics` folder. The driver does not run the Rmds' separate nonspatial CCA comparison.
