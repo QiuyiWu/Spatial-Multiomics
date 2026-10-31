@@ -66,6 +66,17 @@ legend_shapes <- c(
   "SPQC"    = 17
 )
 
+# Match the manuscript layout: shared legend, column headings, and row labels.
+assemble_pca_figure <- function(legend_plot, panels) {
+  cowplot::ggdraw() +
+    cowplot::draw_plot(legend_plot, x = 0.06, y = 0.94, width = 0.94, height = 0.06) +
+    cowplot::draw_label("Metabolomic", x = 0.295, y = 0.915, size = 14) +
+    cowplot::draw_label("Proteomic", x = 0.765, y = 0.915, size = 14) +
+    cowplot::draw_plot(panels, x = 0.06, y = 0, width = 0.94, height = 0.89) +
+    cowplot::draw_label("A26", x = 0.028, y = 0.6675, size = 14) +
+    cowplot::draw_label("A27", x = 0.028, y = 0.2225, size = 14)
+}
+
 ################################ Figures for Post-Combat ################################################
 
 # -----------------------------
@@ -89,7 +100,7 @@ make_pca_plot <- function(data_mat, legend_group, title_text) {
     scale_x_continuous(breaks = pretty_breaks(n = 4)) +
     scale_y_continuous(breaks = pretty_breaks(n = 4)) +
     labs(
-      title = NULL,   # panel titles removed; panel letters added in Photoshop. title_text now unused
+      title = NULL,   # column headings are added when the four panels are assembled
       x = paste0("PC1 (", round(var_exp[1], 1), "% variance)"),
       y = paste0("PC2 (", round(var_exp[2], 1), "% variance)"),
       color = NULL,
@@ -142,7 +153,9 @@ panels <- ggarrange(
   p.a27met + theme(legend.position = "none") + panel_margin,
   p.a27pro + theme(legend.position = "none") + panel_margin,
   ncol = 2, nrow = 2,
-  labels = NULL   # panel letters added in Photoshop for cross-figure consistency
+  labels = c("a", "b", "c", "d"),
+  font.label = list(size = 12, face = "bold"),
+  label.x = 0, label.y = 1, hjust = 0, vjust = 1
 )
 
 
@@ -197,12 +210,7 @@ legend_plot <- ggplot(legend_df, aes(x, y)) +
 
 
 
-final_plot_post <- ggarrange(
-  legend_plot,
-  panels,
-  ncol = 1,
-  heights = c(0.08, 1)
-)
+final_plot_post <- assemble_pca_figure(legend_plot, panels)
 
 
 
@@ -245,7 +253,9 @@ panels <- ggarrange(
   p.a27met + theme(legend.position = "none") + panel_margin,
   p.a27pro + theme(legend.position = "none") + panel_margin,
   ncol = 2, nrow = 2,
-  labels = NULL   # panel letters added in Photoshop for cross-figure consistency
+  labels = c("a", "b", "c", "d"),
+  font.label = list(size = 12, face = "bold"),
+  label.x = 0, label.y = 1, hjust = 0, vjust = 1
 )
 
 
@@ -300,12 +310,7 @@ legend_plot <- ggplot(legend_df, aes(x, y)) +
 
 
 
-final_plot_pre <- ggarrange(
-  legend_plot,
-  panels,
-  ncol = 1,
-  heights = c(0.08, 1)
-)
+final_plot_pre <- assemble_pca_figure(legend_plot, panels)
 
 
 
