@@ -116,7 +116,7 @@ Key idea:
 
 Filter both metabolomics and proteomics to the `finalID` selections recorded in C3.
 
-* Output: `a26.RData`
+* Output: `Data/a26.RData`
 
   * metabolomics: 267 × 328
   * proteomics: 267 × 9990
@@ -220,9 +220,9 @@ Compare eligible mapped and heldout candidates and record the selected `finalID`
 
 Filter both metabolomics and proteomics to the `finalID` selections recorded in C3.
 
-* Output: `a27.RData`
+* Output: `Data/a27.RData`
 
-  * metabolomics: 527 × 342
+  * metabolomics: 527 × 343
   * proteomics: 527 × 10,253
 * Code: `CombineClustering.R`
 

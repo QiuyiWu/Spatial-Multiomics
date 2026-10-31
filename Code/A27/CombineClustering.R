@@ -30,12 +30,12 @@ library(htmltools)
 # C4. Selecting Mapping Samples ######
 ##################################################
 # finally 527 samples
-a27.met.data <- as.data.frame(read_excel("../data/PostCombat_a27_Metabolite_beforeHeldout.xlsx"))
-a27.pro.data <- as.data.frame(read_excel("../data/PostCombat_a27_Protein.xlsx", sheet = "combat_corrected_unscaled"))
+a27.met.data <- as.data.frame(read_excel(here::here("Data", "PostCombat_a27_Metabolite_beforeHeldout.xlsx")))
+a27.pro.data <- as.data.frame(read_excel(here::here("Data", "PostCombat_a27_Protein.xlsx"), sheet = "combat_corrected_unscaled"))
 
 
 # convert Duke ID to Analysis ID
-dukeid.df <- data.frame(read_excel("../data/A27_Frizzle_Flatmap_Grid_20260317.xlsx", sheet = "Decoder"))
+dukeid.df <- data.frame(read_excel(here::here("Data", "A27_Frizzle_Flatmap_Grid_20260317.xlsx"), sheet = "Decoder"))
 dukeid.df1 <- dukeid.df[, c("AnalysisID", "DukeID")]
 dukeid.df2 <- dukeid.df[, c("SplitAnalysisID", "SplitDukeID")]
 colnames(dukeid.df2) <- c("AnalysisID", "DukeID")
@@ -50,7 +50,7 @@ a27.pro.data <- a27.pro.data %>%
   mutate(DukeID = AnalysisID) %>%       
   select(-AnalysisID)                   
 
-heldout_updated <- as.data.frame(read_excel("../data/Heldout_Updated_a27.xlsx"))
+heldout_updated <- as.data.frame(read_excel(here::here("Data", "Heldout_Updated_a27.xlsx")))
 
 a27.met.data <- a27.met.data[a27.met.data$Sample %in% unique(heldout_updated$finalID ), ]
 a27.pro.data <- a27.pro.data[a27.pro.data$DukeID %in% unique(heldout_updated$finalID ), ]
@@ -69,7 +69,16 @@ stopifnot(identical(
 rownames(a27.met.data) <- as.character(a27.met.data$Sample)
 rownames(a27.pro.data) <- as.character(a27.pro.data$DukeID)
 
-# save(a27.met.data, a27.pro.data, file = "a27.RData")
+# Validate the selected sample set before exporting C4 inputs for downstream analysis.
+stopifnot(!anyNA(heldout_updated$finalID),
+          !anyDuplicated(a27.met.data$Sample),
+          !anyDuplicated(a27.pro.data$DukeID),
+          nrow(a27.met.data) == length(unique(heldout_updated$finalID)),
+          nrow(a27.pro.data) == nrow(a27.met.data),
+          setequal(as.character(a27.met.data$Sample), as.character(heldout_updated$finalID)),
+          all(is.finite(as.matrix(a27.met.data[, -seq_len(2)]))),
+          all(is.finite(as.matrix(a27.pro.data[, -(1:3)]))))
+save(a27.met.data, a27.pro.data, file = here::here("Data", "a27.RData"))
 
 
 ##################################################
