@@ -1,61 +1,34 @@
-# README for Duke Library Data Deposit
+# External proteomics inputs
 
-## Spatial-Multiomics Proteomics Input Files
+This document describes inputs used by the ProteinFix branch of [Spatial-Multiomics](https://github.com/QiuyiWu/Spatial-Multiomics/tree/ProteinFix). It is not a deposit accession or a confirmation that every required file has been published.
 
-This deposit accompanies the GitHub repository for the manuscript:
+## Quantification files
 
-**Spatial-Multiomics**
-GitHub repository: `https://github.com/QiuyiWu/Spatial-Multiomics`
+Two large long-format quantification files are described as deposited separately in Duke Library:
 
-## Overview
+| Input | Used by | Role |
+| --- | --- | --- |
+| `A26 Proteomics with QC variables.txt` | `Code/A26/Reformatting_A26_pro.R` | A26 protein quantification, including the log2-scale `Y` values used for reformatting |
+| `A27_SNE_combine_protein.tsv` | `Code/A27/Reformatting_A27_pro.R` | A27 intensity-scale `PG.Quantity` values; the script applies `log2()` |
 
-This Duke Library deposit contains two large protein level quantification proteomics input files that were not included in the GitHub repository because their file sizes exceed GitHub's recommended and/or allowed limits for convenient version control. These files are required only at the initial preprocessing stage of the proteomics workflow.
+A deposit URL or accession is not recorded here. Obtain the files from the study's data deposit or contact the authors for access details.
 
-All downstream analysis code, processed data used in the manuscript, and paper figures are available in the GitHub repository above.
+## Additional A27 annotation input
 
-## Files included in this deposit
+`Code/A27/Reformatting_A27_pro.R` also requires **`20260120_122736_Identifications.tsv`**, which provides `FileName`, `Plate.`, and `SPQC.type`. It is not tracked under `Data/`. Confirm its availability with the authors; the quantification file alone is insufficient to reproduce A27 P1.
 
-1. `A26 Proteomics with QC variables.txt`
-2. `A27_SNE_combine_protein.tsv`
+## Running P1
 
+1. Obtain the quantification files and the A27 annotation file.
+2. Load `readr`, `dplyr`, and `tidyr` in a clean R session.
+3. Adjust the scripts' legacy relative paths to the downloaded inputs.
+4. Set the save destinations to `Data/Adjusted_Protein_A26.RData` and `Data/Adjusted_Protein_A27.RData` in the repository.
+5. Run the scripts, then continue with M1/P2 and C3–C6 as described in [README.md](README.md).
 
-## Role of these files in the workflow
+The saved objects contain metadata in addition to 9,990 A26 or 10,253 A27 protein variables. Both outputs are on the log2 scale before P2 imputation.
 
-These two files are used only in the initial preprocessing scripts:
+## Starting from processed inputs
 
-* `Reformatting_A26_pro.R`
-* `Reformatting_A27_pro.R`
+Users reproducing downstream analyses can start from the processed objects already tracked in the GitHub repository. Download them with Git LFS. The external long-format inputs are needed to reproduce P1, not to read the included downstream objects.
 
-These scripts read the proteomics input files `A26 Proteomics with QC variables.txt` for A26 and `A27_SNE_combine_protein.tsv` for A27, and reformat them into the corresponding A26 and A27 wide-format proteomics data objects `Adjusted_Protein_A26.RData` and `Adjusted_Protein_A27.RData`, which are used for downstream preprocessing and analysis.
-
-After this preprocessing step, the downstream analyses rely on the processed outputs rather than the original large protein level quantification files.
-
-
-
-## Relationship to the GitHub repository
-
-The GitHub repository contains:
-
-* analysis scripts
-* processed data objects used in downstream analysis
-* figure-generation code
-* figures included in the manuscript
-
-The two large protein level quantification proteomics files are deposited separately here in Duke Library solely because of file-size constraints for GitHub hosting.
-
-## Reproducibility notes
-
-To fully reproduce the proteomics preprocessing workflow from protein level quantification input, users should:
-
-1. download the two large files from this Duke Library deposit
-2. place them in the expected local data directory referenced by:
-
-   * `Reformatting_A26_pro.R`
-   * `Reformatting_A27_pro.R`
-3. run those preprocessing scripts before running the downstream analysis scripts in the GitHub repository
-
-Users interested only in reproducing the manuscript analyses from the processed data may use the GitHub repository directly, without rerunning the original data preprocessing step, provided the processed files included there are sufficient for their purpose.
-
-## Notes
-
-These deposited files are included to support full computational reproducibility of the proteomics preprocessing pipeline associated with the manuscript.
+See [README_Figures.md](README_Figures.md) for figure commands. Generated figures and supplementary-table exports are ignored by Git; their presence in a local output directory does not imply that they are included in the repository.
