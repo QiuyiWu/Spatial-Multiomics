@@ -38,7 +38,7 @@ The seven unflagged rows incorrectly removed by the old Figure 5 expression were
 - `Data/A27_to_A26_projection.rds`
 - `Data/Figure5_PCA_results.rds` (new reproducible PCA, outlier audit, feature matching, and loading comparisons)
 
-A26's model rerun agrees numerically with its reference. A26 Figure 4/S5 results and A27 Figure 4 protein correlations / S5 protein-cluster correlations also agree with their prior results. Raw input workbooks and proteomics preprocessing references were not changed by this correction.
+A26's model rerun agrees numerically with its reference. A26 Figure S5 results and A27 Figure S5 protein-cluster correlations agree with their prior results. Figure 4 was subsequently updated to use protein clusters as described below. Raw input workbooks and proteomics preprocessing references were not changed by this correction.
 
 ## Figure package
 
@@ -67,3 +67,7 @@ QC3 continues to participate in Figure 5 missingness filtering, half-minimum imp
 Local execution used R 4.4.3 and the installed system library, explicitly invoked with `--vanilla`; session information is included with the local audits. `renv.lock` still records R 4.5.2. A full run under that locked R version was not performed.
 
 See [REPRODUCIBILITY.md](REPRODUCIBILITY.md#regenerate-the-coordinated-qcfix-corrections) for the coordinated rerun command and [README_Figures.md](README_Figures.md) for individual exports.
+
+## Figure 4 protein-cluster correction
+
+Figure 4 protein panels now use the same loading-weighted protein-cluster representation as Figure S5: 4,717 A26 clusters and 6,933 A27 clusters. The metabolite panels are unchanged numerically. Figure 4 maps per-sample neighbor means; S5 shows unique undirected pair-correlation distributions. The numeric Figure 4 export includes both quantities so agreement with S5 can be checked directly. Figure S5 and upstream preprocessing, clustering, and sr-sCCA data do not require regeneration for this change. `Code/tests/test_figure4_s5_consistency.R` verified equality of all underlying pair correlations for both modalities and both animals, as well as unchanged Figure 4 metabolite means.

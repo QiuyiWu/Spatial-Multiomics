@@ -1,5 +1,5 @@
 # Run from the repository root: Rscript --vanilla Code/regenerate_Figure4.R [output_directory]
-# Executes the raw metabolite/protein Figure 4 chunks, excluding the optional cluster analysis.
+# Uses individual metabolites and the same loading-weighted protein clusters as Figure S5.
 suppressPackageStartupMessages({library(here); library(cowplot); library(ggplot2)})
 here::i_am('README.md')
 args <- commandArgs(TRUE)
@@ -11,13 +11,24 @@ pdf(file.path(out,'diagnostics.pdf'))
 run_animal <- function(animal) {
   e <- new.env(parent=globalenv())
   lines <- readLines(here::here('Code',animal,paste0('SampleSize_',animal,'_spearman.Rmd')))
-  starts <- grep('^```\\{r',lines)
-  for(start in starts) {
+  chunks <- list()
+  for(start in grep('^```\\{r',lines)) {
     label <- sub('^```\\{r *','',lines[start]); label <- sub('[,}].*$','',label)
-    if(label=='pro cluster') break
     end <- start + which(lines[(start+1):length(lines)]=='```')[1]
+    chunks[[label]] <- lines[(start+1):(end-1)]
+  }
+  for(label in c('setup','lib','preparation',paste(tolower(animal),'met'),
+                'scaling met','map met',paste(tolower(animal),'proteomic'),
+                paste(tolower(animal),'pro'),'scaling','pro cluster')) {
+    code <- chunks[[label]]
+    # Only construct standardized inputs and loading-weighted clusters here.
+    # Compute each full correlation matrix once below for the final maps.
+    if(label %in% c('scaling met','scaling','pro cluster')) {
+      cut <- grep('^cors\\.1 <-',code)[1]
+      stopifnot(!is.na(cut));code <- code[seq_len(cut-1)]
+    }
     message(animal,': ',label)
-    eval(parse(text=lines[(start+1):(end-1)]),e)
+    eval(parse(text=code),e)
     if(label=='setup') {e$fig4_export <- FALSE; e$s5_export <- FALSE}
     if(label=='preparation') {
       A <- e$nbr1.full
@@ -27,26 +38,41 @@ run_animal <- function(animal) {
     }
   }
   orders <- if(animal=='A26') 1:3 else c(1,3,5)
-  correlations <- list()
+  correlations <- pair_correlations <- plots <- list()
   for(type in c('met','pro')) {
-    X <- if(type=='met') e$X.sub.met else e$X.z.pro
-    stopifnot(all(is.finite(X)))
+    X <- if(type=='met') e$X.sub.met else e$X.cluster.pro
+    stopifnot(all(is.finite(X)),!anyDuplicated(rownames(X)))
     C <- cor(t(X),method='spearman')
-    correlations[[type]] <- lapply(orders,function(k) {
+    pair_correlations[[type]] <- list()
+    plots[[type]] <- list()
+    correlations[[type]] <- lapply(seq_along(orders),function(index) {
+      k <- orders[index]
       A <- get(paste0('nbr',k,'.full'),e)[rownames(X),rownames(X),drop=FALSE]
-      observed <- get(paste0('cor',k,'.',type),e)
-      expected <- rowSums(C*A)/rowSums(A)
-      stopifnot(identical(rownames(X),rownames(A)),max(abs(observed-expected),na.rm=TRUE)<1e-10)
+      stopifnot(identical(rownames(X),rownames(A)),all(rowSums(A)>0))
+      observed <- rowSums(C*A)/rowSums(A)
+      # Independently evaluate complete neighbor means for representative samples.
+      for(i in unique(round(seq(1,nrow(X),length.out=10)))) {
+        neighbors <- which(A[i,]==1)
+        direct <- mean(vapply(neighbors,function(j)
+          cor(X[i,],X[j,],method='spearman'),numeric(1)))
+        stopifnot(abs(observed[i]-direct)<1e-10)
+      }
+      pair_correlations[[type]][[index]] <<- C[which(A==1 & upper.tri(A),arr.ind=TRUE)]
+      map <- e$paint_to_map(e$map.df,setNames(observed,rownames(X)))
+      plots[[type]][[index]] <<- e$plot_map(map,NULL)
       observed
     })
   }
-  result <- list(animal=animal,orders=orders,met=get(paste0('p_',tolower(animal),'_met'),e),
-                 pro=get(paste0('p_',tolower(animal),'_pro'),e),correlations=correlations,
+  result <- list(animal=animal,orders=orders,met=plots$met,pro=plots$pro,
+                 correlations=correlations,pair_correlations=pair_correlations,
                  n=nrow(e$X.sub.met),met_features=ncol(e$X.sub.met),
-                 protein_features=ncol(e$X.z.pro),constant_proteins=sum(!e$pro_keep))
+                 protein_representation='loading_weighted_clusters',
+                 protein_clusters=ncol(e$X.cluster.pro),
+                 standardized_proteins=ncol(e$X.z.pro),constant_proteins=sum(!e$pro_keep))
   saveRDS(result[setdiff(names(result),c('met','pro'))],
           file.path(out,paste0(animal,'_Figure4_results.rds')))
-  message(animal,': ',result$n,' spatial samples; ',result$met_features,' metabolites; ',result$protein_features,' variable proteins; ',result$constant_proteins,' constant proteins omitted')
+  message(animal,': ',result$n,' spatial samples; ',result$met_features,
+          ' metabolites; ',result$protein_clusters,' loading-weighted protein clusters')
   result
 }
 a26 <- run_animal('A26'); a27 <- run_animal('A27')
@@ -77,7 +103,7 @@ body <- plot_grid(make_group(a26,'met','a'),make_group(a26,'pro','b'),
                   make_group(a27,'met','c'),make_group(a27,'pro','d'),ncol=2)
 fig <- ggdraw() + draw_plot(body,x=.06,y=.075,width=.865,height=.865) +
  draw_label('Metabolomics',x=.28,y=.97,size=16) +
- draw_label('Proteomics',x=.71,y=.97,size=16) +
+ draw_label('Protein clusters',x=.71,y=.97,size=16) +
  draw_label('A26',x=.035,y=.73,size=15) +
  draw_label('A27',x=.035,y=.295,size=15) +
  draw_label('Neighbor order',x=.5,y=.035,size=16) +

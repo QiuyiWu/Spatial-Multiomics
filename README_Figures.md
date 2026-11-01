@@ -106,13 +106,13 @@ QCFix exports use the stored fitted-model signs for all components and projectio
 Rscript Code/regenerate_Figure4.R /absolute/path/to/output
 ```
 
-The driver executes the raw-metabolite and raw-protein sections of `Code/A26/SampleSize_A26_spearman.Rmd` and `Code/A27/SampleSize_A27_spearman.Rmd`. It does not use the optional protein-cluster comparison for Figure 4.
+The driver uses the metabolite preprocessing and loading-weighted protein-cluster aggregation in `Code/A26/SampleSize_A26_spearman.Rmd` and `Code/A27/SampleSize_A27_spearman.Rmd`. Protein panels 4b/d use the same cluster representation as Figure S5: 4,717 clusters for A26 and 6,933 for A27. Individual-protein panels are optional diagnostics and are not used in the final Figure 4.
 
 `Code/exact_neighbor_orders.R` defines neighbors by exact shortest-path distance. Groups exclude self and all closer samples. A26 displays orders 1/2/3; A27 displays 1/3/5. Features are standardized across the spatial samples, then Spearman correlations across features are averaged over each sample's neighbors. Constant protein columns are omitted because their standardized values are undefined.
 
-The script checks the graph groups against `igraph` shortest paths and the per-sample means against a separately computed sample-correlation matrix.
+The script checks graph groups against `igraph` shortest paths and independently recomputes neighbor means for representative samples. The saved numeric output includes the unique pair correlations used to verify agreement with Figure S5.
 
-Outputs are `Figure4_corrected.tiff` (600 dpi), `Figure4_corrected.png`, numeric `A26_Figure4_results.rds` and `A27_Figure4_results.rds`, and diagnostic plots. The assembled figure has Metabolomics/Proteomics column headings, horizontal A26/A27 labels, a–d panel letters, ordinal map headings, a bottom Neighbor order label, and a shared blue–white–red `avg cor` legend on a fixed −1 to 1 scale.
+Outputs are `Figure4_corrected.tiff` (600 dpi), `Figure4_corrected.png`, numeric `A26_Figure4_results.rds` and `A27_Figure4_results.rds`, and diagnostic plots. The assembled figure has Metabolomics/Protein clusters column headings, horizontal A26/A27 labels, a–d panel letters, ordinal map headings, a bottom Neighbor order label, and a shared blue–white–red `avg cor` legend on a fixed −1 to 1 scale.
 
 ## Figure S5: spatial gradient boxplots
 
@@ -122,7 +122,7 @@ Rscript Code/regenerate_FigureS5.R /absolute/path/to/output
 
 This uses the preparation, standardization, and protein-cluster aggregation from the same two SampleSize Rmds as Figure 4. `Code/protein_cluster_contributions.R` reads current C5 protein loadings from `Data/A26_PChclust.RData` and `Data/A27_PChclust.RData`; the separately exported contribution workbooks are not used by this runner.
 
-The left column summarizes metabolite correlations. The right summarizes correlations across loading-weighted protein clusters. Each box contains **unique undirected sample-pair** Spearman correlations for its exact neighbor order, rather than Figure 4's per-sample means. Median bars and 1.5-IQR whiskers are shown without outlier symbols; connected dots indicate means. Direct pairwise calculations check a subset of the matrix-derived correlations.
+The left column summarizes metabolite correlations. The right summarizes correlations across loading-weighted protein clusters. Both figures use the same metabolite data and loading-weighted protein clusters. Each S5 box contains **unique undirected sample-pair** Spearman correlations for its exact neighbor order; Figure 4 maps each sample's mean correlation with its neighbors. S5 is therefore a pairwise distribution, not a distribution of the Figure 4 sample means. Median bars and 1.5-IQR whiskers are shown without outlier symbols; connected dots indicate means. Direct pairwise calculations check a subset of the matrix-derived correlations.
 
 Outputs are `FigureS5_corrected.tiff` (600 dpi), `FigureS5_corrected.png`, numeric results for each animal, and diagnostics. Gray boxes, A26/A27 row labels, column headings, Average correlation, and the bottom Neighbor order label follow the manuscript layout.
 

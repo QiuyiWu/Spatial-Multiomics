@@ -254,7 +254,7 @@ Filter both metabolomics and proteomics to the `finalID` selections recorded in 
 
 See [QCFIX_VALIDATION.md](QCFIX_VALIDATION.md) for verified before/after counts and the correction record.
 
-See [README_Figures.md](README_Figures.md) for the final TIFF workflow and [REPRODUCIBILITY.md](REPRODUCIBILITY.md#regenerate-the-coordinated-qcfix-corrections) for the coordinated rerun command. Figures 3, S3, and S4 are assembled from component PNGs; Figures 4, 5, and S5 are exported directly as TIFFs.
+See [README_Figures.md](README_Figures.md) for the final TIFF workflow and [REPRODUCIBILITY.md](REPRODUCIBILITY.md#regenerate-the-coordinated-qcfix-corrections) for the coordinated rerun command. Figures 3, S3, and S4 are assembled from component PNGs; Figures 4, 5, and S5 are exported directly as TIFFs. Figures 4 and S5 both use loading-weighted protein clusters; Figure 4 maps sample-level neighbor means, while S5 displays unique pair-correlation distributions.
 
 Figure 5 now removes only flagged outlier rows, using row identity rather than sample numbers shared across animals. Its later PCA/sCCA loading comparisons harmonize metabolite names before matching. QC3 participation in Figure 5 filtering, imputation, and normalization is retained.
 

@@ -46,6 +46,7 @@ writeLines(c(sprintf('options(proteinfix.pca_export_dir=%s)',encodeString(out,qu
 execute(pca,label='PCA')
 execute('Code/regenerate_Figure4.R',file.path(out,'Figure4'),'Figure4')
 execute('Code/regenerate_FigureS5.R',file.path(out,'FigureS5'),'FigureS5')
+execute('Code/tests/test_figure4_s5_consistency.R',c(file.path(out,'Figure4'),file.path(out,'FigureS5')),'Figure4_S5_consistency')
 execute('Code/regenerate_Figure5.R',file.path(out,'Figure5'),'Figure5')
 execute('Code/assemble_manuscript_components.R',c(out,out),'component_assembly')
 exports <- c('post_PCA_4panel_shared_legend.tiff'='Figure2.tiff',

@@ -19,10 +19,11 @@ source(here::here("Code", "exact_neighbor_orders.R"))
 source(here::here("Code", "protein_cluster_contributions.R"))
 
 ## ---- Fig 4 (per-panel corr maps) + S5 (decay boxplots) export parameters ----
-## Fig 4: individual raw metabolite/protein correlation-map panels.
+## Fig 4: metabolite and loading-weighted protein-cluster correlation-map panels.
 ## Run Code/regenerate_Figure4.R for the complete labeled A26/A27 figure.
 ## S5: base-R; gated tiff() device so flag OFF = inline preview, ON = write file.
 fig4_export <- TRUE
+raw_protein_export <- FALSE  # Optional individual-protein diagnostic panels.
 s5_export   <- TRUE
 fig_dir <- getOption("proteinfix.neighbor_figure_dir", here::here("Figure"))
 dir.create(fig_dir, recursive = TRUE, showWarnings = FALSE)
@@ -544,12 +545,12 @@ cor3_map <- paint_to_map(map.df, setNames(cor3.pro, as.character(names(cor3.pro)
 ```
 
 
-# Raw-protein panels for Figure 4 (separate from the optional cluster comparison).
-```{r export raw protein Figure4}
+# Optional individual-protein diagnostics; Figure 4 uses the cluster panels below.
+```{r export raw protein diagnostics}
 p_a26_pro <- list(plot_map(cor1_map, NULL),
                   plot_map(cor2_map, NULL),
                   plot_map(cor3_map, NULL))
-if (isTRUE(get0("fig4_export", ifnotfound = FALSE)))
+if (isTRUE(get0("raw_protein_export", ifnotfound = FALSE)))
   export_panels(p_a26_pro, "cor_a26_pro", orders = c(1, 2, 3))
 ```
 
