@@ -1,5 +1,5 @@
 # Rscript Code/regenerate_Figure5.R OUTPUT_DIRECTORY
-# Runs the notebook verbatim, including its provisional QC3 preprocessing policy.
+# Runs the notebook verbatim, including its PI-confirmed QC3 preprocessing policy.
 args <- commandArgs(TRUE)
 stopifnot(length(args)==1L)
 here::i_am('README.md')

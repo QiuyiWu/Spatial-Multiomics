@@ -62,7 +62,7 @@ fig_h_mm <- 89
 
 If we wan to compare A26, A27, U5, we need to remove the batch effect in these three datasets, so here we subtract the average of Q500 level 3 samples.
 
-QCFix provisional policy (pending PI review): QC3 rows participate in missingness filtering, half-minimum imputation, and QC3 normalization in this Figure 5 workflow. They are removed before the biological-sample PCA. This differs from the separate A27 SPQC/ComBat workflow, which excludes commercial QC Levels 1–3 before filtering and imputation.
+PI-confirmed QCFix policy: QC3 rows participate in missingness filtering, half-minimum imputation, and QC3 normalization in this Figure 5 workflow. They are removed before the biological-sample PCA. This differs from the separate A27 SPQC/ComBat workflow, which excludes commercial QC Levels 1–3 before filtering and imputation.
 
 # U5
 
@@ -535,7 +535,7 @@ ggplot(pca_data.comb, aes(x = PC1, y = PC2, color = Subject)) +
 
 # Remove outliers
 # QC3 continues to participate in filtering/imputation and normalization.
-# This is the provisional Figure 5 policy pending PI review.
+# The PI confirmed this Figure 5 QC3 policy.
 figure5_outlier_audit <- figure5_outliers(met_data.comb.adj, pca_data.comb)
 met_data.comb.clean <- met_data.comb.adj[!figure5_outlier_audit$flagged, , drop = FALSE]
 stopifnot(nrow(met_data.comb.adj) - nrow(met_data.comb.clean) ==
