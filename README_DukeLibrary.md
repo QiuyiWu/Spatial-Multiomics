@@ -1,6 +1,6 @@
 # External proteomics inputs
 
-This document describes external proteomics inputs used by the FinalVersion branch of [Spatial-Multiomics](https://github.com/QiuyiWu/Spatial-Multiomics/tree/FinalVersion).
+This document describes external proteomics inputs used by the main branch and v1.1 release of [Spatial-Multiomics](https://github.com/QiuyiWu/Spatial-Multiomics/tree/main).
 
 ## Quantification files
 
@@ -15,7 +15,7 @@ Obtain the quantification files from the [Duke data record](https://doi.org/10.7
 
 ## Additional A27 annotation input
 
-`Code/A27/Reformatting_A27_pro.R` also requires **`20260120_122736_Identifications.tsv`**, which provides `FileName`, `Plate.`, and `SPQC.type`. It is not tracked under `Data/`. Check the [Duke data record](https://doi.org/10.7924/r4r506) for this annotation input; the quantification file alone is insufficient to reproduce A27 P1.
+`Code/A27/Reformatting_A27_pro.R` also requires **`20260120_122736_Identifications.tsv`**, which provides `FileName`, `Plate.`, and `SPQC.type`. It is not tracked under `Data/`. This annotation file is available from the authors on request; the quantification file alone is insufficient to reproduce A27 P1.
 
 ## Running P1
 

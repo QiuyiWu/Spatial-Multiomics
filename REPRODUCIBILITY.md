@@ -1,8 +1,8 @@
-# Reproducibility guide — QCFix
+# Reproducibility guide — main / v1.1
 
 Analysis code for *Integrated metabolomics and proteomics from voxelated cortical hemispheres of adult rhesus monkeys*, by Qiuyi Wu, Alev M. Brigande, Michael W. Lutz, Pixu Shi, and Anita A. Disney.
 
-This branch contains corrected proteomics imputation and downstream A26/A27 analyses. The study integrates metabolomics and proteomics, selects samples for spatial mapping, clusters analytes, and fits spatially regularized sparse canonical correlation models (sr-sCCA).
+The **main** branch and **v1.1** release contain corrected proteomics imputation and downstream A26/A27 analyses. The study integrates metabolomics and proteomics, selects samples for spatial mapping, clusters analytes, and fits spatially regularized sparse canonical correlation models (sr-sCCA).
 
 For the study overview and animal-by-animal pipeline, see [README.md](README.md).
 
@@ -16,7 +16,7 @@ Run analyses from the repository root. Files under `Data/` are tracked with Git 
 
 ```sh
 git lfs install
-git clone --branch QCFix https://github.com/QiuyiWu/Spatial-Multiomics.git
+git clone --branch v1.1 https://github.com/QiuyiWu/Spatial-Multiomics.git
 cd Spatial-Multiomics
 git lfs pull
 ```

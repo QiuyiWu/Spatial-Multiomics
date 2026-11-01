@@ -1,6 +1,6 @@
 # Spatial Multiomics
 
-This README describes the **FinalVersion** branch. For environment setup, execution commands, reproduction/update modes, and validation, see [REPRODUCIBILITY.md](REPRODUCIBILITY.md). For manuscript figure exports, see [README_Figures.md](README_Figures.md).
+This README describes the **main** branch and the **v1.1** release. For environment setup, execution commands, reproduction/update modes, and validation, see [REPRODUCIBILITY.md](REPRODUCIBILITY.md). For manuscript figure exports, see [README_Figures.md](README_Figures.md).
 
 ## Overview
 
