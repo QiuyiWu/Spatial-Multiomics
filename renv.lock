@@ -969,6 +969,63 @@
       "Repository": "RSPM",
       "Encoding": "UTF-8"
     },
+    "RNeXML": {
+      "Package": "RNeXML",
+      "Version": "2.4.11",
+      "Source": "Repository",
+      "Type": "Package",
+      "Title": "Semantically Rich I/O for the 'NeXML' Format",
+      "Authors@R": "c(person(\"Carl\", \"Boettiger\", role = c(\"cre\", \"aut\"), email=\"cboettig@gmail.com\", comment = c(ORCID=\"0000-0002-1642-628X\")),  person(\"Scott\", \"Chamberlain\", role =\"aut\", comment = c(ORCID=\"0000-0003-1444-9135\")),  person(\"Hilmar\", \"Lapp\", role = \"aut\", comment = c(ORCID=\"0000-0001-9107-0714\")),  person(\"Kseniia\",\"Shumelchyk\", role = \"aut\"),  person(\"Rutger\", \"Vos\", role = \"aut\", comment = c(ORCID=\"0000-0001-9254-7318\")))",
+      "Description": "Provides access to phyloinformatic data in 'NeXML' format.  The package should add new functionality to R such as the possibility to manipulate 'NeXML' objects in more various and refined way and compatibility with 'ape' objects.",
+      "URL": "https://docs.ropensci.org/RNeXML/, https://github.com/ropensci/RNeXML",
+      "BugReports": "https://github.com/ropensci/RNeXML/issues",
+      "License": "BSD_3_clause + file LICENSE",
+      "VignetteBuilder": "knitr",
+      "Suggests": [
+        "spelling",
+        "rdflib",
+        "geiger (>= 2.0)",
+        "phytools (>= 0.3.93)",
+        "knitr (>= 1.5)",
+        "rfigshare (>= 0.3.0)",
+        "knitcitations (>= 1.0.1)",
+        "testthat (>= 0.10.0)",
+        "rmarkdown (>= 0.3.3)",
+        "xslt",
+        "covr",
+        "taxalight",
+        "progress"
+      ],
+      "Depends": [
+        "R (>= 3.0.0)",
+        "ape (>= 3.1)",
+        "methods (>= 3.0.0)"
+      ],
+      "Imports": [
+        "XML (>= 3.95)",
+        "plyr (>= 1.8)",
+        "reshape2 (>= 1.2.2)",
+        "httr (>= 0.3)",
+        "uuid (>= 0.1-1)",
+        "dplyr (>= 0.7.0)",
+        "tidyr (>= 0.3.1)",
+        "stringr (>= 1.0)",
+        "stringi",
+        "xml2",
+        "rlang"
+      ],
+      "Collate": "'S4-utils.R' 'classes.R' 'add_basic_meta.R' 'add_characters.R' 'add_meta.R' 'add_namespaces.R' 'nexmlTree.R' 'add_trees.R' 'character_classes.R' 'concatenate_nexml.R' 'constructors.R' 'deprecated.R' 'get_basic_metadata.R' 'get_characters.R' 'get_level.R' 'get_metadata.R' 'get_namespaces.R' 'get_rdf.R' 'get_taxa.R' 'get_taxa_meta.R' 'get_trees.R' 'internal_get_node_maps.R' 'internal_isEmpty.R' 'internal_name_by_id.R' 'internal_nexml_id.R' 'meta.R' 'nexml_add.R' 'nexml_get.R' 'nexml_methods.R' 'nexml_publish.R' 'nexml_read.R' 'nexml_validate.R' 'nexml_write.R' 'prefixed-uris.R' 'simmap.R' 'taxize_nexml.R' 'tbl_df.R' 'utils.R'",
+      "RoxygenNote": "7.2.3",
+      "X-schema.org-applicationCategory": "Data Publication",
+      "X-schema.org-keywords": "metadata, nexml, phylogenetics, linked-data",
+      "X-schema.org-isPartOf": "https://ropensci.org",
+      "Language": "en-US",
+      "Encoding": "UTF-8",
+      "NeedsCompilation": "no",
+      "Author": "Carl Boettiger [cre, aut] (<https://orcid.org/0000-0002-1642-628X>), Scott Chamberlain [aut] (<https://orcid.org/0000-0003-1444-9135>), Hilmar Lapp [aut] (<https://orcid.org/0000-0001-9107-0714>), Kseniia Shumelchyk [aut], Rutger Vos [aut] (<https://orcid.org/0000-0001-9254-7318>)",
+      "Maintainer": "Carl Boettiger <cboettig@gmail.com>",
+      "Repository": "CRAN"
+    },
     "RSQLite": {
       "Package": "RSQLite",
       "Version": "3.53.3",
@@ -1422,6 +1479,225 @@
       "Repository": "CRAN",
       "Encoding": "UTF-8"
     },
+    "ade4": {
+      "Package": "ade4",
+      "Version": "1.7-23",
+      "Source": "Repository",
+      "Title": "Analysis of Ecological Data: Exploratory and Euclidean Methods in Environmental Sciences",
+      "Authors@R": "c( person(\"Stéphane\", \"Dray\", email = \"stephane.dray@univ-lyon1.fr\", role = \"aut\", comment = c(ORCID = \"0000-0003-0153-1105\")), person(\"Anne-Béatrice\", \"Dufour\", email = \"anne-beatrice.dufour@univ-lyon1.fr\", role = \"aut\", comment = c(ORCID = \"0000-0002-9339-4293\")), person(\"Jean\", \"Thioulouse\", email = \"jean.thioulouse@univ-lyon1.fr\", role = \"aut\", comment = c(ORCID = \"0000-0001-7664-0598\")), person(\"Daniel\", \"Chessel\", role = \"ant\"), person(\"Thibaut\", \"Jombart\", role = \"ctb\"), person(\"Sandrine\", \"Pavoine\",role = \"ctb\"), person(\"Jean R.\", \"Lobry\", role = \"ctb\"), person(\"Sébastien\", \"Ollier\", role = \"ctb\"), person(\"Daniel\", \"Borcard\", role = \"ctb\"), person(\"Pierre\", \"Legendre\", role = \"ctb\"), person(\"Stéphanie\", \"Bougeard\", role = \"ctb\"), person(\"Aurélie\", \"Siberchicot\", role = c(\"ctb\", \"cre\"), email = \"aurelie.siberchicot@univ-lyon1.fr\", comment = c(ORCID = \"0000-0002-7638-8318\")) )",
+      "Depends": [
+        "R (>= 3.5.0)"
+      ],
+      "Imports": [
+        "graphics",
+        "grDevices",
+        "methods",
+        "stats",
+        "utils",
+        "MASS",
+        "pixmap",
+        "sp",
+        "Rcpp"
+      ],
+      "LinkingTo": [
+        "Rcpp",
+        "RcppArmadillo"
+      ],
+      "Suggests": [
+        "ade4TkGUI",
+        "adegraphics",
+        "adephylo",
+        "adespatial",
+        "ape",
+        "CircStats",
+        "deldir",
+        "lattice",
+        "spdep",
+        "splancs",
+        "waveslim",
+        "progress",
+        "foreach",
+        "parallel",
+        "doParallel",
+        "iterators",
+        "knitr",
+        "rmarkdown"
+      ],
+      "VignetteBuilder": "knitr",
+      "Description": "Tools for multivariate data analysis. Several methods are provided for the analysis (i.e., ordination) of one-table (e.g., principal component analysis, correspondence analysis), two-table (e.g., coinertia analysis, redundancy analysis), three-table (e.g., RLQ analysis) and K-table (e.g., STATIS, multiple coinertia analysis). The philosophy of the package is described in Dray and Dufour (2007) <doi:10.18637/jss.v022.i04>.",
+      "License": "GPL (>= 2)",
+      "URL": "https://adeverse.github.io/ade4/, http://pbil.univ-lyon1.fr/ADE-4/",
+      "BugReports": "https://github.com/adeverse/ade4/issues",
+      "Encoding": "UTF-8",
+      "NeedsCompilation": "yes",
+      "Author": "Stéphane Dray [aut] (<https://orcid.org/0000-0003-0153-1105>), Anne-Béatrice Dufour [aut] (<https://orcid.org/0000-0002-9339-4293>), Jean Thioulouse [aut] (<https://orcid.org/0000-0001-7664-0598>), Daniel Chessel [ant], Thibaut Jombart [ctb], Sandrine Pavoine [ctb], Jean R. Lobry [ctb], Sébastien Ollier [ctb], Daniel Borcard [ctb], Pierre Legendre [ctb], Stéphanie Bougeard [ctb], Aurélie Siberchicot [ctb, cre] (<https://orcid.org/0000-0002-7638-8318>)",
+      "Maintainer": "Aurélie Siberchicot <aurelie.siberchicot@univ-lyon1.fr>",
+      "Repository": "CRAN"
+    },
+    "adegenet": {
+      "Package": "adegenet",
+      "Version": "2.1.11",
+      "Source": "Repository",
+      "Title": "Exploratory Analysis of Genetic and Genomic Data",
+      "Authors@R": "c(person(given = \"Thibaut\", family = \"Jombart\", role = \"aut\", comment = c(ORCID = \"0000-0003-2226-8692\")), person(given = \"Zhian N.\", family = \"Kamvar\", role = c(\"aut\", \"cre\"), email = \"zkamvar@gmail.com\", comment = c(ORCID = \"0000-0003-1458-7108\")), person(given = \"Caitlin\", family = \"Collins\", role = \"ctb\"), person(given = \"Roman\", family = \"Lustrik\", role = \"ctb\"), person(given = \"Marie-Pauline\", family = \"Beugin\", role = \"ctb\"), person(given = \"Brian J.\", family = \"Knaus\", role = \"ctb\"), person(given = \"Peter\", family = \"Solymos\", role = \"ctb\"), person(given = \"Vladimir\", family = \"Mikryukov\", role = \"ctb\"), person(given = \"Klaus\", family = \"Schliep\", role = \"ctb\"), person(given = \"Tiago\", family = \"Maié\", role = \"ctb\"), person(given = \"Libor\", family = \"Morkovsky\", role = \"ctb\"), person(given = \"Ismail\", family = \"Ahmed\", role = \"ctb\"), person(given = \"Anne\", family = \"Cori\", role = \"ctb\"), person(given = \"Federico\", family = \"Calboli\", role = \"ctb\"), person(given = \"RJ\", family = \"Ewing\", role = \"ctb\"), person(given = \"Frédéric\", family = \"Michaud\", role = \"ctb\"), person(given = \"Rebecca\", family = \"DeCamp\", role = \"ctb\"), person(given = \"Alexandre\", family = \"Courtiol\", role = \"ctb\", comment = c(ORCID = \"0000-0003-0637-2959\")), person(given = \"Lindsay V.\", family = \"Clark\", role = \"ctb\", comment = c(ORCID = \"0000-0002-3881-9252\")), person(given = \"Pavel\", family = \"Dimens\", role = \"ctb\", comment = c(ORCID = \"0000-0003-3823-0373\")), person(given = \"Max\", family = \"Coulter\", role = \"ctb\"), person(given = \"Ivan\", family = \"Krylov\", role = \"ctb\") )",
+      "Description": "Toolset for the exploration of genetic and genomic data. Adegenet provides formal (S4) classes for storing and handling various genetic data, including genetic markers with varying ploidy and hierarchical population structure ('genind' class), alleles counts by populations ('genpop'), and genome-wide SNP data ('genlight'). It also implements original multivariate methods (DAPC, sPCA), graphics, statistical tests, simulation tools, distance and similarity measures, and several spatial methods. A range of both empirical and simulated datasets is also provided to illustrate various methods.",
+      "License": "GPL (>= 2)",
+      "URL": "https://github.com/thibautjombart/adegenet",
+      "Depends": [
+        "R (>= 2.14)",
+        "methods",
+        "ade4"
+      ],
+      "Imports": [
+        "utils",
+        "stats",
+        "grDevices",
+        "MASS",
+        "igraph",
+        "ape",
+        "shiny",
+        "ggplot2",
+        "seqinr",
+        "parallel",
+        "boot",
+        "reshape2",
+        "dplyr (>= 0.4.1)",
+        "vegan"
+      ],
+      "Suggests": [
+        "adespatial",
+        "pegas",
+        "hierfstat",
+        "maps",
+        "spdep",
+        "interp",
+        "splancs",
+        "poppr",
+        "testthat"
+      ],
+      "Encoding": "UTF-8",
+      "LazyLoad": "yes",
+      "RoxygenNote": "7.3.2",
+      "Collate": "'adegenet.package.R' 'datasets.R' 'dist.genlight.R' 'orthobasis.R' 'classes.R' 'constructors.R' 'accessors.R' 'basicMethods.R' 'handling.R' 'auxil.R' 'minorAllele.R' 'setAs.R' 'SNPbin.R' 'strataMethods.R' 'hierarchyMethods.R' 'glHandle.R' 'glFunctions.R' 'glSim.R' 'find.clust.R' 'hybridize.R' 'scale.R' 'fstat.R' 'import.R' 'seqTrack.R' 'chooseCN.R' 'genind2genpop.R' 'loadingplot.R' 'sequences.R' 'gstat.randtest.R' 'makefreq.R' 'colorplot.R' 'monmonier.R' 'spca.R' 'coords.monmonier.R' 'haploGen.R' 'old2new.R' 'global_local_tests.R' 'dapc.R' 'compoplot.R' 'xvalDapc.R' 'haploPop.R' 'PCtest.R' 'dist.genpop.R' 'Hs.R' 'propShared.R' 'export.R' 'HWE.R' 'propTyped.R' 'inbreeding.R' 'glPlot.R' 'gengraph.R' 'simOutbreak.R' 'mutations.R' 'snpposi.R' 'snpzip.R' 'pairDist.R' 'snapclust.R' 'AIC.snapclust.R' 'AICc.snapclust.R' 'BIC.snapclust.R' 'KIC.snapclust.R' 'snapclust.choose.k.R' 'servers.R' 'showmekittens.R' 'spca_randtest.R' 'export_to_mvmapper.R' 'doc_C_routines.R' 'zzz.R'",
+      "NeedsCompilation": "yes",
+      "Author": "Thibaut Jombart [aut] (<https://orcid.org/0000-0003-2226-8692>), Zhian N. Kamvar [aut, cre] (<https://orcid.org/0000-0003-1458-7108>), Caitlin Collins [ctb], Roman Lustrik [ctb], Marie-Pauline Beugin [ctb], Brian J. Knaus [ctb], Peter Solymos [ctb], Vladimir Mikryukov [ctb], Klaus Schliep [ctb], Tiago Maié [ctb], Libor Morkovsky [ctb], Ismail Ahmed [ctb], Anne Cori [ctb], Federico Calboli [ctb], RJ Ewing [ctb], Frédéric Michaud [ctb], Rebecca DeCamp [ctb], Alexandre Courtiol [ctb] (<https://orcid.org/0000-0003-0637-2959>), Lindsay V. Clark [ctb] (<https://orcid.org/0000-0002-3881-9252>), Pavel Dimens [ctb] (<https://orcid.org/0000-0003-3823-0373>), Max Coulter [ctb], Ivan Krylov [ctb]",
+      "Maintainer": "Zhian N. Kamvar <zkamvar@gmail.com>",
+      "Repository": "CRAN"
+    },
+    "adegraphics": {
+      "Package": "adegraphics",
+      "Version": "1.0-22",
+      "Source": "Repository",
+      "Type": "Package",
+      "Title": "An S4 Lattice-Based Package for the Representation of Multivariate Data",
+      "Authors@R": "c( person(\"Stéphane\", \"Dray\", email = \"stephane.dray@univ-lyon1.fr\", role = \"aut\", comment = c(ORCID = \"0000-0003-0153-1105\")), person(\"Aurélie\", \"Siberchicot\", role = c(\"aut\", \"cre\"), email = \"aurelie.siberchicot@univ-lyon1.fr\", comment = c(ORCID = \"0000-0002-7638-8318\")), person(\"Jean\", \"Thioulouse\", email = \"jean.thioulouse@univ-lyon1.fr\", role = \"ctb\", comment = c(ORCID = \"0000-0001-7664-0598\")), person(\"Alice\", \"Julien-Laferrière\", role = \"ctb\") )",
+      "Description": "Graphical functionalities for the representation of multivariate data. It is a complete re-implementation of the functions available in the 'ade4' package.",
+      "Depends": [
+        "R (>= 3.0.2)"
+      ],
+      "License": "GPL (>= 2)",
+      "Imports": [
+        "ade4 (>= 1.7-13)",
+        "graphics",
+        "grid",
+        "KernSmooth",
+        "lattice",
+        "latticeExtra",
+        "methods",
+        "RColorBrewer",
+        "sp (>= 1.1-1)",
+        "stats"
+      ],
+      "Suggests": [
+        "car",
+        "Guerry",
+        "knitr",
+        "markdown",
+        "pixmap",
+        "rmarkdown",
+        "spdep",
+        "splancs"
+      ],
+      "Collate": "adeGsenv.R parameter.R utils.R utilstriangle.R genericMethod.R utilsclass.R panelfunctions.R ADEg.R ADEgS.R utilsADEgS.R ADEg.C1.R C1.barchart.R C1.curve.R C1.curves.R C1.density.R C1.gauss.R C1.dotplot.R C1.hist.R C1.interval.R ADEg.S1.R S1.boxplot.R S1.class.R S1.distri.R S1.label.R S1.match.R ADEg.S2.R S2.arrow.R S2.class.R S2.corcircle.R S2.density.R S2.distri.R S2.image.R S2.label.R S2.logo.R S2.match.R S2.traject.R S2.value.R ADEg.T.R T.image.R T.value.R T.cont.R ADEg.Tr.R Tr.class.R Tr.label.R Tr.match.R Tr.traject.R addhist.R addline.R addpoint.R addsegment.R addtext.R ade4-kplot.R ade4-scatter.R ade4-score.R ade4-plot.R multiplot.R s.Spatial.R utilskey.R",
+      "URL": "http://pbil.univ-lyon1.fr/ADE-4/",
+      "BugReports": "https://github.com/adeverse/adegraphics/issues",
+      "Encoding": "UTF-8",
+      "VignetteBuilder": "knitr",
+      "NeedsCompilation": "no",
+      "Author": "Stéphane Dray [aut] (<https://orcid.org/0000-0003-0153-1105>), Aurélie Siberchicot [aut, cre] (<https://orcid.org/0000-0002-7638-8318>), Jean Thioulouse [ctb] (<https://orcid.org/0000-0001-7664-0598>), Alice Julien-Laferrière [ctb]",
+      "Maintainer": "Aurélie Siberchicot <aurelie.siberchicot@univ-lyon1.fr>",
+      "Repository": "CRAN"
+    },
+    "adephylo": {
+      "Package": "adephylo",
+      "Version": "1.1-17",
+      "Source": "Repository",
+      "Title": "Exploratory Analyses for the Phylogenetic Comparative Method",
+      "Authors@R": "c( person(\"Stéphane\", \"Dray\", email = \"stephane.dray@univ-lyon1.fr\", role = \"aut\", comment = c(ORCID = \"0000-0003-0153-1105\")), person(\"Thibaut\", \"Jombart\", role = \"aut\", email = \"t.jombart@imperial.ac.uk\"), person(\"Anders Ellern\", \"Bilgrau\", role = \"ctb\", email = \"abilgrau@math.aau.dk\"), person(\"Aurélie\", \"Siberchicot\", role = c(\"ctb\", \"cre\"), email = \"aurelie.siberchicot@univ-lyon1.fr\", comment = c(ORCID = \"0000-0002-7638-8318\")) )",
+      "Depends": [
+        "methods",
+        "ade4 (>= 1.7-10)"
+      ],
+      "Imports": [
+        "phylobase",
+        "ape",
+        "adegenet"
+      ],
+      "Description": "Multivariate tools to analyze comparative data, i.e. a phylogeny and some traits measured for each taxa. The package contains functions to represent comparative data, compute phylogenetic proximities, perform multivariate analysis with phylogenetic constraints and test for the presence of phylogenetic autocorrelation. The package is described in Jombart et al (2010) <doi:10.1093/bioinformatics/btq292>.",
+      "License": "GPL (>= 2)",
+      "LazyLoad": "yes",
+      "RoxygenNote": "7.3.2",
+      "Encoding": "UTF-8",
+      "URL": "https://github.com/adeverse/adephylo",
+      "BugReports": "https://github.com/adeverse/adephylo/issues",
+      "NeedsCompilation": "yes",
+      "Author": "Stéphane Dray [aut] (<https://orcid.org/0000-0003-0153-1105>), Thibaut Jombart [aut], Anders Ellern Bilgrau [ctb], Aurélie Siberchicot [ctb, cre] (<https://orcid.org/0000-0002-7638-8318>)",
+      "Maintainer": "Aurélie Siberchicot <aurelie.siberchicot@univ-lyon1.fr>",
+      "Repository": "CRAN"
+    },
+    "adespatial": {
+      "Package": "adespatial",
+      "Version": "0.3-28",
+      "Source": "Repository",
+      "Title": "Multivariate Multiscale Spatial Analysis",
+      "Authors@R": "c( person(\"Stéphane\", \"Dray\", email = \"stephane.dray@univ-lyon1.fr\", role = \"aut\", comment = c(ORCID = \"0000-0003-0153-1105\")), person(\"David\", \"Bauman\", role = \"ctb\"), person(\"Guillaume\", \"Blanchet\", role = \"ctb\"), person(\"Daniel\", \"Borcard\", role = \"ctb\"), person(\"Sylvie\", \"Clappe\", role = \"ctb\"), person(\"Guillaume\", \"Guenard\", role = \"ctb\", comment = c(ORCID = \"0000-0003-0761-3072\")), person(\"Thibaut\", \"Jombart\", role = \"ctb\"), person(\"Guillaume\", \"Larocque\", role = \"ctb\"), person(\"Pierre\", \"Legendre\", role = \"ctb\", comment = c(ORCID = \"0000-0002-3838-3305\")), person(\"Naima\", \"Madi\", role = \"ctb\"), person(\"Hélène H\", \"Wagner\", role = \"ctb\"), person(\"Aurélie\", \"Siberchicot\", role = c(\"ctb\", \"cre\"), email = \"aurelie.siberchicot@univ-lyon1.fr\", comment = c(ORCID = \"0000-0002-7638-8318\")), person(\"John\", \"Chambers\", role = \"ctb\", email = \"jmc@r-project.org\", comment = c(\"Original author of two functions from package SoDA\")) )",
+      "Description": "Tools for the multiscale spatial analysis of multivariate data. Several methods are based on the use of a spatial weighting matrix and its eigenvector decomposition (Moran's Eigenvectors Maps, MEM).  Several approaches are described in the review Dray et al (2012) <doi:10.1890/11-1183.1>.",
+      "Imports": [
+        "ade4 (>= 1.7-13)",
+        "adegraphics",
+        "adephylo",
+        "sp",
+        "spdep",
+        "lattice",
+        "methods",
+        "grDevices",
+        "graphics",
+        "MASS",
+        "stats",
+        "utils",
+        "shiny",
+        "vegan"
+      ],
+      "Depends": [
+        "R (>= 3.5.0)"
+      ],
+      "Suggests": [
+        "knitr",
+        "ape",
+        "rmarkdown",
+        "betapart"
+      ],
+      "License": "GPL (>= 2)",
+      "URL": "https://github.com/adeverse/adespatial, http://adeverse.github.io/adespatial/",
+      "BugReports": "https://github.com/adeverse/adespatial/issues",
+      "Encoding": "UTF-8",
+      "NeedsCompilation": "yes",
+      "RoxygenNote": "7.3.2",
+      "VignetteBuilder": "knitr",
+      "Author": "Stéphane Dray [aut] (<https://orcid.org/0000-0003-0153-1105>), David Bauman [ctb], Guillaume Blanchet [ctb], Daniel Borcard [ctb], Sylvie Clappe [ctb], Guillaume Guenard [ctb] (<https://orcid.org/0000-0003-0761-3072>), Thibaut Jombart [ctb], Guillaume Larocque [ctb], Pierre Legendre [ctb] (<https://orcid.org/0000-0002-3838-3305>), Naima Madi [ctb], Hélène H Wagner [ctb], Aurélie Siberchicot [ctb, cre] (<https://orcid.org/0000-0002-7638-8318>), John Chambers [ctb] (Original author of two functions from package SoDA)",
+      "Maintainer": "Aurélie Siberchicot <aurelie.siberchicot@univ-lyon1.fr>",
+      "Repository": "CRAN"
+    },
     "annotate": {
       "Package": "annotate",
       "Version": "1.88.0",
@@ -1476,6 +1752,48 @@
       "RemoteUrl": "https://github.com/bioc/annotate",
       "RemoteRef": "RELEASE_3_22",
       "RemoteSha": "bc0d5a07cf29902d84eb8b9594ff66103e484faf"
+    },
+    "ape": {
+      "Package": "ape",
+      "Version": "5.8-1",
+      "Source": "Repository",
+      "Date": "2024-12-10",
+      "Title": "Analyses of Phylogenetics and Evolution",
+      "Authors@R": "c(person(\"Emmanuel\", \"Paradis\", role = c(\"aut\", \"cre\", \"cph\"), email = \"Emmanuel.Paradis@ird.fr\", comment = c(ORCID = \"0000-0003-3092-2199\")), person(\"Simon\", \"Blomberg\", role = c(\"aut\", \"cph\"), comment = c(ORCID = \"0000-0003-1062-0839\")), person(\"Ben\", \"Bolker\", role = c(\"aut\", \"cph\"), comment = c(ORCID = \"0000-0002-2127-0443\")), person(\"Joseph\", \"Brown\", role = c(\"aut\", \"cph\"), comment = c(ORCID = \"0000-0002-3835-8062\")), person(\"Santiago\", \"Claramunt\", role = c(\"aut\", \"cph\"), comment = c(ORCID = \"0000-0002-8926-5974\")), person(\"Julien\", \"Claude\", role = c(\"aut\", \"cph\"), , comment = c(ORCID = \"0000-0002-9267-1228\")), person(\"Hoa Sien\", \"Cuong\", role = c(\"aut\", \"cph\")), person(\"Richard\", \"Desper\", role = c(\"aut\", \"cph\")), person(\"Gilles\", \"Didier\", role = c(\"aut\", \"cph\"), comment = c(ORCID = \"0000-0003-0596-9112\")), person(\"Benoit\", \"Durand\", role = c(\"aut\", \"cph\")), person(\"Julien\", \"Dutheil\", role = c(\"aut\", \"cph\"), comment = c(ORCID = \"0000-0001-7753-4121\")), person(\"RJ\", \"Ewing\", role = c(\"aut\", \"cph\")), person(\"Olivier\", \"Gascuel\", role = c(\"aut\", \"cph\")), person(\"Thomas\", \"Guillerme\", role = c(\"aut\", \"cph\"), comment = c(ORCID = \"0000-0003-4325-1275\")), person(\"Christoph\", \"Heibl\", role = c(\"aut\", \"cph\"), comment = c(ORCID = \"0000-0002-7655-3299\")), person(\"Anthony\", \"Ives\", role = c(\"aut\", \"cph\"), comment = c(ORCID = \"0000-0001-9375-9523\")), person(\"Bradley\", \"Jones\", role = c(\"aut\", \"cph\"), comment = c(ORCID = \"0000-0003-4498-1069\")), person(\"Franz\", \"Krah\", role = c(\"aut\", \"cph\"), comment = c(ORCID = \"0000-0001-7866-7508\")), person(\"Daniel\", \"Lawson\", role = c(\"aut\", \"cph\"), comment = c(ORCID = \"0000-0002-5311-6213\")), person(\"Vincent\", \"Lefort\", role = c(\"aut\", \"cph\")), person(\"Pierre\", \"Legendre\", role = c(\"aut\", \"cph\"), comment = c(ORCID = \"0000-0002-3838-3305\")), person(\"Jim\", \"Lemon\", role = c(\"aut\", \"cph\")), person(\"Guillaume\", \"Louvel\", role = c(\"aut\", \"cph\"), comment = c(ORCID = \"0000-0002-7745-0785\")), person(\"Federico\", \"Marotta\", role = c(\"aut\", \"cph\")), person(\"Eric\", \"Marcon\", role = c(\"aut\", \"cph\"), comment = c(ORCID = \"0000-0002-5249-321X\")), person(\"Rosemary\", \"McCloskey\", role = c(\"aut\", \"cph\"), comment = c(ORCID = \"0000-0002-9772-8553\")), person(\"Johan\", \"Nylander\", role = c(\"aut\", \"cph\")), person(\"Rainer\", \"Opgen-Rhein\", role = c(\"aut\", \"cph\")), person(\"Andrei-Alin\", \"Popescu\", role = c(\"aut\", \"cph\")), person(\"Manuela\", \"Royer-Carenzi\", role = c(\"aut\", \"cph\")), person(\"Klaus\", \"Schliep\", role = c(\"aut\", \"cph\"), comment = c(ORCID = \"0000-0003-2941-0161\")), person(\"Korbinian\", \"Strimmer\", role = c(\"aut\", \"cph\"), comment = c(ORCID = \"0000-0001-7917-2056\")), person(\"Damien\", \"de Vienne\", role = c(\"aut\", \"cph\"), comment = c(ORCID = \"0000-0001-9532-5251\")))",
+      "Depends": [
+        "R (>= 3.2.0)"
+      ],
+      "Suggests": [
+        "gee",
+        "expm",
+        "igraph",
+        "phangorn",
+        "xml2"
+      ],
+      "Imports": [
+        "nlme",
+        "lattice",
+        "graphics",
+        "methods",
+        "stats",
+        "utils",
+        "parallel",
+        "Rcpp (>= 0.12.0)",
+        "digest"
+      ],
+      "LinkingTo": [
+        "Rcpp"
+      ],
+      "ZipData": "no",
+      "Description": "Functions for reading, writing, plotting, and manipulating phylogenetic trees, analyses of comparative data in a phylogenetic framework, ancestral character analyses, analyses of diversification and macroevolution, computing distances from DNA sequences, reading and writing nucleotide sequences as well as importing from BioConductor, and several tools such as Mantel's test, generalized skyline plots, graphical exploration of phylogenetic data (alex, trex, kronoviz), estimation of absolute evolutionary rates and clock-like trees using mean path lengths and penalized likelihood, dating trees with non-contemporaneous sequences, translating DNA into AA sequences, and assessing sequence alignments. Phylogeny estimation can be done with the NJ, BIONJ, ME, MVR, SDM, and triangle methods, and several methods handling incomplete distance matrices (NJ*, BIONJ*, MVR*, and the corresponding triangle method). Some functions call external applications (PhyML, Clustal, T-Coffee, Muscle) whose results are returned into R.",
+      "License": "GPL-2 | GPL-3",
+      "URL": "https://github.com/emmanuelparadis/ape",
+      "BugReports": "https://github.com/emmanuelparadis/ape/issues",
+      "Encoding": "UTF-8",
+      "NeedsCompilation": "yes",
+      "Author": "Emmanuel Paradis [aut, cre, cph] (<https://orcid.org/0000-0003-3092-2199>), Simon Blomberg [aut, cph] (<https://orcid.org/0000-0003-1062-0839>), Ben Bolker [aut, cph] (<https://orcid.org/0000-0002-2127-0443>), Joseph Brown [aut, cph] (<https://orcid.org/0000-0002-3835-8062>), Santiago Claramunt [aut, cph] (<https://orcid.org/0000-0002-8926-5974>), Julien Claude [aut, cph] (<https://orcid.org/0000-0002-9267-1228>), Hoa Sien Cuong [aut, cph], Richard Desper [aut, cph], Gilles Didier [aut, cph] (<https://orcid.org/0000-0003-0596-9112>), Benoit Durand [aut, cph], Julien Dutheil [aut, cph] (<https://orcid.org/0000-0001-7753-4121>), RJ Ewing [aut, cph], Olivier Gascuel [aut, cph], Thomas Guillerme [aut, cph] (<https://orcid.org/0000-0003-4325-1275>), Christoph Heibl [aut, cph] (<https://orcid.org/0000-0002-7655-3299>), Anthony Ives [aut, cph] (<https://orcid.org/0000-0001-9375-9523>), Bradley Jones [aut, cph] (<https://orcid.org/0000-0003-4498-1069>), Franz Krah [aut, cph] (<https://orcid.org/0000-0001-7866-7508>), Daniel Lawson [aut, cph] (<https://orcid.org/0000-0002-5311-6213>), Vincent Lefort [aut, cph], Pierre Legendre [aut, cph] (<https://orcid.org/0000-0002-3838-3305>), Jim Lemon [aut, cph], Guillaume Louvel [aut, cph] (<https://orcid.org/0000-0002-7745-0785>), Federico Marotta [aut, cph], Eric Marcon [aut, cph] (<https://orcid.org/0000-0002-5249-321X>), Rosemary McCloskey [aut, cph] (<https://orcid.org/0000-0002-9772-8553>), Johan Nylander [aut, cph], Rainer Opgen-Rhein [aut, cph], Andrei-Alin Popescu [aut, cph], Manuela Royer-Carenzi [aut, cph], Klaus Schliep [aut, cph] (<https://orcid.org/0000-0003-2941-0161>), Korbinian Strimmer [aut, cph] (<https://orcid.org/0000-0001-7917-2056>), Damien de Vienne [aut, cph] (<https://orcid.org/0000-0001-9532-5251>)",
+      "Maintainer": "Emmanuel Paradis <Emmanuel.Paradis@ird.fr>",
+      "Repository": "CRAN"
     },
     "askpass": {
       "Package": "askpass",
@@ -3333,6 +3651,37 @@
       "Maintainer": "Alboukadel Kassambara <alboukadel.kassambara@gmail.com>",
       "Repository": "CRAN"
     },
+    "fansi": {
+      "Package": "fansi",
+      "Version": "1.0.6",
+      "Source": "Repository",
+      "Title": "ANSI Control Sequence Aware String Functions",
+      "Description": "Counterparts to R string manipulation functions that account for the effects of ANSI text formatting control sequences.",
+      "Authors@R": "c( person(\"Brodie\", \"Gaslam\", email=\"brodie.gaslam@yahoo.com\", role=c(\"aut\", \"cre\")), person(\"Elliott\", \"Sales De Andrade\", role=\"ctb\"), person(family=\"R Core Team\", email=\"R-core@r-project.org\", role=\"cph\", comment=\"UTF8 byte length calcs from src/util.c\" ))",
+      "Depends": [
+        "R (>= 3.1.0)"
+      ],
+      "License": "GPL-2 | GPL-3",
+      "URL": "https://github.com/brodieG/fansi",
+      "BugReports": "https://github.com/brodieG/fansi/issues",
+      "VignetteBuilder": "knitr",
+      "Suggests": [
+        "unitizer",
+        "knitr",
+        "rmarkdown"
+      ],
+      "Imports": [
+        "grDevices",
+        "utils"
+      ],
+      "RoxygenNote": "7.2.3",
+      "Encoding": "UTF-8",
+      "Collate": "'constants.R' 'fansi-package.R' 'internal.R' 'load.R' 'misc.R' 'nchar.R' 'strwrap.R' 'strtrim.R' 'strsplit.R' 'substr2.R' 'trimws.R' 'tohtml.R' 'unhandled.R' 'normalize.R' 'sgr.R'",
+      "NeedsCompilation": "yes",
+      "Author": "Brodie Gaslam [aut, cre], Elliott Sales De Andrade [ctb], R Core Team [cph] (UTF8 byte length calcs from src/util.c)",
+      "Maintainer": "Brodie Gaslam <brodie.gaslam@yahoo.com>",
+      "Repository": "CRAN"
+    },
     "farver": {
       "Package": "farver",
       "Version": "2.1.2",
@@ -4782,6 +5131,47 @@
       "Maintainer": "Carson Sievert <carson@posit.co>",
       "Repository": "RSPM"
     },
+    "httpuv": {
+      "Package": "httpuv",
+      "Version": "1.6.16",
+      "Source": "Repository",
+      "Type": "Package",
+      "Title": "HTTP and WebSocket Server Library",
+      "Authors@R": "c( person(\"Joe\", \"Cheng\", , \"joe@posit.co\", role = \"aut\"), person(\"Winston\", \"Chang\", , \"winston@posit.co\", role = c(\"aut\", \"cre\")), person(\"Posit, PBC\", \"fnd\", role = \"cph\"), person(\"Hector\", \"Corrada Bravo\", role = \"ctb\"), person(\"Jeroen\", \"Ooms\", role = \"ctb\"), person(\"Andrzej\", \"Krzemienski\", role = \"cph\", comment = \"optional.hpp\"), person(\"libuv project contributors\", role = \"cph\", comment = \"libuv library, see src/libuv/AUTHORS file\"), person(\"Joyent, Inc. and other Node contributors\", role = \"cph\", comment = \"libuv library, see src/libuv/AUTHORS file; and http-parser library, see src/http-parser/AUTHORS file\"), person(\"Niels\", \"Provos\", role = \"cph\", comment = \"libuv subcomponent: tree.h\"), person(\"Internet Systems Consortium, Inc.\", role = \"cph\", comment = \"libuv subcomponent: inet_pton and inet_ntop, contained in src/libuv/src/inet.c\"), person(\"Alexander\", \"Chemeris\", role = \"cph\", comment = \"libuv subcomponent: stdint-msvc2008.h (from msinttypes)\"), person(\"Google, Inc.\", role = \"cph\", comment = \"libuv subcomponent: pthread-fixes.c\"), person(\"Sony Mobile Communcations AB\", role = \"cph\", comment = \"libuv subcomponent: pthread-fixes.c\"), person(\"Berkeley Software Design Inc.\", role = \"cph\", comment = \"libuv subcomponent: android-ifaddrs.h, android-ifaddrs.c\"), person(\"Kenneth\", \"MacKay\", role = \"cph\", comment = \"libuv subcomponent: android-ifaddrs.h, android-ifaddrs.c\"), person(\"Emergya (Cloud4all, FP7/2007-2013, grant agreement no 289016)\", role = \"cph\", comment = \"libuv subcomponent: android-ifaddrs.h, android-ifaddrs.c\"), person(\"Steve\", \"Reid\", role = \"aut\", comment = \"SHA-1 implementation\"), person(\"James\", \"Brown\", role = \"aut\", comment = \"SHA-1 implementation\"), person(\"Bob\", \"Trower\", role = \"aut\", comment = \"base64 implementation\"), person(\"Alexander\", \"Peslyak\", role = \"aut\", comment = \"MD5 implementation\"), person(\"Trantor Standard Systems\", role = \"cph\", comment = \"base64 implementation\"), person(\"Igor\", \"Sysoev\", role = \"cph\", comment = \"http-parser\") )",
+      "Description": "Provides low-level socket and protocol support for handling HTTP and WebSocket requests directly from within R. It is primarily intended as a building block for other packages, rather than making it particularly easy to create complete web applications using httpuv alone.  httpuv is built on top of the libuv and http-parser C libraries, both of which were developed by Joyent, Inc. (See LICENSE file for libuv and http-parser license information.)",
+      "License": "GPL (>= 2) | file LICENSE",
+      "URL": "https://github.com/rstudio/httpuv",
+      "BugReports": "https://github.com/rstudio/httpuv/issues",
+      "Depends": [
+        "R (>= 2.15.1)"
+      ],
+      "Imports": [
+        "later (>= 0.8.0)",
+        "promises",
+        "R6",
+        "Rcpp (>= 1.0.7)",
+        "utils"
+      ],
+      "Suggests": [
+        "callr",
+        "curl",
+        "jsonlite",
+        "testthat",
+        "websocket"
+      ],
+      "LinkingTo": [
+        "later",
+        "Rcpp"
+      ],
+      "Encoding": "UTF-8",
+      "RoxygenNote": "7.3.2",
+      "SystemRequirements": "GNU make, zlib",
+      "Collate": "'RcppExports.R' 'httpuv.R' 'random_port.R' 'server.R' 'staticServer.R' 'static_paths.R' 'utils.R'",
+      "NeedsCompilation": "yes",
+      "Author": "Joe Cheng [aut], Winston Chang [aut, cre], Posit, PBC fnd [cph], Hector Corrada Bravo [ctb], Jeroen Ooms [ctb], Andrzej Krzemienski [cph] (optional.hpp), libuv project contributors [cph] (libuv library, see src/libuv/AUTHORS file), Joyent, Inc. and other Node contributors [cph] (libuv library, see src/libuv/AUTHORS file; and http-parser library, see src/http-parser/AUTHORS file), Niels Provos [cph] (libuv subcomponent: tree.h), Internet Systems Consortium, Inc. [cph] (libuv subcomponent: inet_pton and inet_ntop, contained in src/libuv/src/inet.c), Alexander Chemeris [cph] (libuv subcomponent: stdint-msvc2008.h (from msinttypes)), Google, Inc. [cph] (libuv subcomponent: pthread-fixes.c), Sony Mobile Communcations AB [cph] (libuv subcomponent: pthread-fixes.c), Berkeley Software Design Inc. [cph] (libuv subcomponent: android-ifaddrs.h, android-ifaddrs.c), Kenneth MacKay [cph] (libuv subcomponent: android-ifaddrs.h, android-ifaddrs.c), Emergya (Cloud4all, FP7/2007-2013, grant agreement no 289016) [cph] (libuv subcomponent: android-ifaddrs.h, android-ifaddrs.c), Steve Reid [aut] (SHA-1 implementation), James Brown [aut] (SHA-1 implementation), Bob Trower [aut] (base64 implementation), Alexander Peslyak [aut] (MD5 implementation), Trantor Standard Systems [cph] (base64 implementation), Igor Sysoev [cph] (http-parser)",
+      "Maintainer": "Winston Chang <winston@posit.co>",
+      "Repository": "CRAN"
+    },
     "httr": {
       "Package": "httr",
       "Version": "1.4.7",
@@ -4914,6 +5304,47 @@
       "NeedsCompilation": "yes",
       "Author": "Gábor Csárdi [aut] (ORCID: <https://orcid.org/0000-0001-7098-9676>), Tamás Nepusz [aut] (ORCID: <https://orcid.org/0000-0002-1451-338X>), Vincent Traag [aut] (ORCID: <https://orcid.org/0000-0003-3170-3879>), Szabolcs Horvát [aut] (ORCID: <https://orcid.org/0000-0002-3100-523X>), Fabio Zanini [aut] (ORCID: <https://orcid.org/0000-0001-7097-8539>), Daniel Noom [aut], Kirill Müller [aut, cre] (ORCID: <https://orcid.org/0000-0002-1416-3412>), Michael Antonov [ctb], Chan Zuckerberg Initiative [fnd] (ROR: <https://ror.org/02qenvm24>), David Schoch [aut] (ORCID: <https://orcid.org/0000-0003-2952-4812>), Maëlle Salmon [aut] (ORCID: <https://orcid.org/0000-0002-2815-0399>)",
       "Maintainer": "Kirill Müller <kirill@cynkra.com>",
+      "Repository": "CRAN"
+    },
+    "interp": {
+      "Package": "interp",
+      "Version": "1.1-6",
+      "Source": "Repository",
+      "Type": "Package",
+      "Title": "Interpolation Methods",
+      "Date": "2024-01-26",
+      "Authors@R": "c(person(\"Albrecht\", \"Gebhardt\", role = c(\"aut\", \"cre\", \"cph\"), email = \"albrecht.gebhardt@aau.at\"), person(\"Roger\", \"Bivand\", role = c(\"aut\"), email = \"Roger.Bivand@nhh.no\"), person(\"David\", \"Sinclair\", role = c(\"aut\",\"cph\"), email = \"david@s-hull.org\", comment = \"author of the shull library\"))",
+      "Maintainer": "Albrecht Gebhardt <albrecht.gebhardt@aau.at>",
+      "Description": "Bivariate data interpolation on regular and irregular grids, either linear or using splines are the main part of this package.  It is intended to provide FOSS replacement functions for the ACM licensed akima::interp and tripack::tri.mesh functions. Linear interpolation is implemented in  interp::interp(..., method=\"linear\"), this corresponds to the call  akima::interp(..., linear=TRUE) which is the default setting and  covers most of akima::interp use cases in depending packages.   A re-implementation of Akimas irregular grid spline interpolation (akima::interp(..., linear=FALSE)) is now also available via interp::interp(..., method=\"akima\"). Estimators for partial derivatives are now also available in  interp::locpoly(), these are a prerequisite for the spline interpolation.   The basic part is a GPLed triangulation algorithm (sweep hull  algorithm by David Sinclair) providing the starting point for the irregular grid interpolator. As side effect this algorithm is also used to provide replacements for almost all functions of the tripack package which also suffers from the same ACM license restrictions.   All functions are designed to be backward compatible with their  akima / tripack counterparts.",
+      "License": "GPL (>= 2)",
+      "Imports": [
+        "Rcpp (>= 0.12.9)",
+        "deldir"
+      ],
+      "Suggests": [
+        "sp",
+        "Deriv",
+        "Ryacas",
+        "ggplot2",
+        "gridExtra",
+        "lattice",
+        "stringi",
+        "stringr",
+        "scatterplot3d",
+        "MASS"
+      ],
+      "Enhances": [
+        "RcppEigen"
+      ],
+      "LinkingTo": [
+        "Rcpp",
+        "RcppEigen"
+      ],
+      "Depends": [
+        "R (>= 3.5.0)"
+      ],
+      "NeedsCompilation": "yes",
+      "Author": "Albrecht Gebhardt [aut, cre, cph], Roger Bivand [aut], David Sinclair [aut, cph] (author of the shull library)",
       "Repository": "CRAN"
     },
     "irlba": {
@@ -5338,6 +5769,45 @@
       "NeedsCompilation": "yes",
       "Author": "Deepayan Sarkar [aut, cre] (<https://orcid.org/0000-0003-4107-1553>), Felix Andrews [ctb], Kevin Wright [ctb] (documentation), Neil Klepeis [ctb], Johan Larsson [ctb] (miscellaneous improvements), Zhijian (Jason) Wen [cph] (filled contour code), Paul Murrell [ctb], Stefan Eng [ctb] (violin plot improvements), Achim Zeileis [ctb] (modern colors), Alexandre Courtiol [ctb] (generics for larrows, lpolygon, lrect and lsegments)",
       "Maintainer": "Deepayan Sarkar <deepayan.sarkar@r-project.org>",
+      "Repository": "CRAN"
+    },
+    "latticeExtra": {
+      "Package": "latticeExtra",
+      "Version": "0.6-30",
+      "Source": "Repository",
+      "Date": "2022-06-30",
+      "Title": "Extra Graphical Utilities Based on Lattice",
+      "Author": "Deepayan Sarkar <deepayan.sarkar@r-project.org>, Felix Andrews <felix@nfrac.org>",
+      "Maintainer": "Deepayan Sarkar <deepayan.sarkar@r-project.org>",
+      "Description": "Building on the infrastructure provided by the lattice package, this package provides several new high-level functions and methods, as well as additional utilities such as panel and axis annotation functions.",
+      "Depends": [
+        "R (>= 3.6.0)",
+        "lattice"
+      ],
+      "Imports": [
+        "grid",
+        "stats",
+        "utils",
+        "grDevices",
+        "png",
+        "jpeg",
+        "RColorBrewer",
+        "interp",
+        "MASS"
+      ],
+      "Suggests": [
+        "maps",
+        "mapproj",
+        "deldir",
+        "quantreg",
+        "zoo",
+        "mgcv"
+      ],
+      "URL": "http://latticeextra.r-forge.r-project.org/",
+      "LazyLoad": "yes",
+      "LazyData": "yes",
+      "License": "GPL (>= 2)",
+      "NeedsCompilation": "no",
       "Repository": "CRAN"
     },
     "lazyeval": {
@@ -5950,6 +6420,31 @@
       "Repository": "CRAN",
       "Encoding": "UTF-8"
     },
+    "munsell": {
+      "Package": "munsell",
+      "Version": "0.5.1",
+      "Source": "Repository",
+      "Type": "Package",
+      "Title": "Utilities for Using Munsell Colours",
+      "Author": "Charlotte Wickham <cwickham@gmail.com>",
+      "Maintainer": "Charlotte Wickham <cwickham@gmail.com>",
+      "Description": "Provides easy access to, and manipulation of, the Munsell  colours. Provides a mapping between Munsell's  original notation (e.g. \"5R 5/10\") and hexadecimal strings suitable  for use directly in R graphics. Also provides utilities  to explore slices through the Munsell colour tree, to transform  Munsell colours and display colour palettes.",
+      "Suggests": [
+        "ggplot2",
+        "testthat"
+      ],
+      "Imports": [
+        "colorspace",
+        "methods"
+      ],
+      "License": "MIT + file LICENSE",
+      "URL": "https://cran.r-project.org/package=munsell, https://github.com/cwickham/munsell/",
+      "RoxygenNote": "7.3.1",
+      "Encoding": "UTF-8",
+      "BugReports": "https://github.com/cwickham/munsell/issues",
+      "NeedsCompilation": "no",
+      "Repository": "CRAN"
+    },
     "mvtnorm": {
       "Package": "mvtnorm",
       "Version": "1.4-1",
@@ -6317,6 +6812,40 @@
       "Author": "Ulrich Halekoh [aut, cph], Søren Højsgaard [aut, cre, cph]",
       "Repository": "CRAN"
     },
+    "permute": {
+      "Package": "permute",
+      "Version": "0.9-7",
+      "Source": "Repository",
+      "Title": "Functions for Generating Restricted Permutations of Data",
+      "Date": "2022-01-27",
+      "Authors@R": "c(person(given = \"Gavin L.\", family = \"Simpson\", email = \"ucfagls@gmail.com\", role = c(\"aut\", \"cph\", \"cre\"), comment = c(ORCID = \"0000-0002-9084-8413\")), person(given = \"R Core Team\", role = \"cph\"), person(given = \"Douglas M.\", family = \"Bates\", role = \"ctb\"), person(given = \"Jari\", family = \"Oksanen\", role = \"ctb\"))",
+      "Depends": [
+        "R (>= 2.14.0)"
+      ],
+      "Imports": [
+        "stats"
+      ],
+      "Suggests": [
+        "vegan (>= 2.0-0)",
+        "testthat (>= 0.5)",
+        "parallel",
+        "knitr",
+        "rmarkdown",
+        "bookdown",
+        "sessioninfo"
+      ],
+      "Description": "A set of restricted permutation designs for freely exchangeable, line transects (time series), and spatial grid designs plus permutation of blocks (groups of samples) is provided. 'permute' also allows split-plot designs, in which the whole-plots or split-plots or both can be freely-exchangeable or one of the restricted designs. The 'permute' package is modelled after the permutation schemes of 'Canoco 3.1' (and later) by Cajo ter Braak.",
+      "License": "GPL-2",
+      "ByteCompile": "true",
+      "URL": "https://github.com/gavinsimpson/permute",
+      "BugReports": "https://github.com/gavinsimpson/permute/issues",
+      "Copyright": "see file COPYRIGHTS",
+      "VignetteBuilder": "knitr",
+      "NeedsCompilation": "no",
+      "Author": "Gavin L. Simpson [aut, cph, cre] (<https://orcid.org/0000-0002-9084-8413>), R Core Team [cph], Douglas M. Bates [ctb], Jari Oksanen [ctb]",
+      "Maintainer": "Gavin L. Simpson <ucfagls@gmail.com>",
+      "Repository": "CRAN"
+    },
     "pheatmap": {
       "Package": "pheatmap",
       "Version": "1.0.13",
@@ -6345,6 +6874,45 @@
       "NeedsCompilation": "no",
       "Author": "Raivo Kolde [aut, cre]",
       "Maintainer": "Raivo Kolde <rkolde@gmail.com>",
+      "Repository": "CRAN"
+    },
+    "phylobase": {
+      "Package": "phylobase",
+      "Version": "0.8.12",
+      "Source": "Repository",
+      "Type": "Package",
+      "Title": "Base Package for Phylogenetic Structures and Comparative Data",
+      "Imports": [
+        "ade4",
+        "ape (>= 3.0)",
+        "Rcpp (>= 0.11.0)",
+        "rncl (>= 0.6.0)",
+        "grid",
+        "methods",
+        "stats",
+        "RNeXML"
+      ],
+      "LinkingTo": [
+        "Rcpp"
+      ],
+      "Suggests": [
+        "MASS",
+        "testthat (>= 0.8.1)",
+        "knitr",
+        "rmarkdown"
+      ],
+      "Author": "R Hackathon et al. (alphabetically: Ben Bolker, Marguerite Butler, Peter Cowan, Damien de Vienne, Dirk Eddelbuettel, Mark Holder, Thibaut Jombart, Steve Kembel, Francois Michonneau, David Orme, Brian O'Meara, Emmanuel Paradis, Jim Regetz, Derrick Zwickl)",
+      "Maintainer": "Francois Michonneau <francois.michonneau@gmail.com>",
+      "Description": "Provides a base S4 class for comparative methods, incorporating one or more trees and trait data.",
+      "License": "GPL (>= 2)",
+      "URL": "https://github.com/fmichonneau/phylobase",
+      "BugReports": "https://github.com/fmichonneau/phylobase/issues",
+      "LazyData": "true",
+      "Collate": "'oldclasses-class.R' 'internal-constructors.R' 'phylo4-methods.R' 'RcppExports.R' 'checkdata.R' 'phylo4-class.R' 'getNode-methods.R' 'formatData.R' 'phylo4d-class.R' 'phylo4d-methods.R' 'MRCA-methods.R' 'addData-methods.R' 'ancestors.R' 'phylo4-accessors.R' 'root-methods.R' 'nodeId-methods.R' 'edgeLength-methods.R' 'setAs-methods.R' 'extractTree.R' 'labels-methods.R' 'multiphylo4-class.R' 'pdata.R' 'phylo4d-accessors.R' 'phylobase-package.R' 'phylobase.options.R' 'phylomats-class.R' 'print-methods.R' 'readNCL.R' 'reorder-methods.R' 'shortestPath-methods.R' 'subset-methods.R' 'summary-methods.R' 'tbind.R' 'tdata-methods.R' 'treePlot.R' 'treestruc.R' 'zzz.R'",
+      "VignetteBuilder": "knitr",
+      "RoxygenNote": "7.3.1",
+      "Encoding": "UTF-8",
+      "NeedsCompilation": "yes",
       "Repository": "CRAN"
     },
     "pillar": {
@@ -6402,6 +6970,26 @@
       "NeedsCompilation": "no",
       "Author": "Kirill Müller [aut, cre] (ORCID: <https://orcid.org/0000-0002-1416-3412>), Hadley Wickham [aut], RStudio [cph]",
       "Maintainer": "Kirill Müller <kirill@cynkra.com>",
+      "Repository": "CRAN"
+    },
+    "pixmap": {
+      "Package": "pixmap",
+      "Version": "0.4-13",
+      "Source": "Repository",
+      "Date": "2024-05-01",
+      "Title": "Bitmap Images / Pixel Maps",
+      "Imports": [
+        "methods",
+        "graphics",
+        "grDevices"
+      ],
+      "Authors@R": "c(person(\"Roger\", \"Bivand\", role = \"aut\", comment = c(ORCID = \"0000-0003-2392-6140\")), person(\"Friedrich\", \"Leisch\", role = \"aut\", comment = c(ORCID = \"0000-0001-7278-1983\", \"maintainer 2001-2024\")), person(\"Martin\", \"Maechler\", role = \"aut\", comment = c(ORCID = \"0000-0002-8685-9910\")), person(\"Achim\", \"Zeileis\", role = \"cre\", email = \"Achim.Zeileis@R-project.org\", comment = c(ORCID = \"0000-0003-0918-3766\")))",
+      "Description": "Functions for import, export, visualization and other manipulations of bitmapped images.",
+      "License": "GPL-2",
+      "LazyLoad": "yes",
+      "NeedsCompilation": "no",
+      "Author": "Roger Bivand [aut] (<https://orcid.org/0000-0003-2392-6140>), Friedrich Leisch [aut] (<https://orcid.org/0000-0001-7278-1983>, maintainer 2001-2024), Martin Maechler [aut] (<https://orcid.org/0000-0002-8685-9910>), Achim Zeileis [cre] (<https://orcid.org/0000-0003-0918-3766>)",
+      "Maintainer": "Achim Zeileis <Achim.Zeileis@R-project.org>",
       "Repository": "CRAN"
     },
     "pkgconfig": {
@@ -7346,6 +7934,39 @@
       "Maintainer": "Yihui Xie <xie@yihui.name>",
       "Repository": "RSPM"
     },
+    "rncl": {
+      "Package": "rncl",
+      "Version": "0.8.7",
+      "Source": "Repository",
+      "Title": "An Interface to the Nexus Class Library",
+      "Authors@R": "c(person(\"Francois\", \"Michonneau\", role=c(\"aut\", \"cre\"), email=\"francois.michonneau@gmail.com\",    comment = c(\"ORCID\" = \"0000-0002-9092-966X\")), person(\"Ben\", \"Bolker\", role=c(\"aut\"),    comment = c(\"ORCID\" = \"0000-0002-2127-0443\")), person(\"Mark\", \"Holder\", role=c(\"aut\"),   comment = c(\"ORCID\" = \"0000-0001-5575-0536\")), person(\"Paul\", \"Lewis\", role=c(\"aut\"),    comment = c(\"ORCID\" = \"0000-0001-9852-8759\")), person(\"Brian\", \"O'Meara\", role=c(\"aut\"), comment = c(\"ORCID\" = \"0000-0002-0337-5997\")))",
+      "Maintainer": "Francois Michonneau <francois.michonneau@gmail.com>",
+      "Description": "An interface to the Nexus Class Library which allows parsing of NEXUS, Newick and other phylogenetic tree file formats. It provides elements of the file that can be used to build phylogenetic objects such as ape's 'phylo' or phylobase's 'phylo4(d)'. This functionality is demonstrated with 'read_newick_phylo()' and 'read_nexus_phylo()'.",
+      "Imports": [
+        "Rcpp (>= 0.11.0)",
+        "progress (>= 1.1.2)",
+        "stats"
+      ],
+      "Suggests": [
+        "testthat",
+        "ape"
+      ],
+      "LinkingTo": [
+        "Rcpp",
+        "progress"
+      ],
+      "Depends": [
+        "R (>= 3.1.1)"
+      ],
+      "License": "BSD_2_clause + file LICENSE",
+      "URL": "https://github.com/fmichonneau/rncl",
+      "BugReports": "https://github.com/fmichonneau/rncl/issues",
+      "RoxygenNote": "7.1.2",
+      "Encoding": "UTF-8",
+      "NeedsCompilation": "yes",
+      "Author": "Francois Michonneau [aut, cre] (<https://orcid.org/0000-0002-9092-966X>), Ben Bolker [aut] (<https://orcid.org/0000-0002-2127-0443>), Mark Holder [aut] (<https://orcid.org/0000-0001-5575-0536>), Paul Lewis [aut] (<https://orcid.org/0000-0001-9852-8759>), Brian O'Meara [aut] (<https://orcid.org/0000-0002-0337-5997>)",
+      "Repository": "CRAN"
+    },
     "rpart": {
       "Package": "rpart",
       "Version": "4.1.24",
@@ -7701,6 +8322,27 @@
       "Maintainer": "Uwe Ligges <ligges@statistik.tu-dortmund.de>",
       "Repository": "CRAN"
     },
+    "segmented": {
+      "Package": "segmented",
+      "Version": "2.1-4",
+      "Source": "Repository",
+      "Type": "Package",
+      "Title": "Regression Models with Break-Points / Change-Points Estimation (with Possibly Random Effects)",
+      "Date": "2025-02-26",
+      "Authors@R": "c(person(given = c(\"Vito\",\"M.\",\"R.\"), family = \"Muggeo\", role = c(\"aut\", \"cre\"), email = \"vito.muggeo@unipa.it\", comment=c(ORCID=\"0000-0002-3386-4054\")))",
+      "Maintainer": "Vito M. R. Muggeo <vito.muggeo@unipa.it>",
+      "Description": "Fitting regression models where, in addition to possible linear terms, one or more covariates have segmented (i.e., broken-line or piece-wise linear) or stepmented (i.e. piece-wise constant) effects. Multiple breakpoints for the same variable are allowed.  The estimation method is discussed in Muggeo (2003, <doi:10.1002/sim.1545>) and  illustrated in Muggeo (2008, <https://www.r-project.org/doc/Rnews/Rnews_2008-1.pdf>). An approach for hypothesis testing is presented  in Muggeo (2016, <doi:10.1080/00949655.2016.1149855>), and interval estimation for the breakpoint is discussed in Muggeo (2017, <doi:10.1111/anzs.12200>).  Segmented mixed models, i.e. random effects in the change point, are discussed in Muggeo (2014, <doi:10.1177/1471082X13504721>). Estimation of piecewise-constant relationships and changepoints (mean-shift models) is  discussed in Fasola et al. (2018, <doi:10.1007/s00180-017-0740-4>).",
+      "Depends": [
+        "R (>= 3.5.0)",
+        "MASS",
+        "nlme"
+      ],
+      "License": "GPL",
+      "NeedsCompilation": "no",
+      "Author": "Vito M. R. Muggeo [aut, cre] (<https://orcid.org/0000-0002-3386-4054>)",
+      "RoxygenNote": "7.3.1",
+      "Repository": "CRAN"
+    },
     "selectr": {
       "Package": "selectr",
       "Version": "0.5-1",
@@ -7728,6 +8370,30 @@
       "NeedsCompilation": "no",
       "Author": "Simon Potter [aut, trl, cre], Simon Sapin [aut], Ian Bicking [aut]",
       "Maintainer": "Simon Potter <simon@sjp.co.nz>",
+      "Repository": "CRAN"
+    },
+    "seqinr": {
+      "Package": "seqinr",
+      "Version": "4.2-36",
+      "Source": "Repository",
+      "Title": "Biological Sequences Retrieval and Analysis",
+      "Depends": [
+        "R (>= 2.10.0)"
+      ],
+      "Imports": [
+        "ade4",
+        "segmented"
+      ],
+      "Authors@R": "c(person(\"Delphine\", \"Charif\", role = \"aut\"), person(\"Olivier\", \"Clerc\", role = \"ctb\"), person(\"Carolin\", \"Frank\", role = \"ctb\"), person(c(\"Jean\", \"R.\"), \"Lobry\", role = c(\"aut\", \"cph\")), person(\"Anamaria\", \"Necşulea\", role = \"ctb\"), person(\"Leonor\", \"Palmeira\", role = \"ctb\"), person(\"Simon\", \"Penel\", role = \"cre\", email = \"simon.penel@univ-lyon1.fr\"), person(\"Guy\", \"Perrière\", role = \"ctb\"))",
+      "Maintainer": "Simon Penel <simon.penel@univ-lyon1.fr>",
+      "License": "GPL (>= 2)",
+      "Description": "Exploratory data analysis and data visualization for biological sequence (DNA and protein) data. Seqinr includes utilities for sequence data management under the ACNUC system described in Gouy, M. et al. (1984) Nucleic Acids Res. 12:121-127 <doi:10.1093/nar/12.1Part1.121>.",
+      "URL": "https://seqinr.r-forge.r-project.org/, https://github.com/lbbe-software/seqinr",
+      "BugReports": "https://github.com/lbbe-software/seqinr/issues",
+      "SystemRequirements": "zlib headers and library.",
+      "NeedsCompilation": "yes",
+      "Encoding": "UTF-8",
+      "Author": "Delphine Charif [aut], Olivier Clerc [ctb], Carolin Frank [ctb], Jean R. Lobry [aut, cph], Anamaria Necşulea [ctb], Leonor Palmeira [ctb], Simon Penel [cre], Guy Perrière [ctb]",
       "Repository": "CRAN"
     },
     "sf": {
@@ -7830,6 +8496,75 @@
       "Repository": "CRAN",
       "Encoding": "UTF-8"
     },
+    "shiny": {
+      "Package": "shiny",
+      "Version": "1.10.0",
+      "Source": "Repository",
+      "Type": "Package",
+      "Title": "Web Application Framework for R",
+      "Authors@R": "c( person(\"Winston\", \"Chang\", role = c(\"aut\", \"cre\"), email = \"winston@posit.co\", comment = c(ORCID = \"0000-0002-1576-2126\")), person(\"Joe\", \"Cheng\", role = \"aut\", email = \"joe@posit.co\"), person(\"JJ\", \"Allaire\", role = \"aut\", email = \"jj@posit.co\"), person(\"Carson\", \"Sievert\", role = \"aut\", email = \"carson@posit.co\", comment = c(ORCID = \"0000-0002-4958-2844\")), person(\"Barret\", \"Schloerke\", role = \"aut\", email = \"barret@posit.co\", comment = c(ORCID = \"0000-0001-9986-114X\")), person(\"Yihui\", \"Xie\", role = \"aut\", email = \"yihui@posit.co\"), person(\"Jeff\", \"Allen\", role = \"aut\"), person(\"Jonathan\", \"McPherson\", role = \"aut\", email = \"jonathan@posit.co\"), person(\"Alan\", \"Dipert\", role = \"aut\"), person(\"Barbara\", \"Borges\", role = \"aut\"), person(\"Posit Software, PBC\", role = c(\"cph\", \"fnd\")), person(family = \"jQuery Foundation\", role = \"cph\", comment = \"jQuery library and jQuery UI library\"), person(family = \"jQuery contributors\", role = c(\"ctb\", \"cph\"), comment = \"jQuery library; authors listed in inst/www/shared/jquery-AUTHORS.txt\"), person(family = \"jQuery UI contributors\", role = c(\"ctb\", \"cph\"), comment = \"jQuery UI library; authors listed in inst/www/shared/jqueryui/AUTHORS.txt\"), person(\"Mark\", \"Otto\", role = \"ctb\", comment = \"Bootstrap library\"), person(\"Jacob\", \"Thornton\", role = \"ctb\", comment = \"Bootstrap library\"), person(family = \"Bootstrap contributors\", role = \"ctb\", comment = \"Bootstrap library\"), person(family = \"Twitter, Inc\", role = \"cph\", comment = \"Bootstrap library\"), person(\"Prem Nawaz\", \"Khan\", role = \"ctb\", comment = \"Bootstrap accessibility plugin\"), person(\"Victor\", \"Tsaran\", role = \"ctb\", comment = \"Bootstrap accessibility plugin\"), person(\"Dennis\", \"Lembree\", role = \"ctb\", comment = \"Bootstrap accessibility plugin\"), person(\"Srinivasu\", \"Chakravarthula\", role = \"ctb\", comment = \"Bootstrap accessibility plugin\"), person(\"Cathy\", \"O'Connor\", role = \"ctb\", comment = \"Bootstrap accessibility plugin\"), person(family = \"PayPal, Inc\", role = \"cph\", comment = \"Bootstrap accessibility plugin\"), person(\"Stefan\", \"Petre\", role = c(\"ctb\", \"cph\"), comment = \"Bootstrap-datepicker library\"), person(\"Andrew\", \"Rowls\", role = c(\"ctb\", \"cph\"), comment = \"Bootstrap-datepicker library\"), person(\"Brian\", \"Reavis\", role = c(\"ctb\", \"cph\"), comment = \"selectize.js library\"), person(\"Salmen\", \"Bejaoui\", role = c(\"ctb\", \"cph\"), comment = \"selectize-plugin-a11y library\"), person(\"Denis\", \"Ineshin\", role = c(\"ctb\", \"cph\"), comment = \"ion.rangeSlider library\"), person(\"Sami\", \"Samhuri\", role = c(\"ctb\", \"cph\"), comment = \"Javascript strftime library\"), person(family = \"SpryMedia Limited\", role = c(\"ctb\", \"cph\"), comment = \"DataTables library\"), person(\"John\", \"Fraser\", role = c(\"ctb\", \"cph\"), comment = \"showdown.js library\"), person(\"John\", \"Gruber\", role = c(\"ctb\", \"cph\"), comment = \"showdown.js library\"), person(\"Ivan\", \"Sagalaev\", role = c(\"ctb\", \"cph\"), comment = \"highlight.js library\"), person(family = \"R Core Team\", role = c(\"ctb\", \"cph\"), comment = \"tar implementation from R\") )",
+      "Description": "Makes it incredibly easy to build interactive web applications with R. Automatic \"reactive\" binding between inputs and outputs and extensive prebuilt widgets make it possible to build beautiful, responsive, and powerful applications with minimal effort.",
+      "License": "GPL-3 | file LICENSE",
+      "Depends": [
+        "R (>= 3.0.2)",
+        "methods"
+      ],
+      "Imports": [
+        "utils",
+        "grDevices",
+        "httpuv (>= 1.5.2)",
+        "mime (>= 0.3)",
+        "jsonlite (>= 0.9.16)",
+        "xtable",
+        "fontawesome (>= 0.4.0)",
+        "htmltools (>= 0.5.4)",
+        "R6 (>= 2.0)",
+        "sourcetools",
+        "later (>= 1.0.0)",
+        "promises (>= 1.3.2)",
+        "tools",
+        "crayon",
+        "rlang (>= 0.4.10)",
+        "fastmap (>= 1.1.1)",
+        "withr",
+        "commonmark (>= 1.7)",
+        "glue (>= 1.3.2)",
+        "bslib (>= 0.6.0)",
+        "cachem (>= 1.1.0)",
+        "lifecycle (>= 0.2.0)"
+      ],
+      "Suggests": [
+        "coro (>= 1.1.0)",
+        "datasets",
+        "DT",
+        "Cairo (>= 1.5-5)",
+        "testthat (>= 3.0.0)",
+        "knitr (>= 1.6)",
+        "markdown",
+        "rmarkdown",
+        "ggplot2",
+        "reactlog (>= 1.0.0)",
+        "magrittr",
+        "yaml",
+        "future",
+        "dygraphs",
+        "ragg",
+        "showtext",
+        "sass"
+      ],
+      "URL": "https://shiny.posit.co/, https://github.com/rstudio/shiny",
+      "BugReports": "https://github.com/rstudio/shiny/issues",
+      "Collate": "'globals.R' 'app-state.R' 'app_template.R' 'bind-cache.R' 'bind-event.R' 'bookmark-state-local.R' 'bookmark-state.R' 'bootstrap-deprecated.R' 'bootstrap-layout.R' 'conditions.R' 'map.R' 'utils.R' 'bootstrap.R' 'busy-indicators-spinners.R' 'busy-indicators.R' 'cache-utils.R' 'deprecated.R' 'devmode.R' 'diagnose.R' 'extended-task.R' 'fileupload.R' 'graph.R' 'reactives.R' 'reactive-domains.R' 'history.R' 'hooks.R' 'html-deps.R' 'image-interact-opts.R' 'image-interact.R' 'imageutils.R' 'input-action.R' 'input-checkbox.R' 'input-checkboxgroup.R' 'input-date.R' 'input-daterange.R' 'input-file.R' 'input-numeric.R' 'input-password.R' 'input-radiobuttons.R' 'input-select.R' 'input-slider.R' 'input-submit.R' 'input-text.R' 'input-textarea.R' 'input-utils.R' 'insert-tab.R' 'insert-ui.R' 'jqueryui.R' 'knitr.R' 'middleware-shiny.R' 'middleware.R' 'timer.R' 'shiny.R' 'mock-session.R' 'modal.R' 'modules.R' 'notifications.R' 'priorityqueue.R' 'progress.R' 'react.R' 'reexports.R' 'render-cached-plot.R' 'render-plot.R' 'render-table.R' 'run-url.R' 'runapp.R' 'serializers.R' 'server-input-handlers.R' 'server-resource-paths.R' 'server.R' 'shiny-options.R' 'shiny-package.R' 'shinyapp.R' 'shinyui.R' 'shinywrappers.R' 'showcase.R' 'snapshot.R' 'staticimports.R' 'tar.R' 'test-export.R' 'test-server.R' 'test.R' 'update-input.R' 'utils-lang.R' 'version_bs_date_picker.R' 'version_ion_range_slider.R' 'version_jquery.R' 'version_jqueryui.R' 'version_selectize.R' 'version_strftime.R' 'viewer.R'",
+      "RoxygenNote": "7.3.2",
+      "Encoding": "UTF-8",
+      "RdMacros": "lifecycle",
+      "Config/testthat/edition": "3",
+      "Config/Needs/check": "shinytest2",
+      "NeedsCompilation": "no",
+      "Author": "Winston Chang [aut, cre] (<https://orcid.org/0000-0002-1576-2126>), Joe Cheng [aut], JJ Allaire [aut], Carson Sievert [aut] (<https://orcid.org/0000-0002-4958-2844>), Barret Schloerke [aut] (<https://orcid.org/0000-0001-9986-114X>), Yihui Xie [aut], Jeff Allen [aut], Jonathan McPherson [aut], Alan Dipert [aut], Barbara Borges [aut], Posit Software, PBC [cph, fnd], jQuery Foundation [cph] (jQuery library and jQuery UI library), jQuery contributors [ctb, cph] (jQuery library; authors listed in inst/www/shared/jquery-AUTHORS.txt), jQuery UI contributors [ctb, cph] (jQuery UI library; authors listed in inst/www/shared/jqueryui/AUTHORS.txt), Mark Otto [ctb] (Bootstrap library), Jacob Thornton [ctb] (Bootstrap library), Bootstrap contributors [ctb] (Bootstrap library), Twitter, Inc [cph] (Bootstrap library), Prem Nawaz Khan [ctb] (Bootstrap accessibility plugin), Victor Tsaran [ctb] (Bootstrap accessibility plugin), Dennis Lembree [ctb] (Bootstrap accessibility plugin), Srinivasu Chakravarthula [ctb] (Bootstrap accessibility plugin), Cathy O'Connor [ctb] (Bootstrap accessibility plugin), PayPal, Inc [cph] (Bootstrap accessibility plugin), Stefan Petre [ctb, cph] (Bootstrap-datepicker library), Andrew Rowls [ctb, cph] (Bootstrap-datepicker library), Brian Reavis [ctb, cph] (selectize.js library), Salmen Bejaoui [ctb, cph] (selectize-plugin-a11y library), Denis Ineshin [ctb, cph] (ion.rangeSlider library), Sami Samhuri [ctb, cph] (Javascript strftime library), SpryMedia Limited [ctb, cph] (DataTables library), John Fraser [ctb, cph] (showdown.js library), John Gruber [ctb, cph] (showdown.js library), Ivan Sagalaev [ctb, cph] (highlight.js library), R Core Team [ctb, cph] (tar implementation from R)",
+      "Maintainer": "Winston Chang <winston@posit.co>",
+      "Repository": "CRAN"
+    },
     "showtext": {
       "Package": "showtext",
       "Version": "0.9-8",
@@ -7912,6 +8647,28 @@
       "NeedsCompilation": "no",
       "Repository": "CRAN",
       "Encoding": "UTF-8"
+    },
+    "sourcetools": {
+      "Package": "sourcetools",
+      "Version": "0.1.7-1",
+      "Source": "Repository",
+      "Type": "Package",
+      "Title": "Tools for Reading, Tokenizing and Parsing R Code",
+      "Author": "Kevin Ushey",
+      "Maintainer": "Kevin Ushey <kevinushey@gmail.com>",
+      "Description": "Tools for the reading and tokenization of R code. The 'sourcetools' package provides both an R and C++ interface for the tokenization of R code, and helpers for interacting with the tokenized representation of R code.",
+      "License": "MIT + file LICENSE",
+      "Depends": [
+        "R (>= 3.0.2)"
+      ],
+      "Suggests": [
+        "testthat"
+      ],
+      "RoxygenNote": "5.0.1",
+      "BugReports": "https://github.com/kevinushey/sourcetools/issues",
+      "Encoding": "UTF-8",
+      "NeedsCompilation": "yes",
+      "Repository": "CRAN"
     },
     "sp": {
       "Package": "sp",
@@ -8906,6 +9663,38 @@
       "Author": "Hadley Wickham [aut], Lionel Henry [aut], Davis Vaughan [aut, cre], data.table team [cph] (Radix sort based on data.table's forder() and their contribution to R's order()), Posit Software, PBC [cph, fnd]",
       "Maintainer": "Davis Vaughan <davis@posit.co>",
       "Repository": "https://p3m.dev/cran/latest"
+    },
+    "vegan": {
+      "Package": "vegan",
+      "Version": "2.6-10",
+      "Source": "Repository",
+      "Title": "Community Ecology Package",
+      "Authors@R": "c(person(\"Jari\", \"Oksanen\", role=c(\"aut\",\"cre\"), email=\"jhoksane@gmail.com\"), person(\"Gavin L.\", \"Simpson\", role=\"aut\", email=\"ucfagls@gmail.com\"), person(\"F. Guillaume\", \"Blanchet\", role=\"aut\"), person(\"Roeland\", \"Kindt\", role=\"aut\"), person(\"Pierre\", \"Legendre\", role=\"aut\"), person(\"Peter R.\", \"Minchin\", role=\"aut\"), person(\"R.B.\", \"O'Hara\", role=\"aut\"), person(\"Peter\", \"Solymos\", role=\"aut\"), person(\"M. Henry H.\", \"Stevens\", role=\"aut\"), person(\"Eduard\", \"Szoecs\", role=\"aut\"), person(\"Helene\", \"Wagner\", role=\"aut\"), person(\"Matt\", \"Barbour\", role=\"aut\"), person(\"Michael\", \"Bedward\", role=\"aut\"), person(\"Ben\", \"Bolker\", role=\"aut\"), person(\"Daniel\", \"Borcard\", role=\"aut\"), person(\"Gustavo\", \"Carvalho\", role=\"aut\"), person(\"Michael\", \"Chirico\", role=\"aut\"), person(\"Miquel\", \"De Caceres\", role=\"aut\"), person(\"Sebastien\", \"Durand\", role=\"aut\"), person(\"Heloisa Beatriz Antoniazi\", \"Evangelista\", role=\"aut\"), person(\"Rich\", \"FitzJohn\", role=\"aut\"), person(\"Michael\", \"Friendly\", role=\"aut\"), person(\"Brendan\",\"Furneaux\", role=\"aut\"), person(\"Geoffrey\", \"Hannigan\", role=\"aut\"), person(\"Mark O.\", \"Hill\", role=\"aut\"), person(\"Leo\", \"Lahti\", role=\"aut\"), person(\"Dan\", \"McGlinn\", role=\"aut\"), person(\"Marie-Helene\", \"Ouellette\", role=\"aut\"), person(\"Eduardo\", \"Ribeiro Cunha\", role=\"aut\"), person(\"Tyler\", \"Smith\", role=\"aut\"), person(\"Adrian\", \"Stier\", role=\"aut\"), person(\"Cajo J.F.\", \"Ter Braak\", role=\"aut\"), person(\"James\", \"Weedon\", role=\"aut\"), person(\"Tuomas\", \"Borman\", role=\"aut\"))",
+      "Depends": [
+        "permute (>= 0.9-0)",
+        "lattice",
+        "R (>= 4.1.0)"
+      ],
+      "Suggests": [
+        "parallel",
+        "tcltk",
+        "knitr",
+        "markdown"
+      ],
+      "Imports": [
+        "MASS",
+        "cluster",
+        "mgcv"
+      ],
+      "VignetteBuilder": "utils, knitr",
+      "Description": "Ordination methods, diversity analysis and other functions for community and vegetation ecologists.",
+      "License": "GPL-2",
+      "BugReports": "https://github.com/vegandevs/vegan/issues",
+      "URL": "https://github.com/vegandevs/vegan",
+      "NeedsCompilation": "yes",
+      "Author": "Jari Oksanen [aut, cre], Gavin L. Simpson [aut], F. Guillaume Blanchet [aut], Roeland Kindt [aut], Pierre Legendre [aut], Peter R. Minchin [aut], R.B. O'Hara [aut], Peter Solymos [aut], M. Henry H. Stevens [aut], Eduard Szoecs [aut], Helene Wagner [aut], Matt Barbour [aut], Michael Bedward [aut], Ben Bolker [aut], Daniel Borcard [aut], Gustavo Carvalho [aut], Michael Chirico [aut], Miquel De Caceres [aut], Sebastien Durand [aut], Heloisa Beatriz Antoniazi Evangelista [aut], Rich FitzJohn [aut], Michael Friendly [aut], Brendan Furneaux [aut], Geoffrey Hannigan [aut], Mark O. Hill [aut], Leo Lahti [aut], Dan McGlinn [aut], Marie-Helene Ouellette [aut], Eduardo Ribeiro Cunha [aut], Tyler Smith [aut], Adrian Stier [aut], Cajo J.F. Ter Braak [aut], James Weedon [aut], Tuomas Borman [aut]",
+      "Maintainer": "Jari Oksanen <jhoksane@gmail.com>",
+      "Repository": "CRAN"
     },
     "viridis": {
       "Package": "viridis",

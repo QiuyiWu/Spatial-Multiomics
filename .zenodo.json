@@ -7,5 +7,17 @@
   ],
   "keywords": ["spatial multiomics", "metabolomics", "proteomics", "rhesus monkey", "macaque", "cerebral cortex", "sparse CCA"],
   "license": "MIT",
-  "access_right": "open"
+  "access_right": "open",
+  "related_identifiers": [
+    {
+      "identifier": "10.5281/zenodo.23857927",
+      "relation": "references",
+      "scheme": "doi"
+    },
+    {
+      "identifier": "10.7924/r4r506",
+      "relation": "references",
+      "scheme": "doi"
+    }
+  ]
 }

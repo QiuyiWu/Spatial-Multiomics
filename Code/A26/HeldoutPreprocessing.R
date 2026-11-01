@@ -1,3 +1,11 @@
+source(here::here("Code", "pipeline_paths.R"))
+# Run from the repository root using source("Code/A26/HeldoutPreprocessing.R").
+library(readxl)
+library(dplyr)
+library(ggplot2)
+library(ggrepel)
+library(openxlsx)
+
 # 1. remove outliers (only Metabolitics data, because Proteomics outliers looks like another batch)
 # 2. comparing the mapped samples and heldout samples and swap them if necessary
 # 3. compute k = (x-med)/mad, for Proteomics and metabolitics data, each of them would have one or two k values 
@@ -13,7 +21,7 @@
 ######################################## 
 ############ Metabolomics Data #########
 ######################################## 
-a26.met.data <- read_excel("../data/PostCombat_A26_Metabolite_beforeHeldout.xlsx")
+a26.met.data <- read_excel(proteinfix_input('PostCombat_A26_Metabolite_beforeHeldout.xlsx'))
 
 
 #Function to detect outliers based on median ± k * MAD （detect outliers based on the median ± k × MAD (Median Absolute Deviation)）
@@ -61,7 +69,7 @@ pca_met <- pca_met[!pca_met$sample %in% outlier_met$sample, ]
 ############ Proteomics Data ########### 
 ######################################## 
 
-a26.pro.data <- read_excel("../data/PostCombat_A26_Protein.xlsx", sheet = "combat_corrected_unscaled")
+a26.pro.data <- read_excel(proteinfix_input('PostCombat_A26_Protein.xlsx'), sheet = "combat_corrected_unscaled")
 
 # PCA + PLOT
 pca_pro <- prcomp(a26.pro.data[,-c(1:3)], scale. = TRUE)
@@ -72,8 +80,8 @@ pca_pro$color_indicator <- ifelse(pca_pro$sample_type == "SPQC", "black", pca_pr
 pca_pro$sample <- a26.pro.data$pro.sample
 
 # convert Duke ID to Analysis ID
-dukeid.df <- data.frame(read_excel("../data/A26_Bonnie_Flatmap_Grid_20260315.xlsx", sheet = "Proteome_DukeIDs"))
-colnames(pca_pro)[431] <- "DukeID"
+dukeid.df <- data.frame(read_excel(proteinfix_input('A26_Bonnie_Flatmap_Grid_20260315.xlsx'), sheet = "Proteome_DukeIDs"))
+colnames(pca_pro)[colnames(pca_pro) == "sample"] <- "DukeID"
 pca_pro$DukeID <- as.numeric(substr(pca_pro$DukeID, 3,8))
 pca_df_mapped <- pca_pro %>%
   left_join(dukeid.df, by = "DukeID")
@@ -117,7 +125,7 @@ pca_met <- pca_met[pca_met$sample %in% common_samples,]
 
 
 # HELDOUT: sample 413 is removed and replaced by the heldout1 sample 247
-heldout.df <- data.frame(read_excel("../data/A26_Bonnie_Flatmap_Grid_20260315.xlsx", sheet = "Mapped_Samples"))
+heldout.df <- data.frame(read_excel(proteinfix_input('A26_Bonnie_Flatmap_Grid_20260315.xlsx'), sheet = "Mapped_Samples"))
 heldout.df <- heldout.df[-nrow(heldout.df),]
 
 heldout.df[heldout.df$Mapped_AnalysisID %in% outlier_met$sample, ]
@@ -194,5 +202,5 @@ k_table_wide <- heldout.df %>%
   )
 
 
-#write.xlsx(k_table_wide,"../data/Heldout_Updated_a26.xlsx")
+write.xlsx(k_table_wide, proteinfix_output('Heldout_Updated_a26.xlsx'))
 

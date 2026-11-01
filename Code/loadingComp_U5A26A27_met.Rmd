@@ -11,6 +11,8 @@ output:
 ---
 
 ```{r setup, include=FALSE}
+source(here::here("Code", "pipeline_paths.R"))
+source(here::here("Code", "figure5_checks.R"))
 library(Hmisc)
 library(sRDA)
 library(PMA)
@@ -53,13 +55,14 @@ pca_legend_txt <- 9    # legend text size, pt (matches 4-panel)
 
 fig_fmt  <- "tiff"
 fig_dpi  <- 600
-fig_w_mm <- 89    # single-column width (your spec; ~ one PCA panel, measured ~90 mm wide)
-# height = width / aspect. Single-panel aspect ~1.35 (layout-derived) -> plot ~65 mm;
-# +~7 mm for the top legend strip -> 73. If you drop the legend (caption instead), use ~66.
-fig_h_mm <- 73
+# Match the established local manuscript canvas and subject colors.
+fig_w_mm <- 150
+fig_h_mm <- 89
 ```
 
 If we wan to compare A26, A27, U5, we need to remove the batch effect in these three datasets, so here we subtract the average of Q500 level 3 samples.
+
+QC3 rows participate in missingness filtering, half-minimum imputation, and QC3 normalization in this Figure 5 workflow. They are removed before the biological-sample PCA. This differs from the separate A27 SPQC/ComBat workflow, which excludes commercial QC Levels 1–3 before filtering and imputation.
 
 # U5
 
@@ -77,10 +80,10 @@ Steps for PCA:
 
 ```{r load metabolomic u5}
 # load FIA data
-meta_met.u5fia <- read_excel(here::here("Data", "5583 FIA Q500 Data.xlsx"), sheet = "5583 FIA Q500 Data", skip=1)
+meta_met.u5fia <- read_excel(proteinfix_input('5583 FIA Q500 Data.xlsx'), sheet = "5583 FIA Q500 Data", skip=1)
 met_data.u5fia <- as.data.frame(meta_met.u5fia[c(6:80, 92:94), ])
 # load UPLC data
-meta_met.u5uplc <- read_excel(here::here("Data", "5583 UPLC Q500 Data.xlsx"), sheet = "5583 UPLC Q500 Data", skip=1)
+meta_met.u5uplc <- read_excel(proteinfix_input('5583 UPLC Q500 Data.xlsx'), sheet = "5583 UPLC Q500 Data", skip=1)
 met_data.u5uplc <- as.data.frame(meta_met.u5uplc[c(6:80, 92:94), ])
 # combine two data
 met_data.u5 <- cbind(met_data.u5fia, met_data.u5uplc[, 12:219])
@@ -190,7 +193,7 @@ Steps for PCA:
 
 
 ```{r load metabolomic A26}
-meta_met.a26 <- read_excel(here::here("Data", "A26-Q500 Data.xlsx"), sheet = "1. 10412 Raw Data", skip=1)
+meta_met.a26 <- read_excel(proteinfix_input('A26-Q500 Data.xlsx'), sheet = "1. 10412 Raw Data", skip=1)
 # only keep Q500(XL)_QC3
 met_data.a26 <- meta_met.a26[
   !meta_met.a26$`Sample identification` %in%
@@ -325,7 +328,7 @@ Steps for PCA:
 
 
 ```{r load metabolomic a27}
-meta_met.a27 <- read_excel(here::here("Data", "A27-Q500 Data.xlsx"), sheet = "1. 10788 Raw Data", skip=1)
+meta_met.a27 <- read_excel(proteinfix_input('A27-Q500 Data.xlsx'), sheet = "1. 10788 Raw Data", skip=1)
 # only keep Q500(XL)_QC3
 met_data.a27 <- meta_met.a27[
   !meta_met.a27$`Sample identification` %in%
@@ -531,7 +534,11 @@ ggplot(pca_data.comb, aes(x = PC1, y = PC2, color = Subject)) +
 
 
 # Remove outliers
-met_data.comb.clean <- met_data.comb.adj[!met_data.comb.adj$Sample %in% pca_data.comb$Sample[pca_data.comb$outlier], ]
+# QC3 continues to participate in filtering/imputation and normalization.
+figure5_outlier_audit <- figure5_outliers(met_data.comb.adj, pca_data.comb)
+met_data.comb.clean <- met_data.comb.adj[!figure5_outlier_audit$flagged, , drop = FALSE]
+stopifnot(nrow(met_data.comb.adj) - nrow(met_data.comb.clean) ==
+          sum(figure5_outlier_audit$flagged))
 met_combined_mat <- as.matrix(met_data.comb.clean[ , -c(1, ncol(met_data.comb.clean))])  
 pca_combined <- prcomp(met_combined_mat, scale. = TRUE, center = TRUE)
 # Extract first 2 PCs for plotting
@@ -551,7 +558,7 @@ pc2_var <- round(100 * summary(pca_combined)$importance[2, 2], 1)
 #pca_data.comb <- pca_data.comb[sample(nrow(pca_data.comb)), ]
 
 # Plot without outliers
-subject_cols <- c(U5 = "#000000", A26 = "#e69f00", A27 = "#56b4e9")
+subject_cols <- c(A26 = "cyan3", A27 = "red", U5 = "purple")
 
 p_fig5 <- ggplot(pca_data.comb, aes(PC1, PC2, color = Subject)) +
   geom_point(size = pca_pt_size) +
@@ -564,7 +571,9 @@ p_fig5 <- ggplot(pca_data.comb, aes(PC1, PC2, color = Subject)) +
         legend.title = element_blank(),
         legend.text  = element_text(size = pca_legend_txt))
 p_fig5
-ggsave(here::here("Figure", paste0("fig5_pca.", fig_fmt)), plot = p_fig5,
+figure5_output_dir <- getOption("proteinfix.figure5_export_dir", here::here("Figure"))
+dir.create(figure5_output_dir, recursive = TRUE, showWarnings = FALSE)
+ggsave(file.path(figure5_output_dir, paste0("fig5_pca.", fig_fmt)), plot = p_fig5,
        width = fig_w_mm, height = fig_h_mm, units = "mm",
        dpi = fig_dpi, bg = "white", device = fig_fmt, compression = "lzw")
 
@@ -644,16 +653,18 @@ ggplot(top_features,
 
 
 ```{r a26}
-load(here::here("Data", "a26_score.RData"))
-load(here::here("Data", "A26_PChclust.RData"))
+load(proteinfix_input('a26_score.RData'))
+load(proteinfix_input('A26_PChclust.RData'))
 scca_res_a26 <- scca_res
 bi26 <- scca_res_a26$v
 
 met_feat_wt_a26 <- a26.met.cluster$loading %*% bi26
 rownames(met_feat_wt_a26) = rownames(a26.met.cluster$loading)
-common_met <- intersect(pc1_loadings_df$Feature, rownames(a26.met.cluster$loading))
-w26_met_common <- met_feat_wt_a26[common_met,]
-pc1_loadings_common1 <- pc1_loadings_df[common_met,]
+matched_a26 <- figure5_match_loadings(pc1_loadings_df, met_feat_wt_a26)
+w26_met_common <- matched_a26$weights
+pc1_loadings_common1 <- matched_a26$pc1
+common_met <- rownames(w26_met_common)
+message("A26 matched Figure 5 metabolites: ", length(common_met))
 
 # sanity checks
 stopifnot(identical(pc1_loadings_common1$Feature, rownames(w26_met_common)))
@@ -686,16 +697,18 @@ print(cor_results.a26[, c("Correlation", "P_value")])
 
 
 ```{r a27}
-load(here::here("Data", "a27_score.RData"))
-load(here::here("Data", "a27_PChclust.RData"))
+load(proteinfix_input('a27_score.RData'))
+load(proteinfix_input('A27_PChclust.RData'))
 scca_res_a27 <- scca_res
 bi27 <- scca_res_a27$v
 
 met_feat_wt_a27 <- a27.met.cluster$loading %*% bi27
 rownames(met_feat_wt_a27) = rownames(a27.met.cluster$loading)
-common_met <- intersect(pc1_loadings_df$Feature, rownames(a27.met.cluster$loading))
-w27_met_common <- met_feat_wt_a27[common_met,]
-pc1_loadings_common2 <- pc1_loadings_df[common_met,]
+matched_a27 <- figure5_match_loadings(pc1_loadings_df, met_feat_wt_a27)
+w27_met_common <- matched_a27$weights
+pc1_loadings_common2 <- matched_a27$pc1
+common_met <- rownames(w27_met_common)
+message("A27 matched Figure 5 metabolites: ", length(common_met))
 
 # sanity checks
 stopifnot(identical(pc1_loadings_common2$Feature, rownames(w27_met_common)))
@@ -723,9 +736,9 @@ plot(pc1_loadings_common2$PC1_Loading, w27_met_common[, 2], xlab = "PC1 loadings
 
 ```
 
-When inspecting the scatter plot of the strongest correlation (PC2 of A27) and we found correlation to be a very misleading metric. The PC1 separating the animals has some negative values and some zeros. The zeros of PC1 correspond to the largest positive values of that PC3, while the negative values of PC1 correspond to the negative and mediocre values of PC3. By looking at the scatter plot, we would come to the opposite conclusion compared to looking at correlation. 
+Loading correlations and scatterplots above must be interpreted using the regenerated results. Component rankings and signed patterns can change after preprocessing or outlier corrections. The overlap analysis below provides a complementary comparison of which metabolites receive the largest absolute weights, without assuming a particular component is the strongest match.
 
-Now we are using a different matric representing the concordance between components (https://www.biorxiv.org/content/10.1101/2024.09.14.613024v1.full.pdf).
+The concordance approach is described in [the referenced method](https://www.biorxiv.org/content/10.1101/2024.09.14.613024v1.full.pdf).
 Here we want to know if the two components prioritize the same metabolites. 
 
 We are compare the top L metabolites from 

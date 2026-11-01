@@ -1,98 +1,58 @@
-# Spatial Multiomics
+# QCFix workflow
 
+For setup, inputs, dimensions, and commands, see [REPRODUCIBILITY.md](REPRODUCIBILITY.md). For manuscript exports, see [README_Figures.md](README_Figures.md).
 
-## A26
-### Metabolomics
-- M1. Data preprocessing and Batch Correction
-    - Preprocess raw data `A26-Q500 Data.xlsx` and create batch corrected data (403 samples $\times$ 328 variables data frame) `PostCombat_A26_Metabolite_beforeHeldout.xlsx` (code: `Analysis_BatchEffect_A26_met_adj.Rmd`)
-    - Steps:
-        - Remove sample 244, 96, 188
-        - For TG metabolites, remove those missing > 70%; for other metabolites, remove those missing > 85%. 
-        - Impute LOD/2
-        - Dilution factor
-        - Remove 3 SPQC outliers
-        - Log transform
-        - Subtract SPQC
-        - Combat 
-        - PCA analysis (remove HeldOut_AnalysisIDs in Mapped_Samples sheet)
+```mermaid
+flowchart TD
+  A[External long-format proteomics and plate annotations] --> P1[P1: reformat; A27 applies log2]
+  P1 --> P[Adjusted_Protein_A26/A27.RData]
+  P --> P2[P2: minimum log2 value minus 1; dilution; ComBat]
+  M[Raw A26/A27 Q500 workbooks] --> M1[M1: filtering; half-minimum imputation; log2; SPQC adjustment; ComBat]
+  M1 --> C3[C3: mapped/heldout candidate selection]
+  P2 --> C3
+  C3 --> C4[C4: aligned selected samples]
+  C4 --> C5[C5: analyte clustering]
+  C5 --> C6[C6: validate saved graph and fit sr-sCCA]
+  C6 --> Maps[Component maps, cross-animal projection, Table S3]
+  M1 --> PCA[Saved pre/post PCA matrices]
+  P2 --> PCA
+  PCA --> F2[Figure 2 and S2]
+  C6 --> N[Exact-distance spatial neighbors]
+  M1 --> N
+  P2 --> N
+  C5 --> N
+  N --> F4[Figure 4 and S5]
+  U[U5 FIA/UPLC plus A26/A27 raw Q500 workbooks] --> F5[Separate metabolomics-only Figure 5 PCA]
+```
 
-### Proteomics
-- P1. Data Reformatting
-    - Convert log2transformed long data `A26 Proteomics with QC variables.txt` into wide data `Adjusted_Protein_A26.RData` (428 samples $\times$ 9990 variables data frame) **[code: `Reformatting_A26_pro.R`]**
-- P2. Data preprocessing and Batch Correction
-    - Preprocess reformatted large protein level quantification data and create batch corrected data `PostCombat_A26_Protein.xlsx` (427 samples $\times$ 9990 variables data frame) **[code: `Analysis_BatchEffect_A26_pro_adj.Rmd`]**
-    - Steps:
-        - Remove outlier `ID117530`
-        - Impute LOD/2
-        - Dilution factor
-        - Combat (we decided NOT to subtract the SPQC (plate-wise) before batch correction)
-        - PCA analysis (remove HeldOut_AnalysisIDs in Mapped_Samples sheet)
+## Stage counts
 
-### Combine Both
-- C3. Heldout Preprocessing
-    - Data driven way to select final mapping samples (267 samples selected) `Heldout_Updated.xlsx` **[code: `HeldoutPreprocessing.R`]**
-    - Steps:
-        - remove outliers (only Metabolitics data, because Proteomics outliers looks like another batch)
-        - comparing the mapped samples and heldout samples and swap them if necessary
-        - compute $k = (x-med)/mad$, for Proteomics and metabolitics data, each of them would have one or two k values (from original samples and heldout samples), and we unselect the one with maximum k values for the final mapping samplez. Here we use both PC1 and PC2, and compute the robust distance of each sample from the center:
-        $d_i = \sqrt{(PC1_i - med(PC1))^2 + (PC2_i - med(PC2))^2}$. Then normalize this by the Median Absolute Deviation (MAD) of the distances: $k_i = \frac{d_i}{MAD(d)}$. This way, k represents how far a sample is from the robust center of the PCA space (PC1, PC2). We select samples with the smaller k values. 
-- C4. Sample Selecting
-    - Select mapping samples in both datasets and created data `a26.RData` (two data frames:  metabolomics -- 267 samples $\times$ 328 variables data frame; proteomics -- 267 samples $\times$ 9990 variables data frame) **[code: `CombineClustering.R`]**
-- C5. Clustering Analysis
-    - Variable clustering in both datasets and created selected data `A26_PChclust.RData` (two nested lists: metabolomics list and proteomics list, inside of each big list has 5 small lists with information of group, score, loading, cluster summary, and percentage of variance) **[code: `CombineClustering.R`]**
-- C6. Spatial Sparse CCA analysis
-    - Mapping the data then do Spatial SCCA analysis **[code: `A26_analysis_sCCA_laplacians.Rmd`]**
-    - We ultimately obtained 233 matched samples across both datasets
+Dimensions below exclude metadata columns.
 
+| Stage | A26 | A27 |
+| --- | --- | --- |
+| M1 post-ComBat metabolites | 403 samples × 328 analytes | 548 samples × 300 analytes |
+| P2 post-ComBat proteins | 427 samples × 9,990 analytes | 566 samples × 10,253 analytes |
+| C3/C4 selected samples | 267 | 527 |
+| C5 input metabolites | 328 | 300 |
+| C5 variable proteins | 9,987 | 10,252 |
+| C6 spatially matched samples | 233 | 508 |
 
+The M1/P2 PCA exports precede heldout selection. C3 selects candidates; C4 applies those selections to both modalities. C6 retains samples with spatial coordinates. Repeated cells on a flatmap can display the same sample; the graph uses one coordinate per sample according to the current Rmd matching rule.
 
+## Neighbor definition
 
-## A27
-### Metabolomics
-- M1. Data preprocessing and Batch Correction
-    - Preprocess raw data `A27-Q500 Data.xlsx` and create batch corrected data (548 samples $\times$ 343 variables data frame) `PostCombat_A27_Metabolite_beforeHeldout.xlsx` (code: `Analysis_BatchEffect_A27_met_adj.Rmd`)
-    - Steps:
-        - For TG metabolites, remove those missing > 70%; for other metabolites, remove those missing > 85%, remove outlier 212
-        - Impute LOD/2
-        - Dilution factor
-        - Log transform
-        - Subtract SPQC
-        - Combat
-        - PCA analysis (remove HeldOut_AnalysisIDs in Mapped_Samples sheet)
+`Code/exact_neighbor_orders.R` constructs binary, disjoint groups by exact shortest-path distance. Self and all closer neighbors are excluded. Figure 4 and S5 display orders 1/2/3 for A26 and 1/3/5 for A27.
 
-### Proteomics
-- P1. Data Reformatting
-    - Convert log2transformed long data `A27_SNE_combine_protein.tsv` into wide data `Adjusted_Protein_A27.RData` (566 samples $\times$ 10253 variables data frame) **[code: `Reformatting_A27_pro.R`]**
-- P2. Data preprocessing and Batch Correction
-    - Preprocess reformatted large protein level quantification data and create batch corrected data `PostCombat_A27_Protein.xlsx` (566 samples $\times$ 10253 variables data frame) **[code: `Analysis_BatchEffect_A27_pro_adj.Rmd`]**
-    - Steps:
-        - Impute LOD/2
-        - Dilution factor
-        - Combat (we decided NOT to subtract the SPQC (plate-wise) before batch correction)
-        - PCA analysis (remove HeldOut_AnalysisIDs in Mapped_Samples sheet)
+## External inputs
 
-### Combine Both
-- C3. Heldout Preprocessing
-    - Data driven way to select final mapping samples (527 samples selected) `Heldout_Updated_a27.xlsx` **[code: `HeldoutPreprocessing.R`]**
-    - Steps:
-        - remove outliers (only Metabolitics data, because Proteomics outliers looks like another batch)
-        - comparing the mapped samples and heldout samples and swap them if necessary
-        - compute $k = (x-med)/mad$, for Proteomics and metabolitics data, each of them would have one or two k values (from original samples and heldout samples), and we unselect the one with maximum k values for the final mapping samplez. Here we use both PC1 and PC2, and compute the robust distance of each sample from the center:
-        $d_i = \sqrt{(PC1_i - med(PC1))^2 + (PC2_i - med(PC2))^2}$. Then normalize this by the Median Absolute Deviation (MAD) of the distances: $k_i = \frac{d_i}{MAD(d)}$. This way, k represents how far a sample is from the robust center of the PCA space (PC1, PC2). We select samples with the smaller k values. 
-- C4. Sample Selecting
-    - Select mapping samples in both datasets and created data `a27.RData` (two data frames:  metabolomics -- 527 samples $\times$ 342 variables data frame; proteomics -- 527 samples $\times$ 10253 variables data frame) **[code: `CombineClustering.R`]**
-- C5. Clustering Analysis
-    - Variable clustering in both datasets and created selected data `A27_PChclust.RData` (two nested lists: metabolomics list and proteomics list, inside of each big list has 5 small lists with information of group, score, loading, cluster summary, and percentage of variance) **[code: `CombineClustering.R`]**
-- C6. Spatial Sparse CCA analysis
-    - Mapping the data then do Spatial SCCA analysis **[code: `A27_analysis_sCCA_laplacians.Rmd`]**
-    - We ultimately obtained 508 matched samples across both datasets
+P1 retains legacy paths requiring local adjustment. A27 P1 also reads `20260120_122736_Identifications.tsv`; this annotation input is not tracked in the repository. See [external-input documentation](README_DukeLibrary.md).
 
+## Output modes
 
-
-
-
-
-
-
-
-
+Reproduction mode writes generated data to `outputs/reproduction/Data/` by default.
+Downstream stages prefer those regenerated inputs and otherwise use `Data/` references.
+Use a fresh run folder for an independent rerun, then compare with
+`Code/compare_reproduction.R`. Update mode deliberately replaces files in `Data/`.
+Graph rebuilding requires a separate explicit option; saved graphs are validated
+and loaded by default. See [mode configuration](REPRODUCIBILITY.md#reproduction-mode-and-reference-updates).

@@ -7,3 +7,14 @@
 # Generated manuscript figures and supplementary Table S3 exports
 /Figure/
 Supp_Table_S3*.xlsx
+
+# Regenerated analysis outputs; reference Data/ stays tracked
+/outputs/reproduction/
+
+# External raw data restored by Code/get_raw_data.R (Zenodo 23857927)
+/Data/A26-Q500 Data.xlsx
+/Data/A27-Q500 Data.xlsx
+/Data/5583 FIA Q500 Data.xlsx
+/Data/5583 UPLC Q500 Data.xlsx
+/Data/A26_Bonnie_Flatmap_Grid_20260315.xlsx
+/Data/A27_Frizzle_Flatmap_Grid_20260317.xlsx

@@ -11,6 +11,7 @@ output:
 ---
 
 ```{r setup, include=FALSE}
+source(here::here("Code", "pipeline_paths.R"))
 library(Hmisc)
 library(sRDA)
 library(PMA)
@@ -36,7 +37,8 @@ knitr::opts_chunk$set(echo=TRUE, message=FALSE, cache=FALSE, warning=FALSE)
 
 ## ---- projection map export parameters (Fig 3e-f: A27 -> A26) ----
 export_maps <- TRUE
-export_dir  <- here::here("Figure", "projection")
+export_dir  <- getOption("proteinfix.projection_export_dir",
+                         here::here("Figure", "A27_to_A26_components"))
 dir.create(export_dir, showWarnings = FALSE, recursive = TRUE)
 fmt         <- "tiff"
 dpi         <- 600
@@ -47,11 +49,11 @@ panel_h     <- 80
 
 
 ```{r omics map}
-heldout_updated <- as.data.frame(read_excel(here::here("Data", "Heldout_Updated_a26.xlsx")))
+heldout_updated <- as.data.frame(read_excel(proteinfix_input('Heldout_Updated_a26.xlsx')))
 heldout_updated <- heldout_updated[, c(2:5)]
-map.df <- data.frame(read_excel(here::here("Data", "A26_Bonnie_Flatmap_Grid_20260315.xlsx"), sheet = "AnalysisID_Matrix", col_names = F))
+map.df <- data.frame(read_excel(proteinfix_input('A26_Bonnie_Flatmap_Grid_20260315.xlsx'), sheet = "AnalysisID_Matrix", col_names = F))
 map.df <- as.matrix(sapply(map.df, as.numeric))
-load(here::here("Data", "a26.RData"))
+load(proteinfix_input('a26.RData'))
 
 
 # Modify MAP based on HELDOUT: Build a lookup table of all IDs → finalID
@@ -73,7 +75,7 @@ final_vec <- ifelse(!is.na(replacement), replacement, map_char)  # keep original
 map.df<- matrix(as.numeric(final_vec), nrow = nrow(map.df), ncol = ncol(map.df))
 
 
-load(here::here("Data", "A26_PChclust.RData"))
+load(proteinfix_input('A26_PChclust.RData'))
 # make sure A26 metabolite sample names are made consistent with A26 protein sample names
 stopifnot(
   identical(
@@ -155,7 +157,9 @@ ggplot(pca_met, aes(x=PC1, y=PC2, color=color_indicator)) +
 
 
 # Proteomics
-pca_pro_corrected <- prcomp(a26.pro.data[,-c(1:3)], scale. = TRUE)
+pro_pca_input <- a26.pro.data[, -(1:3)]
+pro_pca_input <- pro_pca_input[, vapply(pro_pca_input, sd, numeric(1)) > 0, drop = FALSE]
+pca_pro_corrected <- prcomp(pro_pca_input, scale. = TRUE)
 pca_pro <- data.frame(pca_pro_corrected$x)  # PCA scores
 pca_pro$plate <- a26.pro.data$pro.plate 
 pca_pro$sample_type <- a26.pro.data$pro.sampletype 
@@ -186,8 +190,8 @@ ggplot(pca_pro, aes(x=PC1, y=PC2, color=color_indicator)) +
 
 
 ```{r spCCA cluster 1st component}
-a26.met.cluster$score <- a26.met.cluster$score[rownames(a26.met.cluster$score) %in% rownames(xy_ordered), ]
-a26.pro.cluster$score <- a26.pro.cluster$score[rownames(a26.pro.cluster$score) %in% rownames(xy_ordered), ]
+a26.met.cluster$score <- a26.met.cluster$score[rownames(xy_ordered), , drop = FALSE]
+a26.pro.cluster$score <- a26.pro.cluster$score[rownames(xy_ordered), , drop = FALSE]
 
 
 # spca_delaunay_metCluster <- adegenet::spca(
@@ -200,13 +204,17 @@ a26.pro.cluster$score <- a26.pro.cluster$score[rownames(a26.pro.cluster$score) %
 #   nfnega = 0
 # )
 # save(spca_delaunay_metCluster,  file = "sPCA_a26metCluster.RData")
-load(here::here("Data", "sPCA_a26metCluster.RData"))
+load(proteinfix_input('sPCA_a26metCluster.RData'))
+stopifnot(identical(rownames(spca_delaunay_metCluster$xy), rownames(xy_ordered)),
+          isTRUE(all.equal(unname(as.matrix(spca_delaunay_metCluster$xy)),
+                           unname(as.matrix(xy_ordered)))))
 
 # Standardize both datasets (center + scale)
 X <- a26.pro.cluster$score
 Y <- a26.met.cluster$score
 
-rownames(X) <- rownames(xy_ordered)
+stopifnot(identical(rownames(X), rownames(Y)),
+          identical(rownames(X), rownames(xy_ordered)))
 
 # Get coordinates and rownames
 coords <- as.matrix(xy_ordered)
@@ -241,7 +249,7 @@ To evaluate the reproducibility of the spatial canonical patterns identified in 
 
 Next, we identified the set of features shared between A26 and A27 within each modality and restricted the projection to these common features. Using the A26 proteomic and metabolomic data matrices, we then computed projected scores by multiplying the A26 feature matrices by the A27-derived feature weights. In this way, each A26 sample received proteomic and metabolomic scores corresponding to the canonical components learned from A27.
 
-Finally, for each component, these transferred scores were mapped back onto the cortical sample layout to generate spatial score maps for A26. This procedure allowed us to assess whether the cross-modality spatial patterns estimated in A27 were recapitulated in the independent A26 dataset. There are 9250 common proteins and 289 common metabolites. 
+Finally, for each component, these transferred scores were mapped back onto the cortical sample layout to generate spatial score maps for A26. This procedure allowed us to assess whether the cross-modality spatial patterns estimated in A27 were recapitulated in the independent A26 dataset. The shared protein and metabolite counts are calculated and reported below for the current model inputs.
 
 
 ```{r sparse spCCA 2, message=FALSE, warning=FALSE, results='hide'}
@@ -270,8 +278,8 @@ Ytc <- Y_tilde
 
 
 # load A27 score weights
-load(here::here("Data", "a27_score.RData"))
-load(here::here("Data", "a27_PChclust.RData"))
+load(proteinfix_input('a27_score.RData'))
+load(proteinfix_input('A27_PChclust.RData'))
 scca_res_a27 <- scca_res
 ai27 <- scca_res_a27$u
 bi27 <- scca_res_a27$v
@@ -281,8 +289,10 @@ rownames(pro_feat_wt_a27) = rownames(a27.pro.cluster$loading)
 rownames(met_feat_wt_a27) = rownames(a27.met.cluster$loading)
 
 common_pro <- intersect(rownames(a26.pro.cluster$loading), rownames(a27.pro.cluster$loading))
-X26_pro_common <- as.matrix(a26.pro.data[, common_pro])
-w27_pro_common <- pro_feat_wt_a27[common_pro,]
+stopifnot(length(common_pro) > 0, !anyDuplicated(common_pro))
+X26_pro_common <- as.matrix(a26.pro.data[, common_pro, drop = FALSE])
+w27_pro_common <- pro_feat_wt_a27[common_pro, , drop = FALSE]
+stopifnot(identical(colnames(X26_pro_common), rownames(w27_pro_common)))
 u_A26_from_A27 <- X26_pro_common %*% w27_pro_common
 rownames(u_A26_from_A27) <- rownames(X26_pro_common)
 
@@ -300,7 +310,8 @@ rownames(met_feat_wt_a27) <- n27_weights
 stopifnot(!anyDuplicated(colnames(a26.met.data)))
 
 common_met <- intersect(n26_loading, n27_weights)
-stopifnot(length(common_met) == 289L)
+stopifnot(length(common_met) > 0L, !anyDuplicated(common_met))
+message("Shared metabolites for projection: ", length(common_met))
 X26_met_common <- as.matrix(a26.met.data[, common_met, drop = FALSE])
 w27_met_common <- met_feat_wt_a27[common_met, , drop = FALSE]
 stopifnot(identical(colnames(X26_met_common), rownames(w27_met_common)))
@@ -309,14 +320,23 @@ rownames(v_A26_from_A27) <- rownames(X26_met_common)
 
 length(common_met)
 
-# (1) OUTCOME — does V recover? submitted ~ V1 [-10, 5], V3 [-5, 2.5]; bug ~ [-2, 2]
+# Diagnostic ranges for the transferred metabolomic scores.
 apply(v_A26_from_A27[, c(1, 3)], 2, range)
 
-# (2) WHY — fraction of A27's V-weight retained by the 289-match (governs the scale)
+# Fraction of A27 metabolomic weight retained by the shared-feature match.
 wc <- sapply(c(1, 3), function(i)
   sum(abs(met_feat_wt_a27[common_met, i])) / sum(abs(met_feat_wt_a27[, i])))
 setNames(wc, c("V1", "V3"))
 
+
+# Keep numerical projection results in the original fitted-model sign convention.
+stopifnot(all(is.finite(u_A26_from_A27)), all(is.finite(v_A26_from_A27)),
+          identical(rownames(u_A26_from_A27), rownames(v_A26_from_A27)),
+          ncol(u_A26_from_A27) == 10, ncol(v_A26_from_A27) == 10)
+saveRDS(list(protein_scores = u_A26_from_A27, metabolite_scores = v_A26_from_A27,
+             shared_proteins = common_pro, shared_metabolites = common_met,
+             map = map.df, source_model = "Data/a27_score.RData"),
+        proteinfix_output('A27_to_A26_projection.rds'))
 
 for (i in 1:10) {
   u_scores <- u_A26_from_A27[,i]
@@ -327,7 +347,7 @@ for (i in 1:10) {
   p_u <- ggplot(u_df, aes_string("Column", "Row", fill = paste0("spCCA_U", i))) +
   geom_raster() + scale_x_reverse() + coord_equal() +
   scale_fill_viridis_c(option = "plasma", na.value = "grey90") +
-  labs(title = NULL, x = NULL, y = NULL, fill = "Score") +   # title removed; "U{i}" label added in Photoshop
+  labs(title = NULL, x = NULL, y = NULL, fill = "Score") +   # component label is added below
   theme_minimal() + theme(panel.grid = element_blank(), axis.text = element_blank(), axis.ticks = element_blank())
 
 
@@ -339,9 +359,15 @@ for (i in 1:10) {
   p_v <- ggplot(v_df, aes_string("Column", "Row", fill = paste0("spCCA_V", i))) +
   geom_raster() + scale_x_reverse() + coord_equal() +
   scale_fill_viridis_c(option = "plasma", na.value = "grey90") +
-  labs(title = NULL, x = NULL, y = NULL, fill = "Score") +   # title removed; "V{i}" label added in Photoshop
+  labs(title = NULL, x = NULL, y = NULL, fill = "Score") +   # component label is added below
   theme_minimal() + theme(panel.grid = element_blank(), axis.text = element_blank(), axis.ticks = element_blank())
   
+
+  # Label each projected modality/component in the exported figure.
+  p_u <- p_u + annotate("text", x = min(u_df$Column), y = max(u_df$Row),
+                        label = paste0("U", i), hjust = 1.1, vjust = 1.3, size = 6)
+  p_v <- p_v + annotate("text", x = min(v_df$Column), y = max(v_df$Row),
+                        label = paste0("V", i), hjust = 1.1, vjust = 1.3, size = 6)
 
   if (isTRUE(get0("export_maps", ifnotfound = FALSE))) {
     ggsave(file.path(export_dir, paste0("proj_U", i, ".", fmt)), p_u,
@@ -350,6 +376,8 @@ for (i in 1:10) {
     ggsave(file.path(export_dir, paste0("proj_V", i, ".", fmt)), p_v,
            width = panel_w, height = panel_h, units = "mm",
            dpi = dpi, bg = "white", device = fmt, compression = "lzw")
+    ggsave(file.path(export_dir, paste0("A27_to_A26_comp", i, ".png")), p_v + p_u,
+           width = 25, height = 20, units = "cm", dpi = 300, bg = "white")
   }
 print(p_v + p_u)  
 }

@@ -1,12 +1,13 @@
+source(here::here("Code", "pipeline_paths.R"))
 library(ggplot2)
 library(ggpubr)
 library(scales)
 library(here)
 
-load(here::here("Data", "met_a26_PCAdata.RData"))
-load(here::here("Data", "met_a27_PCAdata.RData"))
-load(here::here("Data", "pro_a26_PCAdata.RData"))
-load(here::here("Data", "pro_a27_PCAdata.RData"))
+load(proteinfix_input('met_a26_PCAdata.RData'))
+load(proteinfix_input('met_a27_PCAdata.RData'))
+load(proteinfix_input('pro_a26_PCAdata.RData'))
+load(proteinfix_input('pro_a27_PCAdata.RData'))
 
 # -----------------------------
 # Figure export parameters (Fig 2 = post, S2 = pre)
@@ -33,7 +34,7 @@ panel_gap_h_pt <- 12   # left/right room: clears right column's y-title AND stop
                        # Was 4 pt (below ggplot's 5.5 default), which caused both problems.
 panel_margin <- theme(plot.margin = margin(t = panel_gap_v_pt, r = panel_gap_h_pt,
                                             b = panel_gap_v_pt, l = panel_gap_h_pt))
-output_dir <- here::here("Figure")   # conform to repo convention; run from project root so this resolves to <root>/Figure
+output_dir <- getOption("proteinfix.pca_export_dir", here::here("Figure"))   # conform to repo convention; run from project root so this resolves to <root>/Figure
 dir.create(output_dir, showWarnings = FALSE, recursive = TRUE)
 
 # -----------------------------
@@ -66,6 +67,17 @@ legend_shapes <- c(
   "SPQC"    = 17
 )
 
+# Match the manuscript layout: shared legend, column headings, and row labels.
+assemble_pca_figure <- function(legend_plot, panels) {
+  cowplot::ggdraw() +
+    cowplot::draw_plot(legend_plot, x = 0.06, y = 0.94, width = 0.94, height = 0.06) +
+    cowplot::draw_label("Metabolomic", x = 0.295, y = 0.915, size = 14) +
+    cowplot::draw_label("Proteomic", x = 0.765, y = 0.915, size = 14) +
+    cowplot::draw_plot(panels, x = 0.06, y = 0, width = 0.94, height = 0.89) +
+    cowplot::draw_label("A26", x = 0.028, y = 0.6675, size = 14) +
+    cowplot::draw_label("A27", x = 0.028, y = 0.2225, size = 14)
+}
+
 ################################ Figures for Post-Combat ################################################
 
 # -----------------------------
@@ -77,6 +89,8 @@ make_pca_plot <- function(data_mat, legend_group, title_text) {
   colnames(pca_df) <- c("PC1", "PC2")
 
   var_exp <- 100 * (pca_res$sdev^2 / sum(pca_res$sdev^2))
+  message(title_text, ": n=", nrow(data_mat), ", analytes=", ncol(data_mat),
+          ", PC1=", round(var_exp[1], 1), "%, PC2=", round(var_exp[2], 1), "%")
 
   pca_df$LegendGroup <- factor(legend_group, levels = legend_levels)
 
@@ -87,7 +101,7 @@ make_pca_plot <- function(data_mat, legend_group, title_text) {
     scale_x_continuous(breaks = pretty_breaks(n = 4)) +
     scale_y_continuous(breaks = pretty_breaks(n = 4)) +
     labs(
-      title = NULL,   # panel titles removed; panel letters added in Photoshop. title_text now unused
+      title = NULL,   # column headings are added when the four panels are assembled
       x = paste0("PC1 (", round(var_exp[1], 1), "% variance)"),
       y = paste0("PC2 (", round(var_exp[2], 1), "% variance)"),
       color = NULL,
@@ -101,62 +115,33 @@ make_pca_plot <- function(data_mat, legend_group, title_text) {
 }
 
 
-pre_met_a26 <- pre_met_a26[-c(404:406), ]
+# Matrices contain only analytes; metadata is exported alongside each stage.
+# Pre and post metabolomics have different QC sample sets, so use their own metadata.
+normalize_plate <- function(x) {
+  x <- as.character(x)
+  x[x == "S-trap batch 1"] <- "2"
+  x[x == "S-trap batch 2"] <- "7"
+  x <- ifelse(grepl("^[1-7]$", x), paste("Plate", x), x)
+  gsub("^plate\\s*", "Plate ", x, ignore.case = TRUE)
+}
 
-plate_a26met <- pre_met_a26$color_indicator
-plate_a26met <- gsub("^plate", "Plate", plate_a26met)
-plate_a26met <- gsub("^Plate\\s*", "Plate ", plate_a26met)
+pca_panel <- function(dataset, stage, title_text) {
+  data_mat <- get(paste(stage, dataset, sep = "_"))
+  metadata <- get(paste(stage, dataset, "metadata", sep = "_"))
+  stopifnot(is.matrix(data_mat), is.numeric(data_mat),
+            nrow(data_mat) == nrow(metadata),
+            identical(rownames(data_mat), rownames(metadata)),
+            all(is.finite(data_mat)))
+  legend_group <- ifelse(metadata$sample_type == "SPQC", "SPQC",
+                         normalize_plate(metadata$plate))
+  stopifnot(!anyNA(legend_group), all(legend_group %in% legend_levels))
+  make_pca_plot(data_mat, legend_group, paste(title_text, stage))
+}
 
-legend_a26met <- ifelse(pre_met_a26$sample_type == "SPQC", "SPQC", plate_a26met)
-
-p.a26met <- make_pca_plot(
-  data_mat = post_met_a26,
-  legend_group = legend_a26met,
-  title_text = "A26 Metabolomics"
-)
-
-plate_a26pro <- pre_pro_a26$pro.plate
-plate_a26pro <- gsub("^Plate", "Plate ", plate_a26pro)   # Plate1 -> Plate 1
-
-legend_a26pro <- ifelse(pre_pro_a26$pro.sampletype == "SPQC", "SPQC", plate_a26pro)
-
-p.a26pro <- make_pca_plot(
-  data_mat = post_pro_a26,
-  legend_group = legend_a26pro,
-  title_text = "A26 Proteomics"
-)
-
-plate_a27met <- pre_met_a27$color_indicator
-plate_a27met <- gsub("^plate", "Plate", plate_a27met)
-plate_a27met <- gsub("^Plate\\s*", "Plate ", plate_a27met)
-
-type_a27met <- ifelse(grepl("SPQC", pre_met_a27$sampleID), "SPQC", "Non-SPQC")
-legend_a27met <- ifelse(type_a27met == "SPQC", "SPQC", plate_a27met)
-
-p.a27met <- make_pca_plot(
-  data_mat = post_met_a27,
-  legend_group = legend_a27met,
-  title_text = "A27 Metabolomics"
-)
-
-plate_a27pro <- as.character(pre_pro_a27$pro.plate)
-
-plate_a27pro[plate_a27pro == "1"] <- "Plate 1"
-plate_a27pro[plate_a27pro == "3"] <- "Plate 3"
-plate_a27pro[plate_a27pro == "4"] <- "Plate 4"
-plate_a27pro[plate_a27pro == "5"] <- "Plate 5"
-plate_a27pro[plate_a27pro == "6"] <- "Plate 6"
-plate_a27pro[plate_a27pro == "S-trap batch 1"] <- "Plate 2"
-plate_a27pro[plate_a27pro == "S-trap batch 2"] <- "Plate 7"
-
-legend_a27pro <- ifelse(pre_pro_a27$pro.sampletype == "SPQC", "SPQC", plate_a27pro)
-
-p.a27pro <- make_pca_plot(
-  data_mat = post_pro_a27,
-  legend_group = legend_a27pro,
-  title_text = "A27 Proteomics"
-)
-
+p.a26met <- pca_panel("met_a26", "post", "A26 Metabolomics")
+p.a26pro <- pca_panel("pro_a26", "post", "A26 Proteomics")
+p.a27met <- pca_panel("met_a27", "post", "A27 Metabolomics")
+p.a27pro <- pca_panel("pro_a27", "post", "A27 Proteomics")
 
 # -----------------------------
 # Combine legend + panels
@@ -169,7 +154,9 @@ panels <- ggarrange(
   p.a27met + theme(legend.position = "none") + panel_margin,
   p.a27pro + theme(legend.position = "none") + panel_margin,
   ncol = 2, nrow = 2,
-  labels = NULL   # panel letters added in Photoshop for cross-figure consistency
+  labels = c("a", "b", "c", "d"),
+  font.label = list(size = 12, face = "bold"),
+  label.x = 0, label.y = 1, hjust = 0, vjust = 1
 )
 
 
@@ -224,12 +211,7 @@ legend_plot <- ggplot(legend_df, aes(x, y)) +
 
 
 
-final_plot_post <- ggarrange(
-  legend_plot,
-  panels,
-  ncol = 1,
-  heights = c(0.08, 1)
-)
+final_plot_post <- assemble_pca_figure(legend_plot, panels)
 
 
 
@@ -256,32 +238,10 @@ ggsave(
 ################################ Figures for Pre-Combat ################################################
 
 
-p.a26met <- make_pca_plot(
-  data_mat = pre_met_a26[, -c(1:3)],
-  legend_group = legend_a26met,
-  title_text = "A26 Metabolomics"
-)
-
-
-p.a26pro <- make_pca_plot(
-  data_mat = pre_pro_a26[, -c(1:3)],
-  legend_group = legend_a26pro,
-  title_text = "A26 Proteomics"
-)
-
-
-p.a27met <- make_pca_plot(
-  data_mat = pre_met_a27[, -c(631:633)],
-  legend_group = legend_a27met,
-  title_text = "A27 Metabolomics"
-)
-
-p.a27pro <- make_pca_plot(
-  data_mat = pre_pro_a27[, -c(1:4)],
-  legend_group = legend_a27pro,
-  title_text = "A27 Proteomics"
-)
-
+p.a26met <- pca_panel("met_a26", "pre", "A26 Metabolomics")
+p.a26pro <- pca_panel("pro_a26", "pre", "A26 Proteomics")
+p.a27met <- pca_panel("met_a27", "pre", "A27 Metabolomics")
+p.a27pro <- pca_panel("pro_a27", "pre", "A27 Proteomics")
 
 # -----------------------------
 # Combine legend + panels
@@ -294,7 +254,9 @@ panels <- ggarrange(
   p.a27met + theme(legend.position = "none") + panel_margin,
   p.a27pro + theme(legend.position = "none") + panel_margin,
   ncol = 2, nrow = 2,
-  labels = NULL   # panel letters added in Photoshop for cross-figure consistency
+  labels = c("a", "b", "c", "d"),
+  font.label = list(size = 12, face = "bold"),
+  label.x = 0, label.y = 1, hjust = 0, vjust = 1
 )
 
 
@@ -349,12 +311,7 @@ legend_plot <- ggplot(legend_df, aes(x, y)) +
 
 
 
-final_plot_pre <- ggarrange(
-  legend_plot,
-  panels,
-  ncol = 1,
-  heights = c(0.08, 1)
-)
+final_plot_pre <- assemble_pca_figure(legend_plot, panels)
 
 
 

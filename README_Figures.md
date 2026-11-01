@@ -1,55 +1,151 @@
-## 📊 Figures and Corresponding Code
+# Manuscript figures and supplementary Table S3
 
-This repository contains the code used to generate all figures for the manuscript:  
-**“Integrated metabolomics and proteomics from voxelated cortical hemispheres of adult rhesus monkeys”**  
-by *Qiuyi Wu\*, Alev M. Brigande\*, Michael W. Lutz, Pixu Shi, and Anita A. Disney*.
+Use the **QCFix** branch with Git LFS inputs downloaded and the R environment restored. Run commands from the repository root. Data inputs/outputs follow the shared reproduction/update mode described in [REPRODUCIBILITY.md](REPRODUCIBILITY.md#reproduction-mode-and-reference-updates). [README.md](README.md) documents the analysis stages; [DIAGRAM.md](DIAGRAM.md) shows their dependencies.
 
----
+The commands below use the activated project library. Adding `--vanilla` bypasses the repository's `renv` startup and requires a separate explicit package setup.
 
-## Main Figures
+## Figure index
 
-- **Figure 2**: Post-ComBat PCA plots  
-  `PCA_Figure.R`
+| Figure | Content | Code |
+| --- | --- | --- |
+| 2 | Post-ComBat PCA, A26/A27 × metabolomics/proteomics | `Code/PCA_Figure.R` |
+| 3a–b | A26 sr-sCCA components 1–2 | `Code/A26/A26_analysis_sCCA_laplacians.Rmd` and `Code/sr_sCCA_figures.R` |
+| 3c–d | A27 sr-sCCA components 1–2 | `Code/A27/A27_analysis_sCCA_laplacians.Rmd` and `Code/sr_sCCA_figures.R` |
+| 3e–f | A27-derived components projected onto A26 | `Code/A26A27_analysis_sCCA.Rmd` |
+| 4 | Mean correlation with exact-order spatial neighbors | `Code/regenerate_Figure4.R` and the two SampleSize Rmds |
+| 5 | Metabolomics PCA: blood-containing U5 versus perfused A26/A27 | `Code/loadingComp_U5A26A27_met.Rmd` |
+| S2 | Pre-ComBat PCA | `Code/PCA_Figure.R` |
+| S3–S4 | All 10 A26 components (S3) and all 10 A27 components (S4) | C6 Rmds and `Code/sr_sCCA_figures.R` |
+| S5 | Metabolite and protein-cluster neighbor-correlation boxplots | `Code/regenerate_FigureS5.R` and the two SampleSize Rmds |
 
-- **Figure 3a–b**: Spatial correlation gradients for A26  
-  `A26_analysis_sCCA_laplacians.Rmd`
+Generated figures under `Figure/` and workbooks matching `Supp_Table_S3*.xlsx` are ignored by Git. Scripts that accept an output directory can write outside the repository. Such files are not automatically committed or published.
 
-- **Figure 3c–d**: Spatial correlation gradients for A27  
-  `A27_analysis_sCCA_laplacians.Rmd`
+## Figures 2 and S2: pre/post-ComBat PCA
 
-- **Figure 3e–f**: Projection of A27-derived components onto A26  
-  `A26A27_analysis_sCCA.Rmd`
+Run the four preprocessing Rmds under `Code/A26/` and `Code/A27/` if the saved PCA objects need to be rebuilt, then run:
 
-- **Figure 4a–b**: Correlation with neighboring samples (A26)  
-  `SampleSize_A26_spearman.Rmd`
+```sh
+Rscript Code/PCA_Figure.R
+```
 
-- **Figure 4c–d**: Correlation with neighboring samples (A27)  
-  `SampleSize_A27_spearman.Rmd`
+Each preprocessing Rmd saves, to the configured data-output directory, numeric `pre_*` and `post_*` matrices plus matching `pre_*_metadata` and `post_*_metadata` tables. Metadata include `sample_id`, `plate`, and `sample_type`; row names match their matrix.
 
-- **Figure 5**: PCA of metabolomics with blood present (U5) vs. perfused samples (A26, A27)  
-  `loadingComp_U5A26A27_met.Rmd`
+| Data file | Pre-ComBat samples × analytes | Post-ComBat samples × analytes |
+| --- | --- | --- |
+| `Data/met_a26_PCAdata.RData` | 433 × 328 | 403 × 328 |
+| `Data/pro_a26_PCAdata.RData` | 427 × 9,990 | 427 × 9,990 |
+| `Data/met_a27_PCAdata.RData` | 581 × 300 | 548 × 300 |
+| `Data/pro_a27_PCAdata.RData` | 566 × 10,253 | 566 × 10,253 |
 
----
+These exports precede heldout selection. The metabolomics preprocessing excludes A26 samples 244, 96, and 188 and A27 sample 212. Log2 transformation occurs before batch correction. QC exclusions differ by stage, so pre/post sample counts need not match.
 
-## Supplementary Figures
+Outputs:
 
-- **Figure S2**: Pre-ComBat PCA plots  
-  `PCA_Figure.R`
+- `Figure/post_PCA_4panel_shared_legend.tiff` — Figure 2.
+- `Figure/pre_PCA_4panel_shared_legend.tiff` — Figure S2.
 
-- **Figures S3–S4**: Additional spatial correlation gradient analyses  
-  `A26_analysis_sCCA_laplacians.Rmd`  
-  `A27_analysis_sCCA_laplacians.Rmd`
+Both contain a shared plate legend, Metabolomic/Proteomic column headings, A26/A27 row labels, and a–d panel letters.
 
-- **Figure S5**: Spatial gradient boxplots  
-  `SampleSize_A26_spearman.Rmd`  
-  `SampleSize_A27_spearman.Rmd`
+## C6 maps: Figures 3 and S3–S4
 
----
+```sh
+Rscript Code/regenerate_C6_outputs.R A26 /absolute/path/to/CorrectedFigure
+Rscript Code/regenerate_C6_outputs.R A27 /absolute/path/to/CorrectedFigure
+```
 
-## Notes
+The driver runs the spatial-model chunks of each C6 Rmd and the corresponding section of `Code/sr_sCCA_figures.R`. It loads and validates the saved Delaunay graph by default (optional rebuilding uses `adegenet::spca()` and `adespatial`), uses seed 123 and 25 tuning permutations, and fits 10 components. It does not run the Rmds' separate nonspatial CCA comparison.
 
-- PCA plots (pre- and post-ComBat) are generated from the same script (`PCA_Figure.R`) with different preprocessing settings.
-- Spatial correlation gradients are derived from spatial CCA (sCCA) using Laplacian-based spatial weighting.
-- Neighbor correlation analyses (Figure 4 and S5) quantify spatial decay of metabolomic similarity across cortical samples.
+Outputs include:
 
+- `A26_components/A26_comp1.png` through `A26_comp10.png`.
+- `A27_components/A27_comp1.png` through `A27_comp10.png`.
+- Current spatial-model weights named `a26_score.RData` and `a27_score.RData` in the configured data-output directory.
+- When explicitly requested, rebuilt `sPCA_a26metCluster.RData` and `sPCA_a27metCluster.RData` in the configured data-output directory.
+- Tuning summaries, plotting state, session information, and diagnostics in `Figure/C6_diagnostics/`.
 
+The paired maps place metabolite scores V on the left and protein scores U on the right. PNGs use the supplied plotting code's orientation, plasma palette, 25 × 20 cm size, and 300 dpi resolution. The graph uses one coordinate per sample; all repeated sample cells are retained when rendering the flatmap.
+
+### Cross-animal projection
+
+Run `Code/A26A27_analysis_sCCA.Rmd` after the current A27 C6 model is available. It uses A27 model weights and cluster loadings with selected A26 data, checks the A26 graph/sample order, and projects through shared features.
+
+The default output folder is `Figure/A27_to_A26_components`. To override it before rendering:
+
+```r
+options(proteinfix.projection_export_dir = "/absolute/path/to/output")
+rmarkdown::render("Code/A26A27_analysis_sCCA.Rmd", knit_root_dir = getwd())
+```
+
+For components 1–10, it exports `proj_U*.tiff` and `proj_V*.tiff` at 600 dpi and paired `A27_to_A26_comp*.png` files at 300 dpi. Numerical results are saved as `A27_to_A26_projection.rds` in the configured data-output directory in the original fitted-model sign convention.
+
+### Composite layout
+
+The component export scripts produce paired maps. Assemble the final manuscript TIFFs separately using the following workflow:
+
+| Final figure | Component PNGs used |
+| --- | --- |
+| `Figure3.tiff` | Selected PNGs from `A26_components/`, `A27_components/`, and `A27_to_A26_components/`; each folder contains components 1–10. |
+| `Figure S3.tiff` | All 10 PNGs from `A26_components/`. |
+| `Figure S4.tiff` | All 10 PNGs from `A27_components/`. |
+
+Run `Rscript Code/assemble_manuscript_components.R /absolute/path/to/components /absolute/path/to/output` to assemble these TIFFs. Figure 3 uses components 1 and 2 from each folder; S3 and S4 use components 1–10 in row-major order. The component PNGs are exported at 300 dpi; the separate 600-dpi TIFF panel settings below do not establish the effective resolution of these assembled figures.
+
+### Separate individual TIFF panel exports in the Rmds
+
+The A26 and A27 C6 Rmds also contain export blocks for individual U (protein) and V (metabolite) maps, controlled by `export_maps`, with `fmt = "tiff"` and `dpi = 600`. Their default destinations are `Figure/A26_components/a26_U*.tiff` and `a26_V*.tiff`, and `Figure/A27_components/a27_U*.tiff` and `a27_V*.tiff`. The projection Rmd similarly exports `proj_U*.tiff` and `proj_V*.tiff` alongside its paired PNGs.
+
+These individual TIFF panels are separate from the PNG inputs used for Figures 3, S3, and S4. `regenerate_C6_outputs.R` runs selected model chunks and the paired PNG plotting script; it does not execute the C6 Rmds' individual-map TIFF export blocks. Figures 4 and S5, by contrast, are exported directly as complete 600-dpi TIFF figures by their regeneration scripts; their PNG copies are additional outputs. Figure 5 is exported directly as TIFF by its PCA Rmd.
+
+### Display signs
+
+QCFix exports use the stored fitted-model signs for all components and projections. No display-only sign flips are applied. Earlier local assets flipped A27 components 1 and 3 and their projections; those historical presentation edits are not carried into this regenerated set.
+
+## Figure 4: spatial neighbor maps
+
+```sh
+Rscript Code/regenerate_Figure4.R /absolute/path/to/output
+```
+
+The driver uses the metabolite preprocessing and loading-weighted protein-cluster aggregation in `Code/A26/SampleSize_A26_spearman.Rmd` and `Code/A27/SampleSize_A27_spearman.Rmd`. Protein panels 4b/d use the same cluster representation as Figure S5: 4,717 clusters for A26 and 6,933 for A27. Individual-protein panels are optional diagnostics and are not used in the final Figure 4.
+
+`Code/exact_neighbor_orders.R` defines neighbors by exact shortest-path distance. Groups exclude self and all closer samples. A26 displays orders 1/2/3; A27 displays 1/3/5. Features are standardized across the spatial samples, then Spearman correlations across features are averaged over each sample's neighbors. Constant protein columns are omitted because their standardized values are undefined.
+
+The script checks graph groups against `igraph` shortest paths and independently recomputes neighbor means for representative samples. The saved numeric output includes the per-sample neighbor means used to verify agreement with Figure S5.
+
+Outputs are `Figure4_corrected.tiff` (600 dpi), `Figure4_corrected.png`, numeric `A26_Figure4_results.rds` and `A27_Figure4_results.rds`, and diagnostic plots. The assembled figure has Metabolomics/Protein clusters column headings, horizontal A26/A27 labels, a–d panel letters, ordinal map headings, a bottom Neighbor order label, and a shared blue–white–red `avg cor` legend on a fixed −1 to 1 scale.
+
+## Figure S5: spatial gradient boxplots
+
+```sh
+Rscript Code/regenerate_FigureS5.R /absolute/path/to/output
+```
+
+This uses the preparation, standardization, and protein-cluster aggregation from the same two SampleSize Rmds as Figure 4. `Code/protein_cluster_contributions.R` reads current C5 protein loadings from `Data/A26_PChclust.RData` and `Data/A27_PChclust.RData`; the separately exported contribution workbooks are not used by this runner.
+
+The left column summarizes metabolite correlations. The right summarizes correlations across loading-weighted protein clusters. Both figures use the same metabolite data and loading-weighted protein clusters. Each S5 box contains **one average Spearman correlation per sample** for its exact neighbor order: the same per-sample neighbor means mapped in Figure 4. Median bars and 1.5-IQR whiskers are shown without outlier symbols; connected dots indicate means. Independent calculations check complete neighbor averages for representative samples.
+
+Outputs are `FigureS5_corrected.tiff` (600 dpi), `FigureS5_corrected.png`, numeric results for each animal, and diagnostics. Gray boxes, A26/A27 row labels, column headings, Average correlation, and the bottom Neighbor order label follow the manuscript layout.
+
+## Figure 5: U5/A26/A27 metabolomics PCA
+
+Run `Rscript Code/regenerate_Figure5.R /absolute/path/to/output` to reproduce Figure 5 and the subsequent loading comparisons. The driver executes `Code/loadingComp_U5A26A27_met.Rmd`, exports audits, loading correlations, feature matches, and overlap curves, and saves `Figure5_PCA_results.rds` to the configured data-output directory.
+
+Inputs are the U5 `5583 FIA Q500 Data.xlsx` and `5583 UPLC Q500 Data.xlsx` workbooks and the A26/A27 raw Q500 workbooks. The Rmd applies its own filtering, half-minimum imputation before log2 transformation, dilution adjustments, QC3 normalization, and outlier-removal procedure. This is not the post-ComBat PCA used in Figure 2.
+
+The current Figure 5 run uses **252 shared metabolites** and, after the Rmd's QC/outlier exclusions, **398 A26, 547 A27, and 68 U5 samples**. PC1 explains **40.1%** and PC2 **13.3%** of the variance. Proteomics imputation does not enter this PCA.
+
+The Rmd directly exports `fig5_pca.tiff` (default: `Figure/`; the driver uses the supplied output directory), 150 × 89 mm at 600 dpi, using cyan A26, red A27, and purple U5 to match the existing local manuscript presentation.
+
+Outliers are removed by their exact aligned row flags, not by sample number alone: numbers repeat across animals. The current run flags 14 rows; the former sample-only expression removed 21. Feature matching in the later loading comparisons normalizes both PCA and cluster names with `make.names()`, preserves original labels, rejects duplicate keys, and explicitly aligns rows. The corrected run matches 252 A26 metabolites and 249 A27 metabolites; unmatched A27 features are `DG(14:1_18:1)`, `ProBetaine`, and `GCDCA`. The match count is reported rather than forced to 252.
+
+**QC3 handling:** Figure 5 retains its existing QC3 participation in missingness filtering, half-minimum imputation, and QC3 normalization. QC3 rows are excluded from the biological-sample PCA. This is distinct from the A27 SPQC/ComBat analysis, which excludes all 63 commercial QC Level 1–3 rows before filtering and imputation.
+
+## Supplementary Table S3
+
+The **A26** C6 driver exports `Supp_Table_S3_protein_clusters_min10_UPDATED.xlsx`: one sheet per protein cluster containing at least 10 proteins, with signed loadings sorted by absolute magnitude. The current corrected output has **80 sheets and 3,834 protein rows**. The sheet count is derived from clustering, not fixed to the earlier manuscript count.
+
+Use a new output directory or move the existing workbook before repeating the C6 export; the exporter protects existing files. The built-in export contains `protein_accession` and `loading`.
+
+The locally annotated workbook in the corrected figure set additionally contains a third `Gene` column. Annotations were matched by accession from the supplied example, the local `PG.Genes` annotation table, and UniProt; protein groups can list multiple available gene names. It has 3,797 annotated rows and 37 marked `Not annotated`. Cluster membership, row order, and loadings were preserved.
+
+The gene-annotation step and its mapping inputs are not part of the committed C6 exporter. Rerunning C6 therefore produces the two-column table, not the annotated three-column manuscript copy. Preserve the annotation mapping with the manuscript assets if exact reproduction of that copy is needed.

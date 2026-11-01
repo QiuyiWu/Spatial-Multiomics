@@ -11,6 +11,7 @@ output:
 ---
 
 ```{r setup, include=FALSE}
+source(here::here("Code", "pipeline_paths.R"))
 library(Hmisc)
 library(sRDA)
 library(PMA)
@@ -45,19 +46,20 @@ knitr::opts_chunk$set(echo=TRUE, message=FALSE, cache=FALSE, warning=FALSE)
 
 # Frizzle A27
 
-In this analysis, I proceed with 85% cutoff for batch correction (combat), the PCA analysis, mapping of PCA scores on the brain map. Totally 630 metabolites. After discussion, we decide to remove those missing > 70% for TG metabolites, and remove those missing > 85% for other metabolites. The number of metabolites reduced from 620 to **308**. After meeting in January 2026, we decided to remove the outlier 212. 
+In this analysis, I proceed with 85% cutoff for batch correction (combat), the PCA analysis, mapping of PCA scores on the brain map. Totally 630 metabolites. After discussion, we decide to remove those missing > 70% for TG metabolites, and remove those missing > 85% for other metabolites. The retained feature count is determined after early commercial-QC exclusion (300 in the validated QCFix run). After meeting in January 2026, we decided to remove the outlier 212.
 Steps for Combat:
 
-1. For TG metabolites, remove those missing > 70%; for other metabolites, remove those missing > 85%, remove outlier 212
-2. Impute LOD/2
-3. Dilution factor x0.1
+1. Remove the 63 commercial plasma QC Level 1–3 rows before filtering or imputation; retain animal-specific SPQC for normalization.
+2. For TG metabolites, remove those missing > 70%; for other metabolites, remove those missing > 85%, remove outlier 212
+3. Impute half the minimum observed intensity
+4. Dilution factor x0.1
 5. Log transform
 6. Subtract SPQC
 7. Combat
 
 
 ```{r load metabolomic A27}
-meta_met.a27 <- read_excel(here::here("Data", "A27-Q500 Data.xlsx"), sheet = "1. 10788 Raw Data", skip=1)
+meta_met.a27 <- read_excel(proteinfix_input('A27-Q500 Data.xlsx'), sheet = "1. 10788 Raw Data", skip=1)
 met_data.a27 <- cbind(meta_met.a27$`Sample description`,  meta_met.a27$`Submission name`, meta_met.a27[, -c(1:11)])
 colnames(met_data.a27)[1:2] <- c("Sample", "Plate")
 met_data.a27$Plate <- sub("^plate", "Plate", met_data.a27$Plate)
@@ -68,6 +70,17 @@ met_data.a27 <- met_data.a27[, 1:632]
 features <- met_data.a27[1,-(1:2)]
 met_data.a27 <- data.frame(met_data.a27[-c(1:121),]) #data.frame(met_data.a27[-c(1:154),]) 
 met_data.a27$Sample[is.na(met_data.a27$Sample)] <- meta_met.a27$`Sample type`[grep("QC", meta_met.a27$`Sample type`)]
+# Exclude commercial plasma QC levels before ANY feature filtering or imputation.
+# Retain animal-specific SPQC rows for the later plate-normalization step.
+plasma_qc_levels <- c("QC Level 1", "QC Level 2", "QC Level 3")
+plasma_qc_rows <- met_data.a27$Sample %in% plasma_qc_levels
+plasma_qc_counts <- table(factor(met_data.a27$Sample[plasma_qc_rows],
+                                levels = plasma_qc_levels))
+message("Commercial plasma QC rows excluded before filtering: ", sum(plasma_qc_rows))
+stopifnot(sum(plasma_qc_rows) == 63L)
+met_data.a27 <- met_data.a27[!plasma_qc_rows, , drop = FALSE]
+stopifnot(!any(met_data.a27$Sample %in% plasma_qc_levels),
+          any(met_data.a27$Sample == "10788 SPQC -Frizzle"))
 colnames(met_data.a27)[-(1:2)] <- features
 # remove outlier sample 212
 met_data.a27 <- met_data.a27[!met_data.a27$Sample=="212", ]
@@ -77,7 +90,7 @@ met_data.a27[met_data.a27 == "< LOD"] <- NA
 # Convert all elements in met_data.a27 from character to numeric
 met_data.a27[,-c(1:2)] <- as.data.frame(lapply(met_data.a27[,-c(1:2)], function(x) as.numeric(as.character(x))))
 # remove 100% missing metabolites
-met_data.a27 <- met_data.a27[, colMeans(is.na(met_data.a27)) < 1] # 10 metabolites with 100% missingness are removed, we have 620 metabolites left. 
+met_data.a27 <- met_data.a27[, colMeans(is.na(met_data.a27)) < 1] # Remove features entirely missing after commercial-QC exclusion.
 ```
 
 
@@ -88,8 +101,8 @@ tg_metabolites <- grepl("^TG", colnames(met_data.a27))
 # Apply different missingness cutoffs
 impute_cols <- colMeans(is.na(met_data.a27)) <= ifelse(tg_metabolites, 0.70, 0.85)
 # Split data based on cutoff criteria
-met_data.a27.impute <- met_data.a27[, impute_cols]  # 308 metabolites
-met_data.a27.binary <- met_data.a27[, !impute_cols] # 312 metabolites
+met_data.a27.impute <- met_data.a27[, impute_cols]  # Retained metabolites after the missingness thresholds
+met_data.a27.binary <- met_data.a27[, !impute_cols] # Features failing the missingness thresholds
 
 
 # impute metabolites 
@@ -165,8 +178,8 @@ for (plate in met.plates) {
 }
 met_data.a27.spqcScaled <- met_data.a27.spqcScaled[-1,]
 
-# remove SPQC and QC level 1-3 samples, 403 samples
-remove_samples <- c("10788 SPQC -Frizzle","QC Level 1","QC Level 2","QC Level 3")
+# Remove SPQC after normalization; commercial QC levels were excluded before filtering.
+remove_samples <- "10788 SPQC -Frizzle"
 
 met_data.a27.spqcScaled <- met_data.a27.spqcScaled[!met_data.a27.spqcScaled$Sample %in% remove_samples, ]
 rownames(met_data.a27.spqcScaled) <- met_data.a27.spqcScaled$Sample
@@ -186,7 +199,7 @@ a27.met.data <- data.frame(cbind(met_data.a27.spqcScaled[,c(1:2)], df_corrected)
 colnames(a27.met.data) = colnames(met_data.a27.spqcScaled)
 
 library(openxlsx)
-write.xlsx(a27.met.data, here::here("Data", "PostCombat_a27_Metabolite_beforeHeldout.xlsx"))
+write.xlsx(a27.met.data, proteinfix_output('PostCombat_a27_Metabolite_beforeHeldout.xlsx'))
                          
 # PCA + PLOT
 #df_corrected <- df_corrected[, which(var_values > 0)]  # Keep nonzero variance columns
@@ -222,3 +235,31 @@ ggplot(pca_data, aes(x=PC1, y=PC2, color=color_indicator)) +
 
 ```
 
+```{r export met_a27 PCA data}
+# Reproducible Figure 2 (post) and Figure S2 (pre) inputs.
+# Pre includes retained QC samples; post follows the script's QC exclusions.
+# Values are log2 transformed before SPQC subtraction and ComBat.
+pre_met_a27 <- as.matrix(met_data.a27.unscaling[, -seq_len(2)])
+post_met_a27 <- as.matrix(df_corrected)
+pre_met_a27_metadata <- data.frame(sample_id = as.character(met_data.a27.unscaling$Sample),
+  plate = as.character(met_data.a27.unscaling$Plate),
+  sample_type = ifelse(met_data.a27.unscaling$Sample == "10788 SPQC -Frizzle", "SPQC", "Non-SPQC"))
+post_met_a27_metadata <- data.frame(sample_id = as.character(met_data.a27.spqcScaled$Sample),
+  plate = as.character(met_data.a27.spqcScaled$Plate),
+  sample_type = rep("Non-SPQC", nrow(df_corrected)))
+
+# Keep an explicit row key for every matrix and its corresponding metadata.
+rownames(pre_met_a27_metadata) <- make.unique(paste(
+  pre_met_a27_metadata$plate, pre_met_a27_metadata$sample_id, sep = "::"))
+rownames(post_met_a27_metadata) <- make.unique(paste(
+  post_met_a27_metadata$plate, post_met_a27_metadata$sample_id, sep = "::"))
+rownames(pre_met_a27) <- rownames(pre_met_a27_metadata)
+rownames(post_met_a27) <- rownames(post_met_a27_metadata)
+stopifnot(nrow(pre_met_a27) == nrow(pre_met_a27_metadata),
+          nrow(post_met_a27) == nrow(post_met_a27_metadata),
+          identical(colnames(pre_met_a27), colnames(post_met_a27)),
+          all(is.finite(pre_met_a27)), all(is.finite(post_met_a27)))
+save(pre_met_a27, post_met_a27,
+     pre_met_a27_metadata, post_met_a27_metadata,
+     file = proteinfix_output('met_a27_PCAdata.RData'))
+```

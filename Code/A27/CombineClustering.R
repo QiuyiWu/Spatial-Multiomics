@@ -1,3 +1,4 @@
+source(here::here("Code", "pipeline_paths.R"))
 
 library(Hmisc)
 library(sRDA)
@@ -30,12 +31,12 @@ library(htmltools)
 # C4. Selecting Mapping Samples ######
 ##################################################
 # finally 527 samples
-a27.met.data <- as.data.frame(read_excel("../data/PostCombat_a27_Metabolite_beforeHeldout.xlsx"))
-a27.pro.data <- as.data.frame(read_excel("../data/PostCombat_a27_Protein.xlsx", sheet = "combat_corrected_unscaled"))
+a27.met.data <- as.data.frame(read_excel(proteinfix_input('PostCombat_a27_Metabolite_beforeHeldout.xlsx')))
+a27.pro.data <- as.data.frame(read_excel(proteinfix_input('PostCombat_a27_Protein.xlsx'), sheet = "combat_corrected_unscaled"))
 
 
 # convert Duke ID to Analysis ID
-dukeid.df <- data.frame(read_excel("../data/A27_Frizzle_Flatmap_Grid_20260317.xlsx", sheet = "Decoder"))
+dukeid.df <- data.frame(read_excel(proteinfix_input('A27_Frizzle_Flatmap_Grid_20260317.xlsx'), sheet = "Decoder"))
 dukeid.df1 <- dukeid.df[, c("AnalysisID", "DukeID")]
 dukeid.df2 <- dukeid.df[, c("SplitAnalysisID", "SplitDukeID")]
 colnames(dukeid.df2) <- c("AnalysisID", "DukeID")
@@ -50,7 +51,7 @@ a27.pro.data <- a27.pro.data %>%
   mutate(DukeID = AnalysisID) %>%       
   select(-AnalysisID)                   
 
-heldout_updated <- as.data.frame(read_excel("../data/Heldout_Updated_a27.xlsx"))
+heldout_updated <- as.data.frame(read_excel(proteinfix_input('Heldout_Updated_a27.xlsx')))
 
 a27.met.data <- a27.met.data[a27.met.data$Sample %in% unique(heldout_updated$finalID ), ]
 a27.pro.data <- a27.pro.data[a27.pro.data$DukeID %in% unique(heldout_updated$finalID ), ]
@@ -69,7 +70,16 @@ stopifnot(identical(
 rownames(a27.met.data) <- as.character(a27.met.data$Sample)
 rownames(a27.pro.data) <- as.character(a27.pro.data$DukeID)
 
-# save(a27.met.data, a27.pro.data, file = "a27.RData")
+# Validate the selected sample set before exporting C4 inputs for downstream analysis.
+stopifnot(!anyNA(heldout_updated$finalID),
+          !anyDuplicated(a27.met.data$Sample),
+          !anyDuplicated(a27.pro.data$DukeID),
+          nrow(a27.met.data) == length(unique(heldout_updated$finalID)),
+          nrow(a27.pro.data) == nrow(a27.met.data),
+          setequal(as.character(a27.met.data$Sample), as.character(heldout_updated$finalID)),
+          all(is.finite(as.matrix(a27.met.data[, -seq_len(2)]))),
+          all(is.finite(as.matrix(a27.pro.data[, -(1:3)]))))
+save(a27.met.data, a27.pro.data, file = proteinfix_output('a27.RData'))
 
 
 ##################################################
@@ -178,8 +188,7 @@ PChclust.score <- function(x, group){
 
 
 ### LOAD DATA
-setwd("~/Documents/Research/Postdoc/BrainMultiomic/A27")
-load("../data/a27.RData")
+load(proteinfix_input('a27.RData'))
 met_data <- a27.met.data 
 pro_data <- a27.pro.data 
 
@@ -187,7 +196,7 @@ pro_data <- a27.pro.data
 # MET data
 met_matrix <- data.frame(met_data)
 rownames(met_matrix) <- met_data$Sample
-met_matrix <- met_matrix[,-(1:3)]
+met_matrix <- met_matrix[,-(1:2)]
 met_matrix <- scale(met_matrix)
 x <- met_matrix
 group <- PChclust(x, method.hclust="average", min_pc1_var=0.7, min_cluster_size = 1)
@@ -205,7 +214,14 @@ x <- pro_matrix
 group <- PChclust(x, method.hclust="average", min_pc1_var=0.7, min_cluster_size = 1)
 a27.pro.cluster <- PChclust.score(x, group)
 
-#save(a27.met.cluster, a27.pro.cluster, file = "../data/a27_PChclust.RData")
+# Validate C5 outputs before exporting them for downstream analyses.
+stopifnot(identical(rownames(a27.met.cluster$score), rownames(a27.pro.cluster$score)),
+          setequal(names(a27.met.cluster$group), colnames(met_matrix)),
+          setequal(names(a27.pro.cluster$group), colnames(pro_matrix)),
+          all(is.finite(a27.met.cluster$score)), all(is.finite(a27.pro.cluster$score)),
+          all(is.finite(a27.met.cluster$loading)), all(is.finite(a27.pro.cluster$loading)))
+save(a27.met.cluster, a27.pro.cluster,
+     file = proteinfix_output('A27_PChclust.RData'))
 
 
 

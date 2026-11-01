@@ -12,20 +12,22 @@ output:
 ---
 
 ```{r setup, include=FALSE}
+source(here::here("Code", "pipeline_paths.R"))
 knitr::opts_chunk$set(echo = TRUE, fig_caption = TRUE, warning = FALSE, message = FALSE)
 library(here)
+source(here::here("Code", "exact_neighbor_orders.R"))
+source(here::here("Code", "protein_cluster_contributions.R"))
 
 ## ---- Fig 4 (per-panel corr maps) + S5 (decay boxplots) export parameters ----
-## Fig 4: export INDIVIDUAL correlation-map panels, matching the sr-sCCA map scripts
-##        (80x80 mm, 600 dpi, TIFF/LZW; coord_equal self-sizes the map -> crop in PS).
-##        A27 shows {1st,3rd,5th} neighbours by design (vs A26 {1,2,3}); panels are named
-##        by TRUE neighbour order (_nbr1/_nbr3/_nbr5). Outer layout + labels done in PS.
-##        (Was: assembled triptychs; reversed per request.)
+## Fig 4: metabolite and loading-weighted protein-cluster correlation-map panels.
+## Run Code/regenerate_Figure4.R for the complete labeled A26/A27 figure.
 ## S5: NOT auto-wrapped for A27 (multiple candidate decay plots; see flags).
 ##     Use the same gated tiff() pattern as A26 once panels are confirmed.
 fig4_export <- TRUE
+raw_protein_export <- FALSE  # Optional individual-protein diagnostic panels.
 s5_export   <- TRUE
-fig_dir <- here::here("Figure")
+fig_dir <- getOption("proteinfix.neighbor_figure_dir", here::here("Figure"))
+dir.create(fig_dir, recursive = TRUE, showWarnings = FALSE)
 fmt     <- "tiff"
 dpi     <- 600
 panel_w_mm <- 80   # per-panel now (was fig4_w_mm 150 for the whole triptych)
@@ -76,7 +78,7 @@ library(readxl)
 
 
 ```{r preparation}
-heldout_updated <- readxl::read_xlsx(here::here("Data", "Heldout_Updated_a27.xlsx")) %>% as.data.frame() %>% .[, c(1:3)]
+heldout_updated <- readxl::read_xlsx(proteinfix_input('Heldout_Updated_a27.xlsx')) %>% as.data.frame() %>% .[, c(1:3)]
 
 id_map <- heldout_updated %>%
   tidyr::pivot_longer(
@@ -92,10 +94,10 @@ lookup <- setNames(id_map$finalID, id_map$ID)
 
 
 ###########
-a27.met.data <- as.data.frame(read_excel(here::here("Data", "PostCombat_a27_Metabolite_beforeHeldout.xlsx")))
-a27.pro.data <- as.data.frame(read_excel(here::here("Data", "PostCombat_a27_Protein.xlsx"), sheet = "combat_corrected_unscaled"))
+a27.met.data <- as.data.frame(read_excel(proteinfix_input('PostCombat_a27_Metabolite_beforeHeldout.xlsx')))
+a27.pro.data <- as.data.frame(read_excel(proteinfix_input('PostCombat_a27_Protein.xlsx'), sheet = "combat_corrected_unscaled"))
 # convert Duke ID to Analysis ID
-dukeid.df <- data.frame(read_excel(here::here("Data", "A27_Frizzle_Flatmap_Grid_20260317.xlsx"), sheet = "Decoder"))
+dukeid.df <- data.frame(read_excel(proteinfix_input('A27_Frizzle_Flatmap_Grid_20260317.xlsx'), sheet = "Decoder"))
 dukeid.df1 <- dukeid.df[, c("AnalysisID", "DukeID")]
 dukeid.df2 <- dukeid.df[, c("SplitAnalysisID", "SplitDukeID")]
 colnames(dukeid.df2) <- c("AnalysisID", "DukeID")
@@ -108,7 +110,7 @@ a27.pro.data <- a27.pro.data %>%
   mutate(DukeID = AnalysisID) %>%       
   select(-AnalysisID)   
 
-heldout_updated <- as.data.frame(read_excel(here::here("Data", "Heldout_Updated_a27.xlsx")))
+heldout_updated <- as.data.frame(read_excel(proteinfix_input('Heldout_Updated_a27.xlsx')))
 
 a27.met.data <- a27.met.data[a27.met.data$Sample %in% unique(heldout_updated$finalID ), ]
 a27.pro.data <- a27.pro.data[a27.pro.data$DukeID %in% unique(heldout_updated$finalID ), ]
@@ -120,7 +122,7 @@ rownames(a27.pro.data) <- a27.pro.data$DukeID
 
 
 ############
-load(here::here("Data", "sPCA_a27metCluster.RData"))
+load(proteinfix_input('sPCA_a27metCluster.RData'))
 
 nb <- spca_delaunay_metCluster$lw$neighbours  # adjacency list
 # convert to binary adjacency matrix
@@ -133,22 +135,13 @@ for (i in 1:n) {
 
 rownames(nbr1.a27)=colnames(nbr1.a27) = rownames(spca_delaunay_metCluster$li)
 
-### 2nd neighbor matrix ###
-nbr2.a27 <- 1*(nbr1.a27%*%nbr1.a27!=0) - nbr1.a27
-nbr2.a27[is.na(nbr1.a27)] <- 0
-
-
-### 3rd neighbor matrix ###
-nbr3.a27 <- 1*(nbr1.a27%*%nbr1.a27%*%nbr1.a27!=0) - nbr1.a27 - nbr2.a27
-nbr3.a27[is.na(nbr3.a27)] <- 0
-
-### 4th neighbor matrix ###
-nbr4.a27 <- 1*(nbr1.a27%*%nbr1.a27%*%nbr1.a27%*%nbr1.a27!=0) - nbr1.a27 - nbr2.a27 - nbr3.a27
-nbr4.a27[is.na(nbr4.a27)] <- 0
-
-### 5th neighbor matrix ###
-nbr5.a27 <- 1*(nbr1.a27%*%nbr1.a27%*%nbr1.a27%*%nbr1.a27%*%nbr1.a27!=0) - nbr1.a27 - nbr2.a27 - nbr3.a27 - nbr4.a27
-nbr5.a27[is.na(nbr5.a27)] <- 0
+# Exact graph-distance shells; never include self or lower-order neighbors.
+neighbor_shells <- exact_neighbor_orders(nbr1.a27, max_order = 5)
+nbr1.a27 <- neighbor_shells[[1]]
+nbr2.a27 <- neighbor_shells[[2]]
+nbr3.a27 <- neighbor_shells[[3]]
+nbr4.a27 <- neighbor_shells[[4]]
+nbr5.a27 <- neighbor_shells[[5]]
 
 
 ######
@@ -159,6 +152,7 @@ rename_ids <- function(ids, lookup) {
 }
 
 new_ids <- rename_ids(rownames(nbr1.a27), lookup)
+stopifnot(!anyNA(new_ids), !anyDuplicated(new_ids))
 
 rownames(nbr1.a27) <- new_ids
 colnames(nbr1.a27) <- new_ids
@@ -253,7 +247,7 @@ avg_neighbor_cor <- function(X, nbr_mat, method = "pearson", use = "pairwise.com
   out <- rep(NA_real_, n)
   names(out) <- rownames(X)
   for (i in seq_len(n)) {
-    nb_idx <- which(nbr_mat[i, ] != 0)  # neighbors of i
+    nb_idx <- which(nbr_mat[i, ] == 1 & seq_len(n) != i)  # exact-order neighbors, excluding self
     if (length(nb_idx) == 0) {
       out[i] <- NA_real_
       next
@@ -325,7 +319,7 @@ if (isTRUE(get0("s5_export", ifnotfound = FALSE))) dev.off()
 
 
 ```{r map met}
-map.df <- as.matrix(readxl::read_xlsx(here::here("Data", "A27_Frizzle_Flatmap_Grid_20260317.xlsx"), sheet = "AnalysisID_Matrix", col_names = F))
+map.df <- as.matrix(readxl::read_xlsx(proteinfix_input('A27_Frizzle_Flatmap_Grid_20260317.xlsx'), sheet = "AnalysisID_Matrix", col_names = F))
 map_chr <- as.character(map.df)
 replacement <- lookup[map_chr]
 map_chr <- ifelse(!is.na(replacement), replacement, map_chr)
@@ -492,7 +486,10 @@ We can see the scaling is needed for proteomic data to make the features compara
 
 
 ```{r scaling}
-X.z.pro <- scale(X.sub.pro, center = TRUE, scale = TRUE)
+pro_sd <- apply(X.sub.pro, 2, sd)
+pro_keep <- is.finite(pro_sd) & pro_sd > 0
+X.z.pro <- scale(X.sub.pro[, pro_keep, drop = FALSE], center = TRUE, scale = TRUE)
+stopifnot(all(is.finite(X.z.pro)))
 
 cors.1 <- avg_neighbor_cor_raw.spearman(X.z.pro, nbr1.a27)
 cors.2 <- avg_neighbor_cor_raw.spearman(X.z.pro, nbr2.a27)
@@ -563,12 +560,21 @@ cor5_map <- paint_to_map(map.df, setNames(cor5.pro, as.character(names(cor5.pro)
 ```
 
 
+# Optional individual-protein diagnostics; Figure 4 uses the cluster panels below.
+```{r export raw protein diagnostics}
+p_a27_pro <- list(plot_map(cor1_map, NULL),
+                  plot_map(cor3_map, NULL),
+                  plot_map(cor5_map, NULL))
+if (isTRUE(get0("raw_protein_export", ifnotfound = FALSE)))
+  export_panels(p_a27_pro, "cor_a27_pro", orders = c(1, 3, 5))
+```
+
 # Protein Clusters
 
 Use loading to aggregate proteins to clusters.
 
-```{r pro cluster, eval=FALSE}
-a27.pro.cluster <- readxl::read_xlsx(here::here("Data", "pro_cluster_contribution_a27.xlsx"), sheet = 1) %>% data.frame()
+```{r pro cluster}
+a27.pro.cluster <- protein_cluster_contributions("A27")
 
 make_sample_by_cluster_weighted_sum <- function(X.sub.pro, a27.pro.cluster) {
   X <- as.matrix(X.sub.pro)
@@ -659,7 +665,7 @@ if (isTRUE(get0("s5_export", ifnotfound = FALSE))) dev.off()
 
 
 
-```{r map pro cluster, eval=FALSE}
+```{r map pro cluster}
 cor1.pro <- avg_neighbor_cor(X.cluster.pro, nbr1.a27, method = "spearman")
 cor2.pro <- avg_neighbor_cor(X.cluster.pro, nbr2.a27, method = "spearman")
 cor3.pro <- avg_neighbor_cor(X.cluster.pro, nbr3.a27, method = "spearman")

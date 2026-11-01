@@ -1,3 +1,4 @@
+source(here::here("Code", "pipeline_paths.R"))
 
 library(Hmisc)
 library(sRDA)
@@ -30,10 +31,10 @@ library(htmltools)
 # C4. Selecting Mapping Samples ######
 ##################################################
 # finally 267 samples
-a26.met.data <- as.data.frame(read_excel("../data/PostCombat_A26_Metabolite_beforeHeldout.xlsx"))
-a26.pro.data <- as.data.frame(read_excel("../data/PostCombat_A26_Protein.xlsx", sheet = "combat_corrected_unscaled"))
+a26.met.data <- as.data.frame(read_excel(proteinfix_input('PostCombat_A26_Metabolite_beforeHeldout.xlsx')))
+a26.pro.data <- as.data.frame(read_excel(proteinfix_input('PostCombat_A26_Protein.xlsx'), sheet = "combat_corrected_unscaled"))
 # convert Duke ID to Analysis ID
-dukeid.df <- data.frame(read_excel("../data/A26_Bonnie_Flatmap_Grid_20260315.xlsx", sheet = "Proteome_DukeIDs"))[, -1]
+dukeid.df <- data.frame(read_excel(proteinfix_input('A26_Bonnie_Flatmap_Grid_20260315.xlsx'), sheet = "Proteome_DukeIDs"))[, -1]
 colnames(a26.pro.data)[1] <- "DukeID"
 a26.pro.data$DukeID <- as.numeric(substr(a26.pro.data$DukeID, 3,8))
 # Join and replace DukeID with AnalysisID
@@ -42,7 +43,7 @@ a26.pro.data <- a26.pro.data %>%
   mutate(DukeID = AnalysisID) %>%       # Replace values with AnalysisIDs
   select(-AnalysisID)                   
 
-heldout_updated <- as.data.frame(read_excel("../data/Heldout_Updated_a26.xlsx"))
+heldout_updated <- as.data.frame(read_excel(proteinfix_input('Heldout_Updated_a26.xlsx')))
 
 a26.met.data <- a26.met.data[a26.met.data$Sample %in% unique(heldout_updated$finalID ), ]
 a26.pro.data <- a26.pro.data[a26.pro.data$DukeID %in% unique(heldout_updated$finalID ), ]
@@ -63,7 +64,16 @@ stopifnot(identical(
 rownames(a26.met.data) <- as.character(a26.met.data$Sample)
 rownames(a26.pro.data) <- as.character(a26.pro.data$DukeID)
 
-# save(a26.met.data, a26.pro.data, file = "a26.RData")
+# Validate the selected sample set before exporting C4 inputs for downstream analysis.
+stopifnot(!anyNA(heldout_updated$finalID),
+          !anyDuplicated(a26.met.data$Sample),
+          !anyDuplicated(a26.pro.data$DukeID),
+          nrow(a26.met.data) == length(unique(heldout_updated$finalID)),
+          nrow(a26.pro.data) == nrow(a26.met.data),
+          setequal(as.character(a26.met.data$Sample), as.character(heldout_updated$finalID)),
+          all(is.finite(as.matrix(a26.met.data[, -seq_len(3)]))),
+          all(is.finite(as.matrix(a26.pro.data[, -(1:3)]))))
+save(a26.met.data, a26.pro.data, file = proteinfix_output('a26.RData'))
 
 
 ##################################################
@@ -170,6 +180,7 @@ PChclust.score <- function(x, group){
 
 
 ### LOAD DATA
+load(proteinfix_input('a26.RData'))
 met_data <- a26.met.data 
 pro_data <- a26.pro.data 
 
@@ -195,7 +206,14 @@ x <- pro_matrix
 group <- PChclust(x, method.hclust="average", min_pc1_var=0.7, min_cluster_size = 1)
 a26.pro.cluster <- PChclust.score(x, group)
 
-#save(a26.met.cluster, a26.pro.cluster, file = "../data/A26_PChclust.RData")
+# Validate C5 outputs before exporting them for downstream analyses.
+stopifnot(identical(rownames(a26.met.cluster$score), rownames(a26.pro.cluster$score)),
+          setequal(names(a26.met.cluster$group), colnames(met_matrix)),
+          setequal(names(a26.pro.cluster$group), colnames(pro_matrix)),
+          all(is.finite(a26.met.cluster$score)), all(is.finite(a26.pro.cluster$score)),
+          all(is.finite(a26.met.cluster$loading)), all(is.finite(a26.pro.cluster$loading)))
+save(a26.met.cluster, a26.pro.cluster,
+     file = proteinfix_output('A26_PChclust.RData'))
 
 
 
