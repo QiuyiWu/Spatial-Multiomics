@@ -48,7 +48,7 @@ dir.create(export_dir, recursive = TRUE, showWarnings = FALSE)
 
 
 # Data Preprocessing
-In this analysis, I proceed with 85% cutoff for batch correction (combat), the PCA analysis, mapping of PCA scores on the brain map. Totally 630 metabolites. After discussion, we decide to remove those missing > 70% for TG metabolites, and remove those missing > 85% for other metabolites. The number of metabolites reduced from 620 to **343**. After meeting in January 2026, we decided to remove the outlier 212.
+In this analysis, I proceed with 85% cutoff for batch correction (combat), the PCA analysis, mapping of PCA scores on the brain map. Totally 630 metabolites. After discussion, we decide to remove those missing > 70% for TG metabolites, and remove those missing > 85% for other metabolites. The corrected upstream analysis excludes commercial plasma QC Levels 1–3 before filtering and imputation and retains **300** metabolites in the validated QCFix run. After meeting in January 2026, we decided to remove the outlier 212.
 Steps for Combat:
 
 1. For TG metabolites, remove those missing > 70%; for other metabolites, remove those missing > 85%, remove outlier 212

@@ -46,12 +46,13 @@ knitr::opts_chunk$set(echo=TRUE, message=FALSE, cache=FALSE, warning=FALSE)
 
 # Frizzle A27
 
-In this analysis, I proceed with 85% cutoff for batch correction (combat), the PCA analysis, mapping of PCA scores on the brain map. Totally 630 metabolites. After discussion, we decide to remove those missing > 70% for TG metabolites, and remove those missing > 85% for other metabolites. The number of metabolites reduced from 620 to **308**. After meeting in January 2026, we decided to remove the outlier 212. 
+In this analysis, I proceed with 85% cutoff for batch correction (combat), the PCA analysis, mapping of PCA scores on the brain map. Totally 630 metabolites. After discussion, we decide to remove those missing > 70% for TG metabolites, and remove those missing > 85% for other metabolites. The retained feature count is determined after early commercial-QC exclusion (300 in the validated QCFix run). After meeting in January 2026, we decided to remove the outlier 212.
 Steps for Combat:
 
-1. For TG metabolites, remove those missing > 70%; for other metabolites, remove those missing > 85%, remove outlier 212
-2. Impute LOD/2
-3. Dilution factor x0.1
+1. Remove the 63 commercial plasma QC Level 1–3 rows before filtering or imputation; retain animal-specific SPQC for normalization.
+2. For TG metabolites, remove those missing > 70%; for other metabolites, remove those missing > 85%, remove outlier 212
+3. Impute half the minimum observed intensity
+4. Dilution factor x0.1
 5. Log transform
 6. Subtract SPQC
 7. Combat
@@ -69,6 +70,17 @@ met_data.a27 <- met_data.a27[, 1:632]
 features <- met_data.a27[1,-(1:2)]
 met_data.a27 <- data.frame(met_data.a27[-c(1:121),]) #data.frame(met_data.a27[-c(1:154),]) 
 met_data.a27$Sample[is.na(met_data.a27$Sample)] <- meta_met.a27$`Sample type`[grep("QC", meta_met.a27$`Sample type`)]
+# Exclude commercial plasma QC levels before ANY feature filtering or imputation.
+# Retain animal-specific SPQC rows for the later plate-normalization step.
+plasma_qc_levels <- c("QC Level 1", "QC Level 2", "QC Level 3")
+plasma_qc_rows <- met_data.a27$Sample %in% plasma_qc_levels
+plasma_qc_counts <- table(factor(met_data.a27$Sample[plasma_qc_rows],
+                                levels = plasma_qc_levels))
+message("Commercial plasma QC rows excluded before filtering: ", sum(plasma_qc_rows))
+stopifnot(sum(plasma_qc_rows) == 63L)
+met_data.a27 <- met_data.a27[!plasma_qc_rows, , drop = FALSE]
+stopifnot(!any(met_data.a27$Sample %in% plasma_qc_levels),
+          any(met_data.a27$Sample == "10788 SPQC -Frizzle"))
 colnames(met_data.a27)[-(1:2)] <- features
 # remove outlier sample 212
 met_data.a27 <- met_data.a27[!met_data.a27$Sample=="212", ]
@@ -78,7 +90,7 @@ met_data.a27[met_data.a27 == "< LOD"] <- NA
 # Convert all elements in met_data.a27 from character to numeric
 met_data.a27[,-c(1:2)] <- as.data.frame(lapply(met_data.a27[,-c(1:2)], function(x) as.numeric(as.character(x))))
 # remove 100% missing metabolites
-met_data.a27 <- met_data.a27[, colMeans(is.na(met_data.a27)) < 1] # 10 metabolites with 100% missingness are removed, we have 620 metabolites left. 
+met_data.a27 <- met_data.a27[, colMeans(is.na(met_data.a27)) < 1] # Remove features entirely missing after commercial-QC exclusion.
 ```
 
 
@@ -89,8 +101,8 @@ tg_metabolites <- grepl("^TG", colnames(met_data.a27))
 # Apply different missingness cutoffs
 impute_cols <- colMeans(is.na(met_data.a27)) <= ifelse(tg_metabolites, 0.70, 0.85)
 # Split data based on cutoff criteria
-met_data.a27.impute <- met_data.a27[, impute_cols]  # 308 metabolites
-met_data.a27.binary <- met_data.a27[, !impute_cols] # 312 metabolites
+met_data.a27.impute <- met_data.a27[, impute_cols]  # Retained metabolites after the missingness thresholds
+met_data.a27.binary <- met_data.a27[, !impute_cols] # Features failing the missingness thresholds
 
 
 # impute metabolites 
@@ -166,8 +178,8 @@ for (plate in met.plates) {
 }
 met_data.a27.spqcScaled <- met_data.a27.spqcScaled[-1,]
 
-# remove SPQC and QC level 1-3 samples, 403 samples
-remove_samples <- c("10788 SPQC -Frizzle","QC Level 1","QC Level 2","QC Level 3")
+# Remove SPQC after normalization; commercial QC levels were excluded before filtering.
+remove_samples <- "10788 SPQC -Frizzle"
 
 met_data.a27.spqcScaled <- met_data.a27.spqcScaled[!met_data.a27.spqcScaled$Sample %in% remove_samples, ]
 rownames(met_data.a27.spqcScaled) <- met_data.a27.spqcScaled$Sample

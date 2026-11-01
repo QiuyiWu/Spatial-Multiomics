@@ -33,6 +33,20 @@ The repository's `.Rprofile` activates `renv`. Install `renv` first if it is una
 
 The commands below assume the restored project environment. `Rscript --vanilla` bypasses `.Rprofile`; use it only if the intended packages have been loaded by another explicit setup.
 
+## Regenerate the coordinated QCFix corrections
+
+After restoring the R environment, run from the repository root with fresh, empty run and figure directories:
+
+```sh
+Rscript Code/regenerate_QCFix.R /absolute/path/to/fresh-run /absolute/path/to/CorrectedFigure2
+```
+
+This reruns A27 metabolomics preprocessing, heldout selection, aligned samples, and clustering; refits the A26/A27 spatial models; regenerates the projection, PCA figures, Figures 4/5/S5, and final component TIFF composites. It writes regenerated data under the run directory's `Data/`, stage logs under `logs/`, and the complete figure set to the supplied figure directory. Review `comparison.csv` before replacing tracked references. Saved graphs are validated; explicitly request rebuilding only if sample/coordinate changes require it.
+
+The correction excludes 63 A27 commercial plasma QC Level 1–3 rows before filtering/imputation in the SPQC/ComBat workflow. Figure 5 removes exactly its flagged rows, matches metabolite names consistently in the loading comparisons, and **provisionally retains QC3 in its own filtering, imputation, and normalization pending PI review**. Original labels and matching/outlier audits are exported.
+
+The recorded local validation uses R 4.4.3 with an independently configured system library, invoked explicitly with `--vanilla`; `renv.lock` remains the R 4.5.2 reference environment. For that explicit alternative, set `PROTEINFIX_RSCRIPT_FLAGS=--vanilla` when calling the coordinated runner. Session information accompanies the outputs.
+
 ## Reproduction mode and reference updates
 
 The pipeline defaults to **reproduction mode**. Generated data artifacts go to
@@ -121,7 +135,7 @@ A26 P1 produces 428 samples and 9,990 protein variables. A27 P1 produces 566 sam
 | --- | --- | --- | --- |
 | A26 metabolomics | `A26/Analysis_BatchEffect_A26_met_adj.Rmd` | `Data/PostCombat_A26_Metabolite_beforeHeldout.xlsx` | 403 × 328 |
 | A26 proteomics | `A26/Analysis_BatchEffect_A26_pro_adj.Rmd` | `Data/PostCombat_A26_Protein.xlsx` | 427 × 9,990 |
-| A27 metabolomics | `A27/Analysis_BatchEffect_A27_met_adj.Rmd` | `Data/PostCombat_a27_Metabolite_beforeHeldout.xlsx` | 548 × 343 |
+| A27 metabolomics | `A27/Analysis_BatchEffect_A27_met_adj.Rmd` | `Data/PostCombat_a27_Metabolite_beforeHeldout.xlsx` | 548 × 300 |
 | A27 proteomics | `A27/Analysis_BatchEffect_A27_pro_adj.Rmd` | `Data/PostCombat_a27_Protein.xlsx` | 566 × 10,253 |
 
 File-name capitalization in this table matches the repository. Dimensions exclude metadata columns. Downstream protein analyses read the `combat_corrected_unscaled` worksheet.
@@ -134,7 +148,7 @@ PCA exports at this stage precede heldout selection. Each Rmd saves a reproducib
 | --- | --- | --- |
 | `Data/met_a26_PCAdata.RData` | 433 × 328 | 403 × 328 |
 | `Data/pro_a26_PCAdata.RData` | 427 × 9,990 | 427 × 9,990 |
-| `Data/met_a27_PCAdata.RData` | 644 × 343 | 548 × 343 |
+| `Data/met_a27_PCAdata.RData` | 581 × 300 | 548 × 300 |
 | `Data/pro_a27_PCAdata.RData` | 566 × 10,253 | 566 × 10,253 |
 
 For example, render an analysis from R in the repository root:
@@ -155,7 +169,7 @@ source("Code/A27/HeldoutPreprocessing.R")
 
 The scripts compare candidate samples using robust distances in the first two PCA dimensions for each modality. The maximum normalized distance across available modalities is used to select the candidate with the smallest value.
 
-Outputs are `Data/Heldout_Updated_a26.xlsx` (267 selected samples) and `Data/Heldout_Updated_a27.xlsx` (527). A27 metabolomics uses all 343 analytes, excluding its two metadata columns.
+Outputs are `Data/Heldout_Updated_a26.xlsx` (267 selected samples) and `Data/Heldout_Updated_a27.xlsx` (527). A27 metabolomics uses all 300 retained analytes, excluding its two metadata columns.
 
 ### C4–C5. Select samples and cluster analytes
 
@@ -169,7 +183,7 @@ Each script performs C4 and C5 sequentially.
 | Animal | C4 output | Selected metabolomics | Selected proteomics | C5 output |
 | --- | --- | --- | --- | --- |
 | A26 | `Data/a26.RData` | 267 × 328 | 267 × 9,990 | `Data/A26_PChclust.RData` |
-| A27 | `Data/a27.RData` | 527 × 343 | 527 × 10,253 | `Data/A27_PChclust.RData` |
+| A27 | `Data/a27.RData` | 527 × 300 | 527 × 10,253 | `Data/A27_PChclust.RData` |
 
 C5 uses Spearman correlations, average linkage, and a 70% PC1 variance threshold. Constant protein columns are excluded before clustering. The saved cluster objects contain group assignments, scores, loadings, cluster summaries, and variance explained.
 
@@ -199,7 +213,7 @@ The manuscript export workflow distinguishes component PNGs from final TIFF figu
 | 5 | `Code/loadingComp_U5A26A27_met.Rmd` directly exports `Figure/fig5_pca.tiff` at 600 dpi. |
 | S5 | `Code/regenerate_FigureS5.R` directly exports `FigureS5_corrected.tiff` at 600 dpi, as well as a PNG copy. |
 
-`Code/sr_sCCA_figures.R`, invoked by `Code/regenerate_C6_outputs.R`, produces the A26/A27 paired component PNGs; it does not assemble the final TIFFs for Figures 3, S3, or S4. Those final layouts require a separate assembly step. The cross-animal Rmd produces the projection component PNGs.
+`Code/sr_sCCA_figures.R`, invoked by `Code/regenerate_C6_outputs.R`, produces the A26/A27 paired component PNGs; it does not itself assemble the final TIFFs for Figures 3, S3, or S4. Run `Code/assemble_manuscript_components.R` for those final layouts. The cross-animal Rmd produces the projection component PNGs.
 
 The A26/A27 C6 Rmds also contain separate 600-dpi TIFF exports for individual U (protein) and V (metabolite) maps (`a26_U*.tiff`, `a26_V*.tiff`, `a27_U*.tiff`, and `a27_V*.tiff`); the projection Rmd exports `proj_U*.tiff` and `proj_V*.tiff`. These are additional panel exports, not the PNG-based assembly workflow above. The C6 driver does not execute the Rmds' individual-map export blocks. The 600-dpi setting for those TIFF panels does not describe the resolution of the PNG-based final composites. See [README_Figures.md](README_Figures.md) for commands, output locations, and assembly details.
 

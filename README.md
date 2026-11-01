@@ -158,11 +158,12 @@ Contains:
 
 * Input: `A27-Q500 Data.xlsx`
 * Output: `PostCombat_a27_Metabolite_beforeHeldout.xlsx`
-  (548 × 343)
+  (548 × 300)
 * Code: `Analysis_BatchEffect_A27_met_adj.Rmd`
 
 Steps:
 
+* Remove the 63 commercial plasma QC Level 1–3 rows before feature filtering and imputation; retain animal-specific SPQC for normalization
 * Missingness filtering
 * Remove outlier 212
 * Imputation: half the minimum observed intensity
@@ -217,7 +218,7 @@ Compare eligible mapped and heldout candidates and record the selected `finalID`
 * Output: `Data/Heldout_Updated_a27.xlsx` (527 samples)
 * Code: `Code/A27/HeldoutPreprocessing.R`
 * Run from the repository root: `source("Code/A27/HeldoutPreprocessing.R")`
-* Metabolomics PCA uses all 343 analytes, excluding only the two metadata columns.
+* Metabolomics PCA uses all 300 retained analytes, excluding only the two metadata columns.
 
 ---
 
@@ -227,7 +228,7 @@ Filter both metabolomics and proteomics to the `finalID` selections recorded in 
 
 * Output: `Data/a27.RData`
 
-  * metabolomics: 527 × 343
+  * metabolomics: 527 × 300
   * proteomics: 527 × 10,253
 * Code: `CombineClustering.R`
 
@@ -248,6 +249,14 @@ Filter both metabolomics and proteomics to the `finalID` selections recorded in 
 * Result: 508 matched samples
 
 ---
+
+## Figure exports and QCFix corrections
+
+See [QCFIX_VALIDATION.md](QCFIX_VALIDATION.md) for verified before/after counts and the correction record.
+
+See [README_Figures.md](README_Figures.md) for the final TIFF workflow and [REPRODUCIBILITY.md](REPRODUCIBILITY.md#regenerate-the-coordinated-qcfix-corrections) for the coordinated rerun command. Figures 3, S3, and S4 are assembled from component PNGs; Figures 4, 5, and S5 are exported directly as TIFFs.
+
+Figure 5 now removes only flagged outlier rows, using row identity rather than sample numbers shared across animals. Its later PCA/sCCA loading comparisons harmonize metabolite names before matching. QC3 participation in Figure 5 filtering, imputation, and normalization is retained provisionally pending PI review.
 
 ## Reproducibility Summary
 

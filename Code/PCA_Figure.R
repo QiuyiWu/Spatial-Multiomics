@@ -34,7 +34,7 @@ panel_gap_h_pt <- 12   # left/right room: clears right column's y-title AND stop
                        # Was 4 pt (below ggplot's 5.5 default), which caused both problems.
 panel_margin <- theme(plot.margin = margin(t = panel_gap_v_pt, r = panel_gap_h_pt,
                                             b = panel_gap_v_pt, l = panel_gap_h_pt))
-output_dir <- here::here("Figure")   # conform to repo convention; run from project root so this resolves to <root>/Figure
+output_dir <- getOption("proteinfix.pca_export_dir", here::here("Figure"))   # conform to repo convention; run from project root so this resolves to <root>/Figure
 dir.create(output_dir, showWarnings = FALSE, recursive = TRUE)
 
 # -----------------------------

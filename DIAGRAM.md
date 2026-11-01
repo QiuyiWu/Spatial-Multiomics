@@ -31,10 +31,10 @@ Dimensions below exclude metadata columns.
 
 | Stage | A26 | A27 |
 | --- | --- | --- |
-| M1 post-ComBat metabolites | 403 samples × 328 analytes | 548 samples × 343 analytes |
+| M1 post-ComBat metabolites | 403 samples × 328 analytes | 548 samples × 300 analytes |
 | P2 post-ComBat proteins | 427 samples × 9,990 analytes | 566 samples × 10,253 analytes |
 | C3/C4 selected samples | 267 | 527 |
-| C5 input metabolites | 328 | 343 |
+| C5 input metabolites | 328 | 300 |
 | C5 variable proteins | 9,987 | 10,252 |
 | C6 spatially matched samples | 233 | 508 |
 

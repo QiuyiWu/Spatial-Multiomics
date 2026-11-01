@@ -249,7 +249,7 @@ To evaluate the reproducibility of the spatial canonical patterns identified in 
 
 Next, we identified the set of features shared between A26 and A27 within each modality and restricted the projection to these common features. Using the A26 proteomic and metabolomic data matrices, we then computed projected scores by multiplying the A26 feature matrices by the A27-derived feature weights. In this way, each A26 sample received proteomic and metabolomic scores corresponding to the canonical components learned from A27.
 
-Finally, for each component, these transferred scores were mapped back onto the cortical sample layout to generate spatial score maps for A26. This procedure allowed us to assess whether the cross-modality spatial patterns estimated in A27 were recapitulated in the independent A26 dataset. There are 9250 common proteins and 289 common metabolites. 
+Finally, for each component, these transferred scores were mapped back onto the cortical sample layout to generate spatial score maps for A26. This procedure allowed us to assess whether the cross-modality spatial patterns estimated in A27 were recapitulated in the independent A26 dataset. The shared protein and metabolite counts are calculated and reported below for the current model inputs.
 
 
 ```{r sparse spCCA 2, message=FALSE, warning=FALSE, results='hide'}
@@ -310,7 +310,8 @@ rownames(met_feat_wt_a27) <- n27_weights
 stopifnot(!anyDuplicated(colnames(a26.met.data)))
 
 common_met <- intersect(n26_loading, n27_weights)
-stopifnot(length(common_met) == 289L)
+stopifnot(length(common_met) > 0L, !anyDuplicated(common_met))
+message("Shared metabolites for projection: ", length(common_met))
 X26_met_common <- as.matrix(a26.met.data[, common_met, drop = FALSE])
 w27_met_common <- met_feat_wt_a27[common_met, , drop = FALSE]
 stopifnot(identical(colnames(X26_met_common), rownames(w27_met_common)))

@@ -15,7 +15,7 @@ The commands below use the activated project library. Adding `--vanilla` bypasse
 | 4 | Mean correlation with exact-order spatial neighbors | `Code/regenerate_Figure4.R` and the two SampleSize Rmds |
 | 5 | Metabolomics PCA: blood-containing U5 versus perfused A26/A27 | `Code/loadingComp_U5A26A27_met.Rmd` |
 | S2 | Pre-ComBat PCA | `Code/PCA_Figure.R` |
-| S3–S4 | Additional sr-sCCA component maps | C6 Rmds and `Code/sr_sCCA_figures.R` |
+| S3–S4 | All 10 A26 components (S3) and all 10 A27 components (S4) | C6 Rmds and `Code/sr_sCCA_figures.R` |
 | S5 | Metabolite and protein-cluster neighbor-correlation boxplots | `Code/regenerate_FigureS5.R` and the two SampleSize Rmds |
 
 Generated figures under `Figure/` and workbooks matching `Supp_Table_S3*.xlsx` are ignored by Git. Scripts that accept an output directory can write outside the repository. Such files are not automatically committed or published.
@@ -34,7 +34,7 @@ Each preprocessing Rmd saves, to the configured data-output directory, numeric `
 | --- | --- | --- |
 | `Data/met_a26_PCAdata.RData` | 433 × 328 | 403 × 328 |
 | `Data/pro_a26_PCAdata.RData` | 427 × 9,990 | 427 × 9,990 |
-| `Data/met_a27_PCAdata.RData` | 644 × 343 | 548 × 343 |
+| `Data/met_a27_PCAdata.RData` | 581 × 300 | 548 × 300 |
 | `Data/pro_a27_PCAdata.RData` | 566 × 10,253 | 566 × 10,253 |
 
 These exports precede heldout selection. The metabolomics preprocessing excludes A26 samples 244, 96, and 188 and A27 sample 212. Log2 transformation occurs before batch correction. QC exclusions differ by stage, so pre/post sample counts need not match.
@@ -88,7 +88,7 @@ The component export scripts produce paired maps. Assemble the final manuscript 
 | `Figure S3.tiff` | All 10 PNGs from `A26_components/`. |
 | `Figure S4.tiff` | All 10 PNGs from `A27_components/`. |
 
-The committed scripts do not perform this final selection/layout/TIFF assembly. Preserve the selection, layout, and export settings with the manuscript assets to reproduce the assembled figures. The component PNGs are exported at 300 dpi; the separate 600-dpi TIFF panel settings below do not establish the effective resolution of these assembled figures.
+Run `Rscript Code/assemble_manuscript_components.R /absolute/path/to/components /absolute/path/to/output` to assemble these TIFFs. Figure 3 uses components 1 and 2 from each folder; S3 and S4 use components 1–10 in row-major order. The component PNGs are exported at 300 dpi; the separate 600-dpi TIFF panel settings below do not establish the effective resolution of these assembled figures.
 
 ### Separate individual TIFF panel exports in the Rmds
 
@@ -98,7 +98,7 @@ These individual TIFF panels are separate from the PNG inputs used for Figures 3
 
 ### Display signs
 
-The corrected local presentation set also uses paired display-sign flips for A27 components 1 and 3 and their A27-to-A26 projections. These flips are presentation edits; the committed fitted models retain their original signs. They are not applied automatically by the export scripts. Record any sign orientation with the final manuscript assets and flip both U and V together.
+QCFix exports use the stored fitted-model signs for all components and projections. No display-only sign flips are applied. Earlier local assets flipped A27 components 1 and 3 and their projections; those historical presentation edits are not carried into this regenerated set.
 
 ## Figure 4: spatial neighbor maps
 
@@ -128,13 +128,17 @@ Outputs are `FigureS5_corrected.tiff` (600 dpi), `FigureS5_corrected.png`, numer
 
 ## Figure 5: U5/A26/A27 metabolomics PCA
 
-Run `Code/loadingComp_U5A26A27_met.Rmd` through its `PCA without QC samples` chunk to reproduce Figure 5. Subsequent chunks compare PCA loadings with sr-sCCA and are separate from this figure.
+Run `Rscript Code/regenerate_Figure5.R /absolute/path/to/output` to reproduce Figure 5 and the subsequent loading comparisons. The driver executes `Code/loadingComp_U5A26A27_met.Rmd`, exports audits, loading correlations, feature matches, and overlap curves, and saves `Figure5_PCA_results.rds` to the configured data-output directory.
 
 Inputs are the U5 `5583 FIA Q500 Data.xlsx` and `5583 UPLC Q500 Data.xlsx` workbooks and the A26/A27 raw Q500 workbooks. The Rmd applies its own filtering, half-minimum imputation before log2 transformation, dilution adjustments, QC3 normalization, and outlier-removal procedure. This is not the post-ComBat PCA used in Figure 2.
 
-The current Figure 5 run uses **252 shared metabolites** and, after the Rmd's QC/outlier exclusions, **396 A26, 542 A27, and 68 U5 samples**. PC1 explains **40.2%** and PC2 **13.3%** of the variance. Proteomics imputation does not enter this PCA.
+The current Figure 5 run uses **252 shared metabolites** and, after the Rmd's QC/outlier exclusions, **398 A26, 547 A27, and 68 U5 samples**. PC1 explains **40.1%** and PC2 **13.3%** of the variance. Proteomics imputation does not enter this PCA.
 
-The Rmd's built-in export is `Figure/fig5_pca.tiff`, 89 × 73 mm at 600 dpi. Its final export uses orange A26, blue A27, and black U5. Earlier plotting expressions in the same chunk use cyan A26, red A27, and purple U5. The requested local `Figure5_corrected.tiff`/PNG presentation uses those earlier colors and a wider canvas; that presentation override is not committed to the Rmd.
+The Rmd directly exports `fig5_pca.tiff` (default: `Figure/`; the driver uses the supplied output directory), 150 × 89 mm at 600 dpi, using cyan A26, red A27, and purple U5 to match the existing local manuscript presentation.
+
+Outliers are removed by their exact aligned row flags, not by sample number alone: numbers repeat across animals. The current run flags 14 rows; the former sample-only expression removed 21. Feature matching in the later loading comparisons normalizes both PCA and cluster names with `make.names()`, preserves original labels, rejects duplicate keys, and explicitly aligns rows. The corrected run matches 252 A26 metabolites and 249 A27 metabolites; unmatched A27 features are `DG(14:1_18:1)`, `ProBetaine`, and `GCDCA`. The match count is reported rather than forced to 252.
+
+**Provisional QC3 policy:** Figure 5 retains its existing QC3 participation in missingness filtering, half-minimum imputation, and QC3 normalization, pending PI review. QC3 rows are excluded from the biological-sample PCA. This is distinct from the A27 SPQC/ComBat analysis, which excludes all 63 commercial QC Level 1–3 rows before filtering and imputation.
 
 ## Supplementary Table S3
 
