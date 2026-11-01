@@ -48,9 +48,9 @@ The local `CorrectedFigure2` package contains Figures 2–5 and S2–S5, all 30 
 
 Figure 5 retains the prior local cyan A26 / red A27 / purple U5 palette and 150 × 89 mm canvas, now recorded in the notebook rather than an external override.
 
-## PI-confirmed Figure 5 QC3 policy
+## Figure 5 QC3 handling
 
-As confirmed by the PI, QC3 continues to participate in Figure 5 missingness filtering, half-minimum imputation, and QC3 normalization, as confirmed by the PI. QC3 is removed before the biological-sample PCA. This policy is separate from early removal of all commercial QC levels in the A27 SPQC/ComBat workflow.
+QC3 continues to participate in Figure 5 missingness filtering, half-minimum imputation, and QC3 normalization. QC3 is removed before the biological-sample PCA. This is separate from early removal of all commercial QC levels in the A27 SPQC/ComBat workflow.
 
 ## Validation and environment
 

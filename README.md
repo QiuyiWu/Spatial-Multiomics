@@ -256,7 +256,7 @@ See [QCFIX_VALIDATION.md](QCFIX_VALIDATION.md) for verified before/after counts 
 
 See [README_Figures.md](README_Figures.md) for the final TIFF workflow and [REPRODUCIBILITY.md](REPRODUCIBILITY.md#regenerate-the-coordinated-qcfix-corrections) for the coordinated rerun command. Figures 3, S3, and S4 are assembled from component PNGs; Figures 4, 5, and S5 are exported directly as TIFFs.
 
-Figure 5 now removes only flagged outlier rows, using row identity rather than sample numbers shared across animals. Its later PCA/sCCA loading comparisons harmonize metabolite names before matching. QC3 participation in Figure 5 filtering, imputation, and normalization is retained, as confirmed by the PI.
+Figure 5 now removes only flagged outlier rows, using row identity rather than sample numbers shared across animals. Its later PCA/sCCA loading comparisons harmonize metabolite names before matching. QC3 participation in Figure 5 filtering, imputation, and normalization is retained.
 
 ## Reproducibility Summary
 

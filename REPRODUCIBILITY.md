@@ -43,7 +43,7 @@ Rscript Code/regenerate_QCFix.R /absolute/path/to/fresh-run /absolute/path/to/Co
 
 This reruns A27 metabolomics preprocessing, heldout selection, aligned samples, and clustering; refits the A26/A27 spatial models; regenerates the projection, PCA figures, Figures 4/5/S5, and final component TIFF composites. It writes regenerated data under the run directory's `Data/`, stage logs under `logs/`, and the complete figure set to the supplied figure directory. Review `comparison.csv` before replacing tracked references. Saved graphs are validated; explicitly request rebuilding only if sample/coordinate changes require it.
 
-The correction excludes 63 A27 commercial plasma QC Level 1–3 rows before filtering/imputation in the SPQC/ComBat workflow. Figure 5 removes exactly its flagged rows, matches metabolite names consistently in the loading comparisons, and **retains QC3 in its own filtering, imputation, and normalization, as confirmed by the PI**. Original labels and matching/outlier audits are exported.
+The correction excludes 63 A27 commercial plasma QC Level 1–3 rows before filtering/imputation in the SPQC/ComBat workflow. Figure 5 removes exactly its flagged rows, matches metabolite names consistently in the loading comparisons, and **retains QC3 in its own filtering, imputation, and normalization**. Original labels and matching/outlier audits are exported.
 
 The recorded local validation uses R 4.4.3 with an independently configured system library, invoked explicitly with `--vanilla`; `renv.lock` remains the R 4.5.2 reference environment. For that explicit alternative, set `PROTEINFIX_RSCRIPT_FLAGS=--vanilla` when calling the coordinated runner. Session information accompanies the outputs.
 

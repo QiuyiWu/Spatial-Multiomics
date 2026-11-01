@@ -138,7 +138,7 @@ The Rmd directly exports `fig5_pca.tiff` (default: `Figure/`; the driver uses th
 
 Outliers are removed by their exact aligned row flags, not by sample number alone: numbers repeat across animals. The current run flags 14 rows; the former sample-only expression removed 21. Feature matching in the later loading comparisons normalizes both PCA and cluster names with `make.names()`, preserves original labels, rejects duplicate keys, and explicitly aligns rows. The corrected run matches 252 A26 metabolites and 249 A27 metabolites; unmatched A27 features are `DG(14:1_18:1)`, `ProBetaine`, and `GCDCA`. The match count is reported rather than forced to 252.
 
-**PI-confirmed QC3 policy:** Figure 5 retains its existing QC3 participation in missingness filtering, half-minimum imputation, and QC3 normalization, as confirmed by the PI. QC3 rows are excluded from the biological-sample PCA. This is distinct from the A27 SPQC/ComBat analysis, which excludes all 63 commercial QC Level 1–3 rows before filtering and imputation.
+**QC3 handling:** Figure 5 retains its existing QC3 participation in missingness filtering, half-minimum imputation, and QC3 normalization. QC3 rows are excluded from the biological-sample PCA. This is distinct from the A27 SPQC/ComBat analysis, which excludes all 63 commercial QC Level 1–3 rows before filtering and imputation.
 
 ## Supplementary Table S3
 
