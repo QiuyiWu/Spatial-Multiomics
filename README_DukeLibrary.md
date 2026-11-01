@@ -1,21 +1,21 @@
 # External proteomics inputs
 
-This document describes inputs used by the ProteinFix branch of [Spatial-Multiomics](https://github.com/QiuyiWu/Spatial-Multiomics/tree/ProteinFix). It is not a deposit accession or a confirmation that every required file has been published.
+This document describes external proteomics inputs used by the FinalVersion branch of [Spatial-Multiomics](https://github.com/QiuyiWu/Spatial-Multiomics/tree/FinalVersion).
 
 ## Quantification files
 
-Two large long-format quantification files are described as deposited separately in Duke Library:
+Two large long-format quantification files are deposited separately in the Duke Research Data Repository at [doi:10.7924/r4r506](https://doi.org/10.7924/r4r506):
 
 | Input | Used by | Role |
 | --- | --- | --- |
 | `A26 Proteomics with QC variables.txt` | `Code/A26/Reformatting_A26_pro.R` | A26 protein quantification, including the log2-scale `Y` values used for reformatting |
 | `A27_SNE_combine_protein.tsv` | `Code/A27/Reformatting_A27_pro.R` | A27 intensity-scale `PG.Quantity` values; the script applies `log2()` |
 
-A deposit URL or accession is not recorded here. Obtain the files from the study's data deposit or contact the authors for access details.
+Obtain the quantification files from the [Duke data record](https://doi.org/10.7924/r4r506) and cite that record when using these data.
 
 ## Additional A27 annotation input
 
-`Code/A27/Reformatting_A27_pro.R` also requires **`20260120_122736_Identifications.tsv`**, which provides `FileName`, `Plate.`, and `SPQC.type`. It is not tracked under `Data/`. Confirm its availability with the authors; the quantification file alone is insufficient to reproduce A27 P1.
+`Code/A27/Reformatting_A27_pro.R` also requires **`20260120_122736_Identifications.tsv`**, which provides `FileName`, `Plate.`, and `SPQC.type`. It is not tracked under `Data/`. Check the [Duke data record](https://doi.org/10.7924/r4r506) for this annotation input; the quantification file alone is insufficient to reproduce A27 P1.
 
 ## Running P1
 
@@ -32,3 +32,10 @@ The saved objects contain metadata in addition to 9,990 A26 or 10,253 A27 protei
 Users reproducing downstream analyses can start from the processed objects already tracked in the GitHub repository. Download them with Git LFS. The external long-format inputs are needed to reproduce P1, not to read the included downstream objects.
 
 See [README_Figures.md](README_Figures.md) for figure commands. Generated figures and supplementary-table exports are ignored by Git; their presence in a local output directory does not imply that they are included in the repository.
+
+## Data citation and license scope
+
+The license associated with the code record covers the code only. Data are distributed under the terms of their respective data records and must be cited using those records, separately from the code record:
+
+* Proteomics quantification: [Duke Research Data Repository, doi:10.7924/r4r506](https://doi.org/10.7924/r4r506).
+* Raw metabolomics data and spatial flatmap grids: [Zenodo, doi:10.5281/zenodo.23857927](https://doi.org/10.5281/zenodo.23857927), downloaded with `Code/get_raw_data.R` as described in [README.md](README.md#data).

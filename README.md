@@ -1,6 +1,6 @@
 # Spatial Multiomics
 
-This README describes the **QCFix** branch. For environment setup, execution commands, reproduction/update modes, and validation, see [REPRODUCIBILITY.md](REPRODUCIBILITY.md). For manuscript figure exports, see [README_Figures.md](README_Figures.md).
+This README describes the **FinalVersion** branch. For environment setup, execution commands, reproduction/update modes, and validation, see [REPRODUCIBILITY.md](REPRODUCIBILITY.md). For manuscript figure exports, see [README_Figures.md](README_Figures.md).
 
 ## Overview
 
@@ -13,12 +13,23 @@ This repository contains the full analysis pipeline for the Spatial Multiomics s
 * spatial sparse CCA (spCCA)
 * figure generation for the manuscript
 
-⚠️ **Important:** Two large protein level quantification proteomics input files are **not included in this repository** due to file size limitations. They are deposited separately in the Duke Library:
+## Data
 
-* `A26 Proteomics with QC variables.txt`
-* `A27_SNE_combine_protein.tsv`
+External inputs are available from their own citable data records:
 
-These files are **only required for the initial reformatting step** (P1 below).
+* **Raw metabolomics data and spatial flatmap grids:** Zenodo, [doi:10.5281/zenodo.23857927](https://doi.org/10.5281/zenodo.23857927). From the repository root, run:
+
+  ```sh
+  Rscript --vanilla Code/get_raw_data.R
+  ```
+
+  The script downloads the A26/A27 Q500 workbooks, the 5583 FIA/UPLC Q500 workbooks, and both flatmap grids into `Data/`, verifies their checksums, and restores the filenames expected by the analysis scripts. The grids are deposited without animal names and restored locally as `A26_Bonnie_Flatmap_Grid_20260315.xlsx` and `A27_Frizzle_Flatmap_Grid_20260317.xlsx`. These downloaded raw inputs are ignored by Git.
+
+* **Proteomics quantification files:** Duke Research Data Repository, [doi:10.7924/r4r506](https://doi.org/10.7924/r4r506). The external files `A26 Proteomics with QC variables.txt` and `A27_SNE_combine_protein.tsv` are required for the initial proteomics reformatting step (P1). See [README_DukeLibrary.md](README_DukeLibrary.md) for input details, including the additional A27 annotation input and legacy input paths.
+
+Processed tables and analysis objects remain in `Data/`.
+
+The license associated with the code record covers the code only. Data are distributed under the terms of their respective data records and must be cited using those records, separately from the code record.
 
 ---
 
