@@ -71,3 +71,11 @@ See [REPRODUCIBILITY.md](REPRODUCIBILITY.md#regenerate-the-coordinated-qcfix-cor
 ## Figure 4 protein-cluster correction
 
 Figure 4 protein panels now use the same loading-weighted protein-cluster representation as Figure S5: 4,717 A26 clusters and 6,933 A27 clusters. The metabolite panels are unchanged numerically. Figure 4 maps per-sample neighbor means; S5 shows unique undirected pair-correlation distributions. The numeric Figure 4 export includes both quantities so agreement with S5 can be checked directly. Figure S5 and upstream preprocessing, clustering, and sr-sCCA data do not require regeneration for this change. `Code/tests/test_figure4_s5_consistency.R` verified equality of all underlying pair correlations for both modalities and both animals, as well as unchanged Figure 4 metabolite means.
+
+## A27 alternative SPQC-adjusted worksheet correction (November 1, 2026)
+
+The plate-wise SPQC loop previously concatenated rows by plate, then reused the original metadata and batch order. In A27 this moved 418 of 566 rows and mismatched 63 batch labels. The alternative `combat_corrected_scaled` worksheet was therefore incorrect; downstream analyses use `combat_corrected_unscaled`.
+
+`Code/protein_spqc_adjustment.R` now preallocates the matrix in original row order and assigns each plate's adjusted values back to its original indices. Stable, unique row keys handle repeated SPQC labels. The A27 Rmd checks matrix columns against named batches before ComBat and checks row identity before export. The obsolete dummy-row removal was deleted. Interleaved-plate, repeated-label, metadata-order, and missing-QC tests cover these cases.
+
+The regenerated scaled worksheet is checked against independent per-row SPQC subtraction and ComBat with the correctly aligned batch vector. The unscaled worksheet and saved proteomics PCA matrices were verified numerically unchanged (tolerance 1e-10); upstream raw inputs, A26, and manuscript figures do not require regeneration. The earlier full rerun checked reproduction of the previous worksheet, not this row-identity invariant.

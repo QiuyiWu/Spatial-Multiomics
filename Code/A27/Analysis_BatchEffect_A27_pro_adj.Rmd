@@ -155,18 +155,17 @@ PC coordinates of each plate are shown in the table below.
 pro.plates <- unique(pro.a27.adj$pro.plate)
 tb <- vector("list", 7)
 
-pro.comb.complete_spqcScaled <- array(dim = c(1,ncol(pro.a27.adj)-4))
-colnames(pro.comb.complete_spqcScaled) <- colnames(pro.comb.num)
+source(here::here("Code", "protein_spqc_adjustment.R"))
+a27_sample_keys <- protein_sample_keys(pro.a27.adj)
+pro.comb.complete_spqcScaled <- protein_spqc_adjustment(pro.comb.num, pro.a27.adj)
 # Loop through each plate and perform PCA
 for(plate in pro.plates) {
   # Subset data for the current plate
   plate_data <- pro.comb.num[pro.a27.adj$pro.plate == plate, ]
   identifier <- pro.a27.adj[pro.a27.adj$pro.plate == plate, 1:4]
   
-  # subtract average SPQC by plate
-  spqc_means <- colMeans(plate_data[identifier$pro.sampletype == "SPQC",], na.rm = T)
-  plate_data_spqcScaled <- sweep(plate_data, 2, spqc_means, FUN = "-")
-  pro.comb.complete_spqcScaled <- rbind(pro.comb.complete_spqcScaled, plate_data_spqcScaled)
+  # SPQC-adjusted values were assigned to original row positions above.
+  # This loop only creates the per-plate diagnostic plots.
   
   # Remove columns with zero variance (constant columns)
   plate_data_clean <- plate_data[, apply(plate_data, 2, var) > 0]
@@ -266,7 +265,7 @@ datatable(tb[["S-trap batch 2"]],
 
 
 ```{r re-plot PCA protein}
-pro.comb.complete_spqcScaled  <- pro.comb.complete_spqcScaled[-1,]
+stopifnot(identical(rownames(pro.comb.complete_spqcScaled), a27_sample_keys))
 pca_pro <- prcomp(pro.comb.complete_spqcScaled, scale. = TRUE)
 pca_data <- data.frame(pca_pro$x)  # PCA scores
 
@@ -329,9 +328,12 @@ combat_corrected_unscaled <- combat_corrected
 
 ```{r pro spqc sva}
 protein_data <- as.matrix(t(pro.comb.complete_spqcScaled))
+scaled_batch <- setNames(as.factor(pro.a27.adj$pro.plate), a27_sample_keys)
+stopifnot(identical(colnames(protein_data), names(scaled_batch)),
+          identical(rownames(pro.comb.complete_spqcScaled), a27_sample_keys))
 
-# Apply ComBat to remove batch effect
-combat_corrected <- ComBat(dat = protein_data, batch = pro.batch, mod = NULL, par.prior = TRUE, prior.plots = FALSE)
+# Apply ComBat with batch labels in the same order as the adjusted samples.
+combat_corrected <- ComBat(dat = protein_data, batch = scaled_batch, mod = NULL, par.prior = TRUE, prior.plots = FALSE)
 
 
 pca_pro_corrected <- prcomp(t(combat_corrected), scale. = TRUE)
@@ -365,7 +367,9 @@ combat_corrected_scaled <- combat_corrected
 
 # save data
 
-combat_corrected_scaled <- cbind( pro.a27.adj[,1:3], t(combat_corrected_scaled))
+stopifnot(identical(colnames(combat_corrected_scaled), a27_sample_keys),
+          identical(names(scaled_batch), a27_sample_keys))
+combat_corrected_scaled <- cbind(pro.a27.adj[,1:3], t(combat_corrected_scaled))
 combat_corrected_unscaled <- cbind( pro.a27.adj[,1:3], t(combat_corrected_unscaled))
 library(openxlsx)
 write.xlsx(

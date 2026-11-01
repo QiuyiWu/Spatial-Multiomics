@@ -138,7 +138,7 @@ A26 P1 produces 428 samples and 9,990 protein variables. A27 P1 produces 566 sam
 | A27 metabolomics | `A27/Analysis_BatchEffect_A27_met_adj.Rmd` | `Data/PostCombat_a27_Metabolite_beforeHeldout.xlsx` | 548 × 300 |
 | A27 proteomics | `A27/Analysis_BatchEffect_A27_pro_adj.Rmd` | `Data/PostCombat_a27_Protein.xlsx` | 566 × 10,253 |
 
-File-name capitalization in this table matches the repository. Dimensions exclude metadata columns. Downstream protein analyses read the `combat_corrected_unscaled` worksheet.
+File-name capitalization in this table matches the repository. Dimensions exclude metadata columns. Downstream protein analyses read the `combat_corrected_unscaled` worksheet. The alternative `combat_corrected_scaled` worksheet applies plate-wise SPQC subtraction before ComBat; "scaled" here does not mean z-scoring. A27 assigns adjusted values back to their original row positions and checks sample keys against batch labels before ComBat and export, including distinct row identities for repeated SPQC labels. Run `Rscript Code/tests/test_protein_spqc_order.R` to check interleaved plates, repeated SPQC labels, metadata alignment, and missing-QC handling.
 
 For metabolomics, the scripts apply missingness thresholds of 70% for TG analytes and 85% for other analytes, imputation, dilution adjustment, log2 transformation, SPQC adjustment, and ComBat. A26 excludes samples 244, 96, and 188; A27 excludes sample 212. QC exclusions account for differences between pre- and post-ComBat sample counts. A26 proteomics removes outlier `ID117530`.
 
