@@ -110,7 +110,7 @@ The driver uses the metabolite preprocessing and loading-weighted protein-cluste
 
 `Code/exact_neighbor_orders.R` defines neighbors by exact shortest-path distance. Groups exclude self and all closer samples. A26 displays orders 1/2/3; A27 displays 1/3/5. Features are standardized across the spatial samples, then Spearman correlations across features are averaged over each sample's neighbors. Constant protein columns are omitted because their standardized values are undefined.
 
-The script checks graph groups against `igraph` shortest paths and independently recomputes neighbor means for representative samples. The saved numeric output includes the unique pair correlations used to verify agreement with Figure S5.
+The script checks graph groups against `igraph` shortest paths and independently recomputes neighbor means for representative samples. The saved numeric output includes the per-sample neighbor means used to verify agreement with Figure S5.
 
 Outputs are `Figure4_corrected.tiff` (600 dpi), `Figure4_corrected.png`, numeric `A26_Figure4_results.rds` and `A27_Figure4_results.rds`, and diagnostic plots. The assembled figure has Metabolomics/Protein clusters column headings, horizontal A26/A27 labels, a–d panel letters, ordinal map headings, a bottom Neighbor order label, and a shared blue–white–red `avg cor` legend on a fixed −1 to 1 scale.
 
@@ -122,7 +122,7 @@ Rscript Code/regenerate_FigureS5.R /absolute/path/to/output
 
 This uses the preparation, standardization, and protein-cluster aggregation from the same two SampleSize Rmds as Figure 4. `Code/protein_cluster_contributions.R` reads current C5 protein loadings from `Data/A26_PChclust.RData` and `Data/A27_PChclust.RData`; the separately exported contribution workbooks are not used by this runner.
 
-The left column summarizes metabolite correlations. The right summarizes correlations across loading-weighted protein clusters. Both figures use the same metabolite data and loading-weighted protein clusters. Each S5 box contains **unique undirected sample-pair** Spearman correlations for its exact neighbor order; Figure 4 maps each sample's mean correlation with its neighbors. S5 is therefore a pairwise distribution, not a distribution of the Figure 4 sample means. Median bars and 1.5-IQR whiskers are shown without outlier symbols; connected dots indicate means. Direct pairwise calculations check a subset of the matrix-derived correlations.
+The left column summarizes metabolite correlations. The right summarizes correlations across loading-weighted protein clusters. Both figures use the same metabolite data and loading-weighted protein clusters. Each S5 box contains **one average Spearman correlation per sample** for its exact neighbor order: the same per-sample neighbor means mapped in Figure 4. Median bars and 1.5-IQR whiskers are shown without outlier symbols; connected dots indicate means. Independent calculations check complete neighbor averages for representative samples.
 
 Outputs are `FigureS5_corrected.tiff` (600 dpi), `FigureS5_corrected.png`, numeric results for each animal, and diagnostics. Gray boxes, A26/A27 row labels, column headings, Average correlation, and the bottom Neighbor order label follow the manuscript layout.
 

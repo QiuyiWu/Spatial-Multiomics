@@ -200,7 +200,7 @@ The driver saves spatial-model weights, and graphs only when explicitly rebuilt,
 
 ## Manuscript figures
 
-Figure 2 and S2 use the four pre/post PCA objects. Figure 3 and the additional component maps use C6 and the cross-animal projection. Figure 4 and S5 use corrected exact-distance neighbor groups and the same loading-weighted protein-cluster representation. Figure 4 maps sample-level neighbor means; S5 displays unique pair-correlation distributions. Figure 5 is a separate **metabolomics-only** U5/A26/A27 PCA; it does not use proteomics imputation.
+Figure 2 and S2 use the four pre/post PCA objects. Figure 3 and the additional component maps use C6 and the cross-animal projection. Figure 4 and S5 use corrected exact-distance neighbor groups and the same loading-weighted protein-cluster representation. Figure 4 maps each sample’s average correlation with its neighbors; S5 displays the distribution of those same per-sample averages for each neighbor order. Figure 5 is a separate **metabolomics-only** U5/A26/A27 PCA; it does not use proteomics imputation.
 
 The manuscript export workflow distinguishes component PNGs from final TIFF figures:
 

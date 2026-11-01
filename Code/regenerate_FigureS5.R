@@ -18,7 +18,7 @@ run <- function(animal) {
  for(label in c('setup','lib','preparation',paste(tolower(animal),'met'),'scaling met',
                 paste(tolower(animal),'proteomic'),paste(tolower(animal),'pro'),'scaling','pro cluster')) {
   code<-chunks[[label]]
-  # The S5 runner computes pair correlations once rather than repeating per-node calls.
+  # The S5 runner computes the correlation matrix once, then averages neighbors per sample.
   if(label %in% c('scaling met','scaling','pro cluster')) {
    cut<-grep('^cors\\.1 <-',code)[1]
    code<-code[seq_len(cut-1)]
@@ -27,19 +27,24 @@ run <- function(animal) {
   if(label=='setup') {e$fig4_export<-FALSE;e$s5_export<-FALSE}
  }
  orders<-if(animal=='A26') 1:3 else c(1,3,5)
- result<-list(animal=animal,orders=orders,n=nrow(e$X.sub.met),clusters=ncol(e$X.cluster.pro))
+ result<-list(animal=animal,summary='per_sample_neighbor_mean',orders=orders,n=nrow(e$X.sub.met),clusters=ncol(e$X.cluster.pro))
  for(type in c('met','procluster')) {
   X<-if(type=='met') e$X.sub.met else e$X.cluster.pro
   stopifnot(all(is.finite(X)),ncol(X)>1)
   C<-cor(t(X),method='spearman')
   result[[type]]<-lapply(orders,function(k) {
    A<-get(paste0('nbr',k,'.full'),e)[rownames(X),rownames(X),drop=FALSE]
-   idx<-which(A==1 & upper.tri(A),arr.ind=TRUE)
-   values<-C[idx];stopifnot(all(is.finite(values)))
-   # Independent direct-pair check on a representative subset.
-   for(j in unique(round(seq(1,nrow(idx),length.out=10))))
-    stopifnot(abs(values[j]-cor(X[idx[j,1],],X[idx[j,2],],method='spearman'))<1e-12)
-   values
+   stopifnot(identical(rownames(X),rownames(A)),all(rowSums(A)>0))
+   observed<-rowSums(C*A)/rowSums(A)
+   stopifnot(length(observed)==nrow(X),all(is.finite(observed)))
+   # Independently check complete neighbor means for representative samples.
+   for(i in unique(round(seq(1,nrow(X),length.out=10)))) {
+    neighbors<-which(A[i,]==1)
+    direct<-mean(vapply(neighbors,function(j)
+     cor(X[i,],X[j,],method='spearman'),numeric(1)))
+    stopifnot(abs(observed[i]-direct)<1e-10)
+   }
+   observed
   })
  }
  saveRDS(result,file.path(out,paste0(animal,'_FigureS5_results.rds')))

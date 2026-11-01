@@ -79,3 +79,10 @@ The plate-wise SPQC loop previously concatenated rows by plate, then reused the 
 `Code/protein_spqc_adjustment.R` now preallocates the matrix in original row order and assigns each plate's adjusted values back to its original indices. Stable, unique row keys handle repeated SPQC labels. The A27 Rmd checks matrix columns against named batches before ComBat and checks row identity before export. The obsolete dummy-row removal was deleted. Interleaved-plate, repeated-label, metadata-order, and missing-QC tests cover these cases.
 
 The regenerated scaled worksheet is checked against independent per-row SPQC subtraction and ComBat with the correctly aligned batch vector. The unscaled worksheet and saved proteomics PCA matrices were verified numerically unchanged (tolerance 1e-10); upstream raw inputs, A26, and manuscript figures do not require regeneration. The earlier full rerun checked reproduction of the previous worksheet, not this row-identity invariant.
+
+
+## Figure S5 per-sample neighbor averages (November 1, 2026)
+
+Figure S5 now plots the distribution across samples of each sample’s average Spearman correlation with its neighbors, for each exact neighbor order. This replaces the previous distribution of individual undirected neighbor-pair correlations. Both modalities retain the same inputs and loading-weighted protein clusters as Figure 4.
+
+A fresh run of `Code/regenerate_FigureS5.R` regenerated both animals’ numeric results and the 600-dpi TIFF. Independent complete neighbor averages were checked for representative samples. The updated `Code/tests/test_figure4_s5_consistency.R` passed for every sample, modality, and neighbor order against the existing Figure 4 results (4,717 A26 and 6,933 A27 protein clusters); each distribution contains one value per sample, with sample names aligned. Figure 4 and upstream analysis outputs are unchanged. Earlier pairwise consistency checks described above tested a different summary and are superseded by this check for S5.
